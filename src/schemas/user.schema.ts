@@ -3,16 +3,34 @@ import { Document } from 'mongoose';
 
 export type UserDocument = User & Document;
 
-@Schema()
+@Schema({ timestamps: true })
 export class User {
-  @Prop()
-  name: string;
+  @Prop({ required: true })
+  email: string;
+
+  @Prop({ required: true })
+  password: string;
 
   @Prop()
-  age: number;
+  firstName: string;
 
   @Prop()
-  address: string;
+  lastName: string;
+
+  @Prop()
+  userName: string;
+
+  @Prop()
+  birthDate: Date;
+
+  @Prop()
+  avatar: string;
+
+  @Prop({ default: 'local', enum: ['local', 'twitter', 'google', 'facebook'] })
+  authType: string;
+
+  @Prop({ default: false })
+  isVerified: boolean;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
