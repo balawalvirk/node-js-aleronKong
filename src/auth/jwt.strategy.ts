@@ -3,13 +3,13 @@ import { PassportStrategy } from '@nestjs/passport';
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import { IEnvironmentVariables } from 'src/types';
-import { UserService } from 'src/user/user.service';
+import { UsersService } from 'src/users/users.service';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(
     private configService: ConfigService<IEnvironmentVariables>,
-    private userService: UserService
+    private usersService: UsersService
   ) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
@@ -19,6 +19,6 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
   }
 
   async validate(payload: any) {
-    return await this.userService.findOne({ _id: payload.sub });
+    return await this.usersService.findOne({ _id: payload.sub });
   }
 }

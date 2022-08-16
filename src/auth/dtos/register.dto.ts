@@ -1,5 +1,5 @@
 import { IsNotEmpty, IsEmail, IsString, MinLength } from 'class-validator';
-import { Match } from 'src/decorators/match.decorator';
+import { Match } from 'src/helpers/decorators/match.decorator';
 
 export class RegisterDto {
   @IsNotEmpty()
@@ -13,14 +13,4 @@ export class RegisterDto {
 
   @Match('password')
   confirmPassword: string;
-}
-
-export class LoginDto {
-  @IsNotEmpty()
-  @IsEmail()
-  email: string;
-
-  @IsNotEmpty()
-  @IsString()
-  password: string;
 }

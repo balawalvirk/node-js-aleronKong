@@ -1,18 +1,18 @@
 import { Body, Controller, HttpException, HttpStatus, Post, UseGuards } from '@nestjs/common';
 import { hash } from 'bcrypt';
-
-import { UserService } from '../user/user.service';
+import { UsersService } from '../users/users.service';
 import { AuthService } from './auth.service';
 import { LocalAuthGuard } from './local-auth.guard';
-import { LoginDto, RegisterDto } from './auth.dto';
-import { GetUser } from 'src/decorators/user.decorator';
-import { UserDocument } from 'src/schemas/user.schema';
+import { GetUser } from 'src/helpers/decorators/user.decorator';
+import { UserDocument } from 'src/users/users.schema';
+import { LoginDto } from './dtos/login';
+import { RegisterDto } from './dtos/register.dto';
 
 @Controller('auth')
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
-    private readonly userService: UserService
+    private readonly usersService: UsersService
   ) {}
 
   @UseGuards(LocalAuthGuard)
@@ -24,11 +24,11 @@ export class AuthController {
 
   @Post('register')
   async register(@Body() body: RegisterDto) {
-    const emailExists = await this.userService.findOne({ email: body.email });
+    const emailExists = await this.usersService.findOne({ email: body.email });
     if (emailExists)
       throw new HttpException('User already exists with this email.', HttpStatus.BAD_REQUEST);
     const hashedPassword = await hash(body.password, 10);
-    const user = await this.userService.create({ ...body, password: hashedPassword });
+    const user = await this.usersService.create({ ...body, password: hashedPassword });
     return { msg: 'User registered successfully.', user };
   }
 }
