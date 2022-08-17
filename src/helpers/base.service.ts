@@ -19,13 +19,13 @@ export class BaseService {
    * Creates a find query: gets a list of documents that match filter.
    * @param filter
    */
-  find = (filter?: FilterQuery<any>) => this.model.find(filter).lean();
+  findAll = (filter?: FilterQuery<any>) => this.model.find(filter).lean();
 
   /**
    * Finds one document.
    *  @param filter
    */
-  findOne = (filter?: FilterQuery<any>) => this.model.findOne(filter).lean();
+  findOneRecord = (filter?: FilterQuery<any>) => this.model.findOne(filter).lean();
 
   /**
    * Paginated Data
@@ -64,6 +64,6 @@ export class BaseService {
    * @param id string
    * @param update
    */
-  findOneAndUpdate = (filter: any, update: UpdateQuery<any>) =>
+  findAndUpdate = (filter: any, update: UpdateQuery<any>) =>
     this.model.findOneAndUpdate(filter, update, { new: true }).lean();
 }

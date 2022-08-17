@@ -24,7 +24,7 @@ export class AuthController {
 
   @Post('register')
   async register(@Body() body: RegisterDto) {
-    const emailExists = await this.usersService.findOne({ email: body.email });
+    const emailExists = await this.usersService.findOneRecord({ email: body.email });
     if (emailExists)
       throw new HttpException('User already exists with this email.', HttpStatus.BAD_REQUEST);
     const hashedPassword = await hash(body.password, 10);

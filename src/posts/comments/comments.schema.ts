@@ -13,4 +13,4 @@ export class Comment {
   creator: User[];
 }
 
-export const CommentsSchema = SchemaFactory.createForClass(Comment);
+export const CommentSchema = SchemaFactory.createForClass(Comment);

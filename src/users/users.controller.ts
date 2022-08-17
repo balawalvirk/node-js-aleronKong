@@ -12,6 +12,6 @@ export class UserController {
 
   @Put('update')
   async setupProfile(@Body() body: UpdateUserDto, @GetUser() user: UserDocument): Promise<User> {
-    return await this.usersService.findOneAndUpdate({ _id: user._id }, body);
+    return await this.usersService.findAndUpdate({ _id: user._id }, body);
   }
 }
