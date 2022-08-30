@@ -15,12 +15,11 @@ export class AuthService {
 
   async validateUser(email: string, pass: string): Promise<any> {
     const user = await this.usersService.findOneRecord({ email });
+    if (!user) return null;
     const match = await compare(pass, user.password);
-    if (user && match) {
-      const { password, ...result } = user;
-      return result;
-    }
-    return null;
+    if (!match) return null;
+    const { password, ...result } = user;
+    return result;
   }
 
   async login(userName: string, userId: string) {

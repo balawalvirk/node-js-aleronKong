@@ -3,8 +3,6 @@ import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
 import { BaseService } from 'src/helpers/base.service';
 import { Chat, ChatDocument } from './chat.schema';
-import { CreateMessageDto } from './dto/create-message.dto';
-import { UpdateMessageDto } from './dto/update-message.dto';
 
 @Injectable()
 export class ChatService extends BaseService {
@@ -12,15 +10,25 @@ export class ChatService extends BaseService {
     super(ChatModel);
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} message`;
+  async findOne(query: any) {
+    return await this.ChatModel.findOne(query).populate([
+      { path: 'sender', select: 'firstName lastName avatar' },
+      { path: 'receiver', select: 'firstName lastName avatar' },
+      { path: 'messages' },
+    ]);
   }
 
-  update(id: number, updateMessageDto: UpdateMessageDto) {
-    return `This action updates a #${id} message`;
+  async save(senderId: string, receiverId: string) {
+    return (await new this.ChatModel({ sender: senderId, receiver: receiverId }).save()).populate([
+      { path: 'sender', select: 'firstName lastName avatar' },
+      { path: 'receiver', select: 'firstName lastName avatar' },
+    ]);
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} message`;
+  async findAllChat(query: any) {
+    return await this.ChatModel.find(query).populate([
+      { path: 'sender', select: 'firstName lastName avatar' },
+      { path: 'receiver', select: 'firstName lastName avatar' },
+    ]);
   }
 }
