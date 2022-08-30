@@ -14,6 +14,8 @@ async function bootstrap() {
   await app.register(helmet);
   const configService = app.get(ConfigService);
   const port = configService.get('PORT') || 3000;
-  await app.listen(port, (err, address) => console.log(`Server is running on ${address}`));
+  await app.listen(port, '0.0.0.0', (err, address) =>
+    console.log(`Server is running on ${address}`)
+  );
 }
 bootstrap();
