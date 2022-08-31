@@ -8,6 +8,8 @@ import { JwtStrategy } from './jwt.strategy';
 import { ConfigService } from '@nestjs/config';
 import { IEnvironmentVariables } from 'src/types';
 import { AuthController } from './auth.controller';
+import { MongooseModule } from '@nestjs/mongoose';
+import { Otp, OtpSchema } from './otp.schema';
 
 @Module({
   imports: [
@@ -17,6 +19,7 @@ import { AuthController } from './auth.controller';
       secret: new ConfigService<IEnvironmentVariables>().get('JWT_TOKEN_SECRET'),
       signOptions: { expiresIn: '15d' },
     }),
+    MongooseModule.forFeature([{ name: Otp.name, schema: OtpSchema }]),
   ],
   providers: [AuthService, LocalStrategy, JwtStrategy],
   controllers: [AuthController],
