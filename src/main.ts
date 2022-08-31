@@ -1,19 +1,21 @@
 import { NestFactory } from '@nestjs/core';
 import { FastifyAdapter, NestFastifyApplication } from '@nestjs/platform-fastify';
 import helmet from '@fastify/helmet';
-import { ValidationPipe } from '@nestjs/common';
+import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-
 import { AppModule } from './app.module';
 
 async function bootstrap() {
   const app = await NestFactory.create<NestFastifyApplication>(AppModule, new FastifyAdapter());
   app.useGlobalPipes(new ValidationPipe());
   app.enableCors();
-  app.setGlobalPrefix('api/v1');
+  app.enableVersioning({ type: VersioningType.URI, defaultVersion: '1' });
   await app.register(helmet);
   const configService = app.get(ConfigService);
   const port = configService.get('PORT') || 3000;
-  await app.listen(port, (err, address) => console.log(`Server is running on ${address}`));
+  // remove address when deploy application to production server
+  await app.listen(port, '0.0.0.0', (err, address) =>
+    console.log(`Server is running on ${address}`)
+  );
 }
 bootstrap();

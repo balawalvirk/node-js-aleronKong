@@ -5,7 +5,7 @@ export type UserDocument = User & Document;
 
 @Schema({ timestamps: true })
 export class User {
-  @Prop({ required: true })
+  @Prop({ required: true, lowercase: true })
   email: string;
 
   @Prop({ required: true })
@@ -25,9 +25,6 @@ export class User {
 
   @Prop()
   avatar: string;
-
-  @Prop({ default: 'local', enum: ['local', 'twitter', 'google', 'facebook'] })
-  authType: string;
 
   @Prop({ default: 'author', enum: ['author', 'fan'] })
   role: string;
