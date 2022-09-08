@@ -39,15 +39,15 @@ export class PostsController {
     return await this.postsService.findAllPosts(user._id);
   }
 
-  @Put('like/:postId')
+  @Post('like/:postId')
   async addLike(@Param('postId') postId: string, @GetUser() user: UserDocument): Promise<Posts> {
     const userFound = await this.usersService.findOneRecord({ _id: user._id });
-    if (userFound)
-      throw new HttpException('You cannot like your own post.', HttpStatus.BAD_REQUEST);
+    // if (userFound)
+    //   throw new HttpException('You cannot like your own post.', HttpStatus.BAD_REQUEST);
     return await this.postsService.updatePost(postId, { $push: { likes: user._id } });
   }
 
-  @Put('comment/:postId')
+  @Post('comment/:postId')
   async createComment(
     @Param('postId') postId: string,
     @GetUser() user: UserDocument,

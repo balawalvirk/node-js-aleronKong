@@ -6,7 +6,6 @@ import { IEnvironmentVariables } from './types';
 import { UsersModule } from './users/users.module';
 import { PostsModule } from './posts/posts.module';
 import { ChatModule } from './chat/chat.module';
-import { MessageModule } from './chat/messages.module';
 
 @Module({
   imports: [
@@ -16,7 +15,6 @@ import { MessageModule } from './chat/messages.module';
     AuthModule,
     PostsModule,
     ChatModule,
-    MessageModule,
   ],
 })
 export class AppModule {}

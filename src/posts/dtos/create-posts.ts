@@ -1,4 +1,4 @@
-import { IsEnum, IsNotEmpty, IsString } from 'class-validator';
+import { IsEnum, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class CreatePostsDto {
   @IsNotEmpty()
@@ -9,7 +9,7 @@ export class CreatePostsDto {
   @IsString()
   media: string;
 
-  @IsNotEmpty()
+  @IsOptional()
   @IsEnum(['guildMembers', 'followers', 'public'])
   privacy: string;
 }
