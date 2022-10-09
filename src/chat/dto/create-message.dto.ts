@@ -1,4 +1,4 @@
-import { IsMongoId, IsNotEmpty, IsString } from 'class-validator';
+import { IsMongoId, IsNotEmpty, IsOptional, IsString } from 'class-validator';
 
 export class CreateMessageDto {
   @IsNotEmpty()
@@ -8,4 +8,8 @@ export class CreateMessageDto {
   @IsNotEmpty()
   @IsMongoId()
   chat: string;
+
+  @IsOptional()
+  @IsString()
+  media?: string;
 }

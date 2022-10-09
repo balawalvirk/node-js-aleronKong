@@ -15,6 +15,9 @@ export class Message {
 
   @Prop({ required: true })
   content: string;
+
+  @Prop()
+  media: string;
 }
 
 export const MessageSchema = SchemaFactory.createForClass(Message);
