@@ -17,12 +17,15 @@ import { LoginDto } from './dtos/login';
 import { RegisterDto } from './dtos/register.dto';
 import { OtpDocument } from './otp.schema';
 import { ResetPasswordDto } from './dtos/reset-password.dto';
+import { SocialLoginDto } from './dtos/social-login.dto';
+import { EmailService } from 'src/helpers/services/email.service';
 
 @Controller('auth')
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
-    private readonly userService: UsersService
+    private readonly userService: UsersService,
+    private readonly emailService: EmailService
   ) {}
 
   @UseGuards(LocalAuthGuard)
@@ -34,10 +37,12 @@ export class AuthController {
 
   @Post('register')
   async register(@Body() body: RegisterDto) {
-    const emailExists = await this.userService.findOneRecord({ email: body.email });
+    const emailExists = await this.userService.findOneRecord({
+      email: body.email,
+    });
     if (emailExists)
       throw new HttpException('User already exists with this email.', HttpStatus.BAD_REQUEST);
-    const user = await this.userService.create({
+    const user = await this.userService.createRecord({
       ...body,
       password: await hash(body.password, 10),
     });
@@ -45,18 +50,19 @@ export class AuthController {
   }
 
   @Post('social-login')
-  async socialLogin(@Body('email') email: string) {
-    const userExists: UserDocument = await this.userService.findOneRecord({ email });
-    if (!userExists) {
-      const user: UserDocument = await this.userService.create({
-        email,
+  async socialLogin(@Body() body: SocialLoginDto) {
+    const userFound: UserDocument = await this.userService.findOneRecord(body);
+    if (!userFound) {
+      const user: UserDocument = await this.userService.createRecord({
+        email: body.email,
         password: await hash(`${new Date().getTime()}`, 10),
+        authType: body.authType,
       });
       const { access_token } = await this.authService.login(user.userName, user._id);
       return { access_token, user };
     } else {
-      const { access_token } = await this.authService.login(userExists.userName, userExists._id);
-      return { access_token, user: userExists };
+      const { access_token } = await this.authService.login(userFound.userName, userFound._id);
+      return { access_token, user: userFound };
     }
   }
 
@@ -64,12 +70,20 @@ export class AuthController {
   async forgetPassword(@Body('email') email: string): Promise<string> {
     const userFound = await this.userService.findOneRecord({ email });
     if (!userFound) throw new BadRequestException('Email does not exists.');
-    await this.authService.createOtp({
+    const otp: OtpDocument = await this.authService.createOtp({
       otp: Math.floor(Math.random() * 10000 + 1),
       // 5 min expiration time .
       expireIn: new Date().getTime() + 300 * 1000,
       email,
     });
+    const mail = {
+      to: email,
+      subject: 'Change Password request',
+      from: 'awaismehr001@gmail.com',
+      text: 'Hello World from NestJS Sendgrid',
+      html: `<h1>password reset otp</h1> <br/> ${otp.otp} </br> This otp will expires in 5 minuutes`,
+    };
+    await this.emailService.send(mail);
     return 'Otp sent to your email.';
   }
 
@@ -79,7 +93,7 @@ export class AuthController {
     if (!otpFound) throw new BadRequestException('Invalid Otp.');
     const diff = otpFound.expireIn - new Date().getTime();
     if (diff < 0) throw new BadRequestException('Otp expired.');
-    await this.userService.findAndUpdate({ email: otpFound.email }, { password });
+    await this.userService.findOneRecordAndUpdate({ email: otpFound.email }, { password });
     return 'Password changed successfully.';
   }
 }

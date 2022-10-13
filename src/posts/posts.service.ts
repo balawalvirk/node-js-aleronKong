@@ -1,9 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { Model } from 'mongoose';
-import { BaseService } from 'src/helpers/base.service';
-import { CommentDocument, Comment } from './comments/comments.schema';
-import { CreateCommentDto } from './comments/dto/create-comments';
+import { BaseService } from 'src/helpers/services/base.service';
 import { PostDocument, Posts } from './posts.schema';
 
 @Injectable()
@@ -12,8 +10,8 @@ export class PostsService extends BaseService {
     super(postModel);
   }
 
-  async findAllPosts(userId: string): Promise<Posts[]> {
-    return await this.postModel.find({ creator: userId }).populate([
+  async findAllPosts(query: any): Promise<Posts[]> {
+    return await this.postModel.find(query).populate([
       {
         path: 'comments',
         select: 'content',
@@ -23,6 +21,8 @@ export class PostsService extends BaseService {
         path: 'likes',
         select: 'firstName lastName avatar',
       },
+      { path: 'creator', select: 'firstName lastName avatar' },
+      { path: 'group', select: 'name' },
     ]);
   }
 
@@ -37,6 +37,8 @@ export class PostsService extends BaseService {
         path: 'likes',
         select: 'firstName lastName avatar',
       },
+      { path: 'creator', select: 'firstName lastName avatar' },
+      { path: 'group', select: 'name' },
     ]);
   }
 }

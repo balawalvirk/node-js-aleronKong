@@ -8,13 +8,16 @@ export type MessageDocument = Message & mongoose.Document;
 @Schema({ timestamps: true })
 export class Message {
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Chat', required: true })
-  Chat: Chat;
+  chat: Chat;
 
-  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User' })
-  sender: User[];
+  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true })
+  sender: User;
 
   @Prop({ required: true })
-  message: string;
+  content: string;
+
+  @Prop()
+  media: string;
 }
 
 export const MessageSchema = SchemaFactory.createForClass(Message);

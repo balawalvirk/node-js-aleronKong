@@ -17,7 +17,7 @@ export class User {
   @Prop()
   lastName: string;
 
-  @Prop()
+  @Prop({ trim: true })
   userName: string;
 
   @Prop()
@@ -25,6 +25,9 @@ export class User {
 
   @Prop()
   avatar: string;
+
+  @Prop({ default: 'local', enum: ['local', 'instagram', 'twitter', 'facebook'] })
+  authType: string;
 
   @Prop({ default: 'author', enum: ['author', 'fan'] })
   role: string;

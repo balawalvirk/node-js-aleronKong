@@ -10,6 +10,7 @@ import { IEnvironmentVariables } from 'src/types';
 import { AuthController } from './auth.controller';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Otp, OtpSchema } from './otp.schema';
+import { EmailService } from 'src/helpers/services/email.service';
 
 @Module({
   imports: [
@@ -21,7 +22,7 @@ import { Otp, OtpSchema } from './otp.schema';
     }),
     MongooseModule.forFeature([{ name: Otp.name, schema: OtpSchema }]),
   ],
-  providers: [AuthService, LocalStrategy, JwtStrategy],
+  providers: [AuthService, LocalStrategy, JwtStrategy, EmailService],
   controllers: [AuthController],
   exports: [AuthService, JwtModule],
 })

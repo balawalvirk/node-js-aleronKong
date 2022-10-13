@@ -1,62 +1,73 @@
-import {
-  Body,
-  Controller,
-  Get,
-  HttpException,
-  HttpStatus,
-  Param,
-  Post,
-  Put,
-  UseGuards,
-} from '@nestjs/common';
+import { Body, Controller, Get, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
-import { CommentDocument } from 'src/posts/comments/comments.schema';
-import { CommentsService } from 'src/posts/comments/comments.service';
 import { GetUser } from 'src/helpers/decorators/user.decorator';
 import { UserDocument } from 'src/users/users.schema';
 import { UsersService } from 'src/users/users.service';
+import { CreateCommentDto } from './dtos/create-comment';
 import { CreatePostsDto } from './dtos/create-posts';
 import { Posts } from './posts.schema';
 import { PostsService } from './posts.service';
-import { CreateCommentDto } from './comments/dto/create-comments';
 
 @Controller('post')
 @UseGuards(JwtAuthGuard)
 export class PostsController {
-  constructor(
-    private postsService: PostsService,
-    private usersService: UsersService,
-    private commentsService: CommentsService
-  ) {}
+  constructor(private postsService: PostsService, private usersService: UsersService) {}
 
   @Post('create')
   async create(@Body() body: CreatePostsDto, @GetUser() user: UserDocument): Promise<Posts> {
-    return await this.postsService.create({ creator: user._id, ...body });
+    return await this.postsService.createRecord({ creator: user._id, ...body });
   }
 
+  //find all post that are on feeds
   @Get('find-all')
-  async findAll(@GetUser() user: UserDocument): Promise<Posts[]> {
-    return await this.postsService.findAllPosts(user._id);
+  async findAll(
+    @GetUser() user: UserDocument,
+    @Query('privacy') privacy: string
+  ): Promise<Posts[]> {
+    return await this.postsService.findAllPosts({
+      privacy,
+      blockers: { $nin: [user._id] },
+    });
   }
 
-  @Put('like/:postId')
+  @Get('find-all/mine')
+  async findMine(@GetUser() user: UserDocument): Promise<Posts[]> {
+    return await this.postsService.findAllPosts({
+      creator: user._id,
+    });
+  }
+
+  @Post('like/:postId')
   async addLike(@Param('postId') postId: string, @GetUser() user: UserDocument): Promise<Posts> {
-    const userFound = await this.usersService.findOneRecord({ _id: user._id });
-    if (userFound)
-      throw new HttpException('You cannot like your own post.', HttpStatus.BAD_REQUEST);
-    return await this.postsService.updatePost(postId, { $push: { likes: user._id } });
+    await this.usersService.findOneRecord({ _id: user._id });
+    return await this.postsService.updatePost(postId, {
+      $push: { likes: user._id },
+    });
   }
 
-  @Put('comment/:postId')
+  @Post('comment/:postId')
   async createComment(
     @Param('postId') postId: string,
     @GetUser() user: UserDocument,
     @Body() body: CreateCommentDto
   ): Promise<Posts> {
-    const comment: CommentDocument = await this.commentsService.create({
-      creator: user._id,
-      ...body,
+    return await this.postsService.updatePost(postId, {
+      $push: { comments: { content: body.content, creator: user._id } },
     });
-    return await this.postsService.updatePost(postId, { $push: { comments: comment._id } });
+  }
+
+  @Put('block/:postId')
+  async blockPost(@Param('postId') postId: string, @GetUser() user: UserDocument) {
+    return await this.postsService.findOneRecordAndUpdate(
+      { _id: postId },
+      {
+        $push: { blockers: user._id },
+      }
+    );
+  }
+
+  @Put('report/:postId')
+  async reportPost(@Param('postId') postId: string, @GetUser() user: UserDocument) {
+    return await this.postsService.findOneRecordAndUpdate({ _id: postId }, { reporter: user._id });
   }
 }
