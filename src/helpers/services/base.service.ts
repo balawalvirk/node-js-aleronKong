@@ -7,19 +7,19 @@ export class BaseService {
    * Creates a new document or documents
    * @param data
    */
-  create = (data: any) => this.model.create(data);
+  createRecord = (data: any) => this.model.create(data);
 
   /**
    * Inserts one or more new documents as a single insertMany call to the MongoDB server.
    * @param data
    */
-  insertMany = (data: any) => this.model.insertMany(data);
+  insertManyRecords = (data: any) => this.model.insertMany(data);
 
   /**
    * Creates a find query: gets a list of documents that match filter.
    * @param filter
    */
-  findAll = (filter?: FilterQuery<any>) => this.model.find(filter).lean();
+  findAllRecords = (filter?: FilterQuery<any>) => this.model.find(filter);
 
   /**
    * Finds one document.
@@ -39,31 +39,31 @@ export class BaseService {
    * Creates a countDocuments query: counts the number of documents that match filter.
    * @param filter
    */
-  countDocuments = (filter: FilterQuery<any>) => this.model.countDocuments(filter);
+  countRecords = (filter: FilterQuery<any>) => this.model.countDocuments(filter);
 
   /**
    * Finds a single document by its _id field.
    * @param id string
    */
-  findById = (id: string) => this.model.findById(id).lean();
+  findRecordById = (id: string) => this.model.findById(id).lean();
 
   /**
    * Finds a single document by its _id field and delete it.
-   * @param id string
+   * @param filter
    */
-  findByIdAndDelete = (filter: any) => this.model.findOneAndDelete(filter);
+  deleteSingleRecord = (filter: FilterQuery<any>) => this.model.findOneAndDelete(filter);
 
   /**
    * Deletes all of the documents that match conditions from the collection.
    *  @param filter
    */
-  deleteMany = (filter?: FilterQuery<any>) => this.model.deleteMany(filter);
+  deleteManyRecord = (filter?: FilterQuery<any>) => this.model.deleteMany(filter);
 
   /**
    * Finds a single document and update it.
-   * @param id string
+   * @param filter
    * @param update
    */
-  findAndUpdate = (filter: any, update: UpdateQuery<any>) =>
+  findOneRecordAndUpdate = (filter: FilterQuery<any>, update: UpdateQuery<any>) =>
     this.model.findOneAndUpdate(filter, update, { new: true }).lean();
 }

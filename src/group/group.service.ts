@@ -1,26 +1,41 @@
 import { Injectable } from '@nestjs/common';
-import { CreateGroupDto } from './dto/create-group.dto';
-import { UpdateGroupDto } from './dto/update-group.dto';
+import { InjectModel } from '@nestjs/mongoose';
+import { FilterQuery, Model } from 'mongoose';
+import { BaseService } from 'src/helpers/services/base.service';
+import { Group, GroupDocument } from './group.schema';
 
 @Injectable()
-export class GroupService {
-  create(createGroupDto: CreateGroupDto) {
-    return 'This action adds a new group';
+export class GroupService extends BaseService {
+  constructor(@InjectModel(Group.name) private groupModel: Model<GroupDocument>) {
+    super(groupModel);
   }
 
-  findAll() {
-    return `This action returns all group`;
+  async findOne(query: FilterQuery<any>) {
+    return await this.groupModel.findOne(query).populate({
+      path: 'posts',
+      populate: [
+        {
+          path: 'comments',
+          select: 'content',
+          populate: { path: 'creator', select: 'firstName lastName avatar' },
+        },
+        {
+          path: 'likes',
+          select: 'firstName lastName avatar',
+        },
+        { path: 'creator', select: 'firstName lastName avatar' },
+        { path: 'group', select: 'name' },
+      ],
+    });
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} group`;
-  }
-
-  update(id: number, updateGroupDto: UpdateGroupDto) {
-    return `This action updates a #${id} group`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} group`;
+  async findAllMembers(query: FilterQuery<any>) {
+    return await this.groupModel
+      .findOne(query)
+      .populate({
+        path: 'members.member',
+        select: 'firstName lastName avatar',
+      })
+      .select('members -_id');
   }
 }

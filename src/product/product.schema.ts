@@ -26,11 +26,23 @@ export class Product {
   @Prop({ required: true })
   quantity: number;
 
+  /**
+   * todo:need to change this field after confirmation.
+   */
   @Prop({ required: true })
   type: string;
 
   @Prop({ required: true })
   syncWithAmazon: boolean;
+
+  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true })
+  creator: User;
+
+  @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }] })
+  buyers: User[];
+
+  @Prop({ required: true, default: 0 })
+  soldUnits: number;
 }
 
-export const PostSchema = SchemaFactory.createForClass(Product);
+export const ProductSchema = SchemaFactory.createForClass(Product);

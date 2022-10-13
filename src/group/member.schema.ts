@@ -1,13 +1,11 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import * as mongoose from 'mongoose';
+import mongoose from 'mongoose';
 import { User } from 'src/users/users.schema';
 
 @Schema({ timestamps: true })
-export class Comment {
-  @Prop({ required: true })
-  content: string;
-
+export class Member {
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true })
-  creator: User;
+  member: User;
 }
-export const CommentSchema = SchemaFactory.createForClass(Comment);
+
+export const memberSchema = SchemaFactory.createForClass(Member);

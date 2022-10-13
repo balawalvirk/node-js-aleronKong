@@ -18,7 +18,7 @@ import { RegisterDto } from './dtos/register.dto';
 import { OtpDocument } from './otp.schema';
 import { ResetPasswordDto } from './dtos/reset-password.dto';
 import { SocialLoginDto } from './dtos/social-login.dto';
-import { EmailService } from 'src/helpers/email.service';
+import { EmailService } from 'src/helpers/services/email.service';
 
 @Controller('auth')
 export class AuthController {
@@ -31,10 +31,7 @@ export class AuthController {
   @UseGuards(LocalAuthGuard)
   @Post('login')
   async login(@Body() body: LoginDto, @GetUser() user: UserDocument) {
-    const { access_token } = await this.authService.login(
-      user.userName,
-      user._id
-    );
+    const { access_token } = await this.authService.login(user.userName, user._id);
     return { access_token, user };
   }
 
@@ -44,11 +41,8 @@ export class AuthController {
       email: body.email,
     });
     if (emailExists)
-      throw new HttpException(
-        'User already exists with this email.',
-        HttpStatus.BAD_REQUEST
-      );
-    const user = await this.userService.create({
+      throw new HttpException('User already exists with this email.', HttpStatus.BAD_REQUEST);
+    const user = await this.userService.createRecord({
       ...body,
       password: await hash(body.password, 10),
     });
@@ -57,23 +51,18 @@ export class AuthController {
 
   @Post('social-login')
   async socialLogin(@Body() body: SocialLoginDto) {
-    const userExists: UserDocument = await this.userService.findOneRecord(body);
-    if (!userExists) {
-      const user: UserDocument = await this.userService.create({
+    const userFound: UserDocument = await this.userService.findOneRecord(body);
+    if (!userFound) {
+      const user: UserDocument = await this.userService.createRecord({
         email: body.email,
         password: await hash(`${new Date().getTime()}`, 10),
+        authType: body.authType,
       });
-      const { access_token } = await this.authService.login(
-        user.userName,
-        user._id
-      );
+      const { access_token } = await this.authService.login(user.userName, user._id);
       return { access_token, user };
     } else {
-      const { access_token } = await this.authService.login(
-        userExists.userName,
-        userExists._id
-      );
-      return { access_token, user: userExists };
+      const { access_token } = await this.authService.login(userFound.userName, userFound._id);
+      return { access_token, user: userFound };
     }
   }
 
@@ -99,19 +88,12 @@ export class AuthController {
   }
 
   @Post('reset-password')
-  async resetPassword(
-    @Body() { password, otp }: ResetPasswordDto
-  ): Promise<string> {
+  async resetPassword(@Body() { password, otp }: ResetPasswordDto): Promise<string> {
     const otpFound: OtpDocument = await this.authService.findOneOtp({ otp });
     if (!otpFound) throw new BadRequestException('Invalid Otp.');
     const diff = otpFound.expireIn - new Date().getTime();
     if (diff < 0) throw new BadRequestException('Otp expired.');
-    await this.userService.findAndUpdate(
-      { email: otpFound.email },
-      { password }
-    );
+    await this.userService.findOneRecordAndUpdate({ email: otpFound.email }, { password });
     return 'Password changed successfully.';
   }
 }
-
-//

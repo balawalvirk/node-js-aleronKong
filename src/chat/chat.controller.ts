@@ -24,7 +24,7 @@ export class ChatController {
     @Body('receiverId') receiverId: string,
     @GetUser() user: UserDocument
   ): Promise<ChatDocument> {
-    return (await this.chatService.create({ members: [user._id, receiverId] })).populate({
+    return (await this.chatService.createRecord({ members: [user._id, receiverId] })).populate({
       path: 'members',
       match: { _id: { $ne: user._id } },
       select: 'avatar firstName lastName',
@@ -33,7 +33,7 @@ export class ChatController {
 
   @Get('/recent-chat')
   async recentChat(@GetUser() user: UserDocument): Promise<LeanDocument<UserDocument>[]> {
-    return await this.chatService.findAll({ members: { $in: [user._id] } }).populate({
+    return await this.chatService.findAllRecords({ members: { $in: [user._id] } }).populate({
       path: 'members',
       match: { _id: { $ne: user._id } },
       select: 'avatar firstName lastName',
@@ -59,14 +59,14 @@ export class ChatController {
     @Body() body: CreateMessageDto,
     @GetUser() user: UserDocument
   ): Promise<string> {
-    const message = await this.messageService.create({ ...body, sender: user._id });
+    const message = await this.messageService.createRecord({ ...body, sender: user._id });
     this.socketService.triggerMessage(body.chat, message);
     return 'message sent successfully.';
   }
 
   @Get('/message/find-all/:chatId')
   async findAllMessage(@Param('chatId') chatId: string): Promise<LeanDocument<MessageDocument>[]> {
-    return await this.messageService.findAll({ chat: chatId }).sort({ createdAt: -1 });
+    return await this.messageService.findAllRecords({ chat: chatId }).sort({ createdAt: -1 });
   }
 
   // // create a new chat or get chat details

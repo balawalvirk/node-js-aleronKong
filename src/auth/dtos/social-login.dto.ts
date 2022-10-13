@@ -6,6 +6,6 @@ export class SocialLoginDto {
   email: string;
 
   @IsNotEmpty()
-  @IsEnum(['local', 'facebook', 'twitter', 'linkedin', 'instagram'], { each: true })
+  @IsEnum(['local', 'facebook', 'twitter', 'linkedin', 'instagram'])
   authType: string;
 }

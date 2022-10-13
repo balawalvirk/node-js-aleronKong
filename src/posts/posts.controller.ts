@@ -1,14 +1,4 @@
-import {
-  Body,
-  Controller,
-  Get,
-  Param,
-  Post,
-  Put,
-  Query,
-  UseGuards,
-} from '@nestjs/common';
-import mongoose from 'mongoose';
+import { Body, Controller, Get, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { GetUser } from 'src/helpers/decorators/user.decorator';
 import { UserDocument } from 'src/users/users.schema';
@@ -21,17 +11,11 @@ import { PostsService } from './posts.service';
 @Controller('post')
 @UseGuards(JwtAuthGuard)
 export class PostsController {
-  constructor(
-    private postsService: PostsService,
-    private usersService: UsersService
-  ) {}
+  constructor(private postsService: PostsService, private usersService: UsersService) {}
 
   @Post('create')
-  async create(
-    @Body() body: CreatePostsDto,
-    @GetUser() user: UserDocument
-  ): Promise<Posts> {
-    return await this.postsService.create({ creator: user._id, ...body });
+  async create(@Body() body: CreatePostsDto, @GetUser() user: UserDocument): Promise<Posts> {
+    return await this.postsService.createRecord({ creator: user._id, ...body });
   }
 
   //find all post that are on feeds
@@ -54,10 +38,7 @@ export class PostsController {
   }
 
   @Post('like/:postId')
-  async addLike(
-    @Param('postId') postId: string,
-    @GetUser() user: UserDocument
-  ): Promise<Posts> {
+  async addLike(@Param('postId') postId: string, @GetUser() user: UserDocument): Promise<Posts> {
     await this.usersService.findOneRecord({ _id: user._id });
     return await this.postsService.updatePost(postId, {
       $push: { likes: user._id },
@@ -76,11 +57,8 @@ export class PostsController {
   }
 
   @Put('block/:postId')
-  async blockPost(
-    @Param('postId') postId: string,
-    @GetUser() user: UserDocument
-  ) {
-    return await this.postsService.findAndUpdate(
+  async blockPost(@Param('postId') postId: string, @GetUser() user: UserDocument) {
+    return await this.postsService.findOneRecordAndUpdate(
       { _id: postId },
       {
         $push: { blockers: user._id },
@@ -89,13 +67,7 @@ export class PostsController {
   }
 
   @Put('report/:postId')
-  async reportPost(
-    @Param('postId') postId: string,
-    @GetUser() user: UserDocument
-  ) {
-    return await this.postsService.findAndUpdate(
-      { _id: postId },
-      { reporter: user._id }
-    );
+  async reportPost(@Param('postId') postId: string, @GetUser() user: UserDocument) {
+    return await this.postsService.findOneRecordAndUpdate({ _id: postId }, { reporter: user._id });
   }
 }
