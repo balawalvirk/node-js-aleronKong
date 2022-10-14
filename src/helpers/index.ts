@@ -4,6 +4,7 @@ export * from './services/email.service';
 export * from './decorators/match.decorator';
 export * from './decorators/user.decorator';
 export * from './gateway/socket.gateway';
+export * from './pipes/objectId.pipe';
 
 export const makeQuery = (q: IQuery) => {
   const limit = parseInt(q.limit) || 10;

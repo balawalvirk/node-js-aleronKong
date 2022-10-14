@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
+import { ProductState, ProductTypes } from 'src/types';
 import { User } from 'src/users/users.schema';
 
 export type ProductDocument = Product & mongoose.Document;
@@ -11,7 +12,7 @@ export class Product {
   @Prop({ required: true })
   description: string;
 
-  @Prop({ enum: ['physical', 'digital'], required: true })
+  @Prop({ enum: ProductState, required: true })
   state: string;
 
   @Prop({ required: true, type: [String] })
@@ -26,10 +27,7 @@ export class Product {
   @Prop({ required: true })
   quantity: number;
 
-  /**
-   * todo:need to change this field after confirmation.
-   */
-  @Prop({ required: true })
+  @Prop({ enum: ProductTypes, required: true })
   type: string;
 
   @Prop({ required: true })

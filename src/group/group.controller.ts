@@ -10,7 +10,7 @@ import {
   BadRequestException,
   Query,
   DefaultValuePipe,
-  ParseEnumPipe,
+  ParseBoolPipe,
 } from '@nestjs/common';
 import { GroupService } from './group.service';
 import { CreateGroupDto } from './dto/create-group.dto';
@@ -21,6 +21,8 @@ import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { PostsService } from 'src/posts/posts.service';
 import { CreatePostsDto } from 'src/posts/dtos/create-posts';
 import { GroupDocument } from './group.schema';
+import { GroupPrivacy } from 'src/types';
+import { ParseObjectId } from 'src/helpers';
 
 @Controller('group')
 @UseGuards(JwtAuthGuard)
@@ -66,7 +68,19 @@ export class GroupController {
     if (group) {
       //check if user is already a member of this group
       const memberFound = group.members.filter((member) => member.member === user._id);
-      if (memberFound) throw new BadRequestException('You are already a member of this group.');
+      if (memberFound.length > 0)
+        throw new BadRequestException('You are already a member of this group.');
+      //check if group is private
+      if (group.privacy === GroupPrivacy.PRIVATE) {
+        //check if user request is already in request array  of this group
+        const requestFound = group.requests.filter((request) => request === user._id);
+        if (requestFound.length > 0)
+          throw new BadRequestException('Your request to join group is pending.');
+        return await this.groupService.findOneRecordAndUpdate(
+          { _id: id },
+          { $push: { requests: user._id } }
+        );
+      }
       return await this.groupService.findOneRecordAndUpdate(
         { _id: id },
         { $push: { members: { member: user._id } } }
@@ -75,22 +89,49 @@ export class GroupController {
   }
 
   @Patch('leave/:id')
-  async leaveGroup(@GetUser() user: UserDocument, @Param('id') id: string) {
-    return await this.groupService.findOneRecordAndUpdate(
+  async leaveGroup(@GetUser() user: UserDocument, @Param('id', ParseObjectId) id: string) {
+    await this.groupService.findOneRecordAndUpdate(
       { _id: id },
-      { $pull: { members: user._id } }
+      { $pull: { members: { member: user._id } } }
     );
+    return 'Group left successfully.';
   }
 
   @Delete('delete/:id')
-  async remove(@Param('id') id: string) {
-    return await this.groupService.deleteSingleRecord({ _id: id });
+  async remove(@Param('id', ParseObjectId) id: string) {
+    const group: GroupDocument = await this.groupService.deleteSingleRecord({ _id: id });
+    await this.postService.deleteManyRecord({ group: group._id });
+    return 'Group deleted successfully.';
   }
 
   @Get('all-members/:id')
   async findAllMembers(@Param('id') id: string) {
     const group = await this.groupService.findAllMembers({ _id: id });
     return group.members;
+  }
+
+  @Get('all-requests/:id')
+  async findAllRequests(@Param('id', ParseObjectId) id: string) {
+    const group: GroupDocument = await this.groupService.findAllRequests({ _id: id });
+    return group.requests;
+  }
+
+  @Patch('request/:id/:userId')
+  async approveRejectRequest(
+    @Query('isApproved', new ParseBoolPipe()) isApproved: boolean,
+    @Param('id', ParseObjectId) id: string,
+    @Param('userId', ParseObjectId) userId: string
+  ) {
+    if (isApproved) {
+      await this.groupService.findOneRecordAndUpdate(
+        { _id: id },
+        { $pull: { requests: userId }, $push: { members: { member: userId } } }
+      );
+      return 'Request approved successfully.';
+    } else {
+      await this.groupService.findOneRecordAndUpdate({ _id: id }, { $pull: { requests: userId } });
+      return 'Request rejected successfully.';
+    }
   }
 
   @Get('find-all')
@@ -105,7 +146,7 @@ export class GroupController {
         name: { $regex: query, $options: 'i' },
         'members.member': user._id,
       });
-    } else if (type === 'yourGroup') {
+    } else if (type === 'yourGroups') {
       groups = await this.groupService.findAllRecords({
         $or: [{ name: { $regex: query, $options: 'i' } }, { creator: user._id }],
       });
@@ -121,5 +162,18 @@ export class GroupController {
     }
 
     return groups;
+  }
+
+  @Patch('report/:id')
+  async report(
+    @Param('id', ParseObjectId) id: string,
+    @GetUser() user: UserDocument,
+    @Body('reason') reason: string
+  ) {
+    await this.groupService.findOneRecordAndUpdate(
+      { _id: id },
+      { $push: { reports: { reporter: user._id, reason } } }
+    );
+    return 'Report submitted successfully.';
   }
 }
