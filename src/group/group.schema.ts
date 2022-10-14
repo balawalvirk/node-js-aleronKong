@@ -1,8 +1,10 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
 import { Posts } from 'src/posts/posts.schema';
+import { GroupPrivacy } from 'src/types';
 import { User } from 'src/users/users.schema';
-import { Member, memberSchema } from './member.schema';
+import { Member, MemberSchema } from './member.schema';
+import { Report, ReportSchema } from './report.schema';
 
 export type GroupDocument = Group & mongoose.Document;
 @Schema({ timestamps: true })
@@ -22,14 +24,20 @@ export class Group {
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true })
   creator: User;
 
-  @Prop({ enum: ['private', 'public'], required: true })
+  @Prop({ enum: GroupPrivacy, required: true })
   privacy: string;
 
-  @Prop({ type: [memberSchema] })
+  @Prop({ type: [MemberSchema] })
   members: Member[];
 
   @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Posts' }] })
   posts: Posts[];
+
+  @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }], required: true })
+  requests: User[];
+
+  @Prop({ type: [ReportSchema] })
+  reports: Report[];
 }
 
 export const GroupSchema = SchemaFactory.createForClass(Group);

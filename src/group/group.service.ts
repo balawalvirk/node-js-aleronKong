@@ -38,4 +38,11 @@ export class GroupService extends BaseService {
       })
       .select('members -_id');
   }
+
+  async findAllRequests(query: FilterQuery<any>) {
+    return await this.groupModel
+      .findOne(query)
+      .populate({ path: 'requests', select: 'firstName lastName avatar' })
+      .select('-_id requests');
+  }
 }
