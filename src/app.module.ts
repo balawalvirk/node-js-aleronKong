@@ -8,7 +8,9 @@ import { PostsModule } from './posts/posts.module';
 import { ChatModule } from './chat/chat.module';
 import { ProductModule } from './product/product.module';
 import { GroupModule } from './group/group.module';
-import { CollectionModule } from './collection/collection.module';
+import { PackageModule } from './package/package.module';
+import { PaymentMethodModule } from './payment-method/payment-method.module';
+import { AddressModule } from './address/address.module';
 
 @Module({
   imports: [
@@ -20,7 +22,9 @@ import { CollectionModule } from './collection/collection.module';
     ChatModule,
     ProductModule,
     GroupModule,
-    CollectionModule,
+    PackageModule,
+    PaymentMethodModule,
+    AddressModule,
   ],
 })
 export class AppModule {}

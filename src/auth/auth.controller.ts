@@ -1,12 +1,4 @@
-import {
-  BadRequestException,
-  Body,
-  Controller,
-  HttpException,
-  HttpStatus,
-  Post,
-  UseGuards,
-} from '@nestjs/common';
+import { BadRequestException, Body, Controller, Post, UseGuards } from '@nestjs/common';
 import { hash } from 'bcrypt';
 import { UsersService } from '../users/users.service';
 import { AuthService } from './auth.service';
@@ -19,13 +11,15 @@ import { OtpDocument } from './otp.schema';
 import { ResetPasswordDto } from './dtos/reset-password.dto';
 import { SocialLoginDto } from './dtos/social-login.dto';
 import { EmailService } from 'src/helpers/services/email.service';
+import { StripeService } from 'src/helpers';
 
 @Controller('auth')
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly userService: UsersService,
-    private readonly emailService: EmailService
+    private readonly emailService: EmailService,
+    private readonly stripeService: StripeService
   ) {}
 
   @UseGuards(LocalAuthGuard)
@@ -40,8 +34,25 @@ export class AuthController {
     const emailExists = await this.userService.findOneRecord({
       email: body.email,
     });
-    if (emailExists)
-      throw new HttpException('User already exists with this email.', HttpStatus.BAD_REQUEST);
+    if (emailExists) throw new BadRequestException('User already exists with this email.');
+
+    // first create stripe connect(express) account and customer account of newly register user.
+    await this.stripeService.createAccount({
+      email: body.email,
+      type: 'express',
+      business_type: 'individual',
+
+      capabilities: {
+        card_payments: {
+          requested: true,
+        },
+        transfers: {
+          requested: true,
+        },
+      },
+    });
+    await this.stripeService.createCustomer({ email: body.email });
+
     const user = await this.userService.createRecord({
       ...body,
       password: await hash(body.password, 10),
@@ -53,6 +64,21 @@ export class AuthController {
   async socialLogin(@Body() body: SocialLoginDto) {
     const userFound: UserDocument = await this.userService.findOneRecord(body);
     if (!userFound) {
+      // first create stripe connect(express) account and customer account of newly register user.
+      await this.stripeService.createAccount({
+        email: body.email,
+        type: 'express',
+        business_type: 'individual',
+        capabilities: {
+          card_payments: {
+            requested: true,
+          },
+          transfers: {
+            requested: true,
+          },
+        },
+      });
+      await this.stripeService.createCustomer({ email: body.email });
       const user: UserDocument = await this.userService.createRecord({
         email: body.email,
         password: await hash(`${new Date().getTime()}`, 10),

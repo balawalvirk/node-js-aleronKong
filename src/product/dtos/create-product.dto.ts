@@ -21,7 +21,7 @@ export class CreateProductDto {
   price: number;
 
   /**
-   * todo:need to change this field after confirmation.
+   * TODO:need to change this field after confirmation.
    */
 
   @IsString()

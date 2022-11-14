@@ -1,3 +1,20 @@
+export enum UserRole {
+  CUSTOMER = 'customer',
+  SELLER = 'seller',
+}
+
+export enum AuthTypes {
+  LOCAL = 'local',
+  INSTAGRAM = 'instagram',
+  TWITTER = 'twitter',
+  FACEBOOK = 'facebook',
+}
+
+export enum UserStatus {
+  BLOCKED = 'blocked',
+  ACTIVE = 'active',
+}
+
 export enum GroupPrivacy {
   PUBLIC = 'public',
   PRIVATE = 'private',

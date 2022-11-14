@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import { Document } from 'mongoose';
+import { AuthTypes, UserRole, UserStatus } from 'src/types';
 
 export type UserDocument = User & Document;
 
@@ -26,14 +27,25 @@ export class User {
   @Prop()
   avatar: string;
 
-  @Prop({ default: 'local', enum: ['local', 'instagram', 'twitter', 'facebook'] })
+  @Prop({ default: AuthTypes.LOCAL, enum: AuthTypes })
   authType: string;
 
-  @Prop({ default: 'author', enum: ['author', 'fan'] })
+  @Prop({ default: UserRole.CUSTOMER, enum: UserRole })
   role: string;
 
-  @Prop({ default: 'active', enum: ['blocked', 'active'] })
+  @Prop({ default: UserStatus.ACTIVE, enum: UserStatus })
   status: string;
+
+  //stripe customer id
+  @Prop()
+  customerId: string;
+
+  //stripe connect(express) account id
+  @Prop()
+  accountId: string;
+
+  @Prop()
+  paymentMethod: string;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

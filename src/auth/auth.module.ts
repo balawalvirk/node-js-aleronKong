@@ -11,6 +11,7 @@ import { AuthController } from './auth.controller';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Otp, OtpSchema } from './otp.schema';
 import { EmailService } from 'src/helpers/services/email.service';
+import { StripeService } from 'src/helpers';
 
 @Module({
   imports: [
@@ -22,7 +23,7 @@ import { EmailService } from 'src/helpers/services/email.service';
     }),
     MongooseModule.forFeature([{ name: Otp.name, schema: OtpSchema }]),
   ],
-  providers: [AuthService, LocalStrategy, JwtStrategy, EmailService],
+  providers: [AuthService, LocalStrategy, JwtStrategy, EmailService, StripeService],
   controllers: [AuthController],
   exports: [AuthService, JwtModule],
 })
