@@ -20,7 +20,6 @@ export class PackageService extends BaseService {
       ])
       .select('creator price');
     // filter repeating users and remove them
-    const uniquePackages = [...new Map(pkgs.map((pkg) => [pkg['_id'], pkg])).values()];
-    return uniquePackages;
+    return [...new Map(pkgs.map((pkg) => [pkg.creator['_id'], pkg])).values()];
   }
 }
