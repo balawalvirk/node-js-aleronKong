@@ -65,5 +65,8 @@ export class BaseService {
    * @param update
    */
   findOneRecordAndUpdate = (filter: FilterQuery<any>, update: UpdateQuery<any>) =>
-    this.model.findOneAndUpdate(filter, update, { new: true }).lean();
+    this.model.findOneAndUpdate(filter, update, { new: true });
+
+  updateManyRecords = (filter?: FilterQuery<any>, update?: UpdateQuery<any>) =>
+    this.model.updateMany(filter, update, { new: true });
 }

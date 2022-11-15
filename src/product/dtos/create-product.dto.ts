@@ -1,4 +1,5 @@
-import { IsBoolean, IsNotEmpty, IsNumber, IsOptional, IsString } from 'class-validator';
+import { IsBoolean, IsEnum, IsNumber, IsOptional, IsString } from 'class-validator';
+import { ProductState, ProductTypes } from 'src/types';
 
 export class CreateProductDto {
   @IsString()
@@ -10,7 +11,7 @@ export class CreateProductDto {
   @IsString({ each: true })
   media: string[];
 
-  @IsString()
+  @IsEnum(ProductState)
   state: string;
 
   @IsOptional()
@@ -20,12 +21,8 @@ export class CreateProductDto {
   @IsNumber()
   price: number;
 
-  /**
-   * TODO:need to change this field after confirmation.
-   */
-
-  @IsString()
-  type: number;
+  @IsEnum(ProductTypes)
+  type: string;
 
   @IsNumber()
   quantity: number;

@@ -11,6 +11,7 @@ import { GroupModule } from './group/group.module';
 import { PackageModule } from './package/package.module';
 import { PaymentMethodModule } from './payment-method/payment-method.module';
 import { AddressModule } from './address/address.module';
+import { PurchaseModule } from './purchase/purchase.module';
 
 @Module({
   imports: [
@@ -25,6 +26,7 @@ import { AddressModule } from './address/address.module';
     PackageModule,
     PaymentMethodModule,
     AddressModule,
+    PurchaseModule,
   ],
 })
 export class AppModule {}

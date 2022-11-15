@@ -140,4 +140,8 @@ export class StripeService {
   ) {
     return await this.stripe.accounts.update(id, params, options);
   }
+
+  async createTransfer(params: Stripe.TransferCreateParams, options?: Stripe.RequestOptions) {
+    return await this.stripe.transfers.create(params, options);
+  }
 }
