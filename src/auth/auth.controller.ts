@@ -1,12 +1,4 @@
-import {
-  BadRequestException,
-  Body,
-  Controller,
-  HttpException,
-  HttpStatus,
-  Post,
-  UseGuards,
-} from '@nestjs/common';
+import { Body, Controller, HttpException, HttpStatus, Post, UseGuards } from '@nestjs/common';
 import { hash } from 'bcrypt';
 import { UsersService } from '../users/users.service';
 import { AuthService } from './auth.service';
@@ -39,7 +31,8 @@ export class AuthController {
   @Post('register')
   async register(@Body() body: RegisterDto) {
     const emailExists = await this.userService.findOneRecord({ email: body.email });
-    if (emailExists) throw new BadRequestException('User already exists with this email.');
+    if (emailExists)
+      throw new HttpException('User already exists with this email.', HttpStatus.BAD_REQUEST);
 
     // first create stripe connect(express) account and customer account of newly register user.
     // await this.stripeService.createAccount({
@@ -115,7 +108,7 @@ export class AuthController {
   @Post('forget-password')
   async forgetPassword(@Body('email') email: string): Promise<string> {
     const userFound = await this.userService.findOneRecord({ email });
-    if (!userFound) throw new BadRequestException('Email does not exists.');
+    if (!userFound) throw new HttpException('Email does not exists.', HttpStatus.BAD_REQUEST);
     const otp: OtpDocument = await this.authService.createOtp({
       otp: Math.floor(Math.random() * 10000 + 1),
       // 5 min expiration time .
@@ -136,9 +129,9 @@ export class AuthController {
   @Post('reset-password')
   async resetPassword(@Body() { password, otp }: ResetPasswordDto): Promise<string> {
     const otpFound: OtpDocument = await this.authService.findOneOtp({ otp });
-    if (!otpFound) throw new BadRequestException('Invalid Otp.');
+    if (!otpFound) throw new HttpException('Invalid Otp.', HttpStatus.BAD_REQUEST);
     const diff = otpFound.expireIn - new Date().getTime();
-    if (diff < 0) throw new BadRequestException('Otp expired.');
+    if (diff < 0) throw new HttpException('Otp expired.', HttpStatus.BAD_REQUEST);
     await this.userService.findOneRecordAndUpdate({ email: otpFound.email }, { password });
     return 'Password changed successfully.';
   }
