@@ -1,11 +1,18 @@
-import { BadRequestException, Body, Controller, Post, UseGuards } from '@nestjs/common';
+import {
+  BadRequestException,
+  Body,
+  Controller,
+  HttpException,
+  HttpStatus,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
 import { hash } from 'bcrypt';
 import { UsersService } from '../users/users.service';
 import { AuthService } from './auth.service';
 import { LocalAuthGuard } from './local-auth.guard';
 import { GetUser } from 'src/helpers/decorators/user.decorator';
 import { UserDocument } from 'src/users/users.schema';
-import { LoginDto } from './dtos/login';
 import { RegisterDto } from './dtos/register.dto';
 import { OtpDocument } from './otp.schema';
 import { ResetPasswordDto } from './dtos/reset-password.dto';
@@ -24,40 +31,53 @@ export class AuthController {
 
   @UseGuards(LocalAuthGuard)
   @Post('login')
-  async login(@Body() body: LoginDto, @GetUser() user: UserDocument) {
+  async login(@Body() @GetUser() user: UserDocument) {
     const { access_token } = await this.authService.login(user.userName, user._id);
-    return { access_token, user };
+    return { statusCode: 200, data: { access_token, user } };
   }
 
   @Post('register')
   async register(@Body() body: RegisterDto) {
-    const emailExists = await this.userService.findOneRecord({
-      email: body.email,
-    });
+    const emailExists = await this.userService.findOneRecord({ email: body.email });
     if (emailExists) throw new BadRequestException('User already exists with this email.');
 
     // first create stripe connect(express) account and customer account of newly register user.
-    await this.stripeService.createAccount({
+    // await this.stripeService.createAccount({
+    //   email: body.email,
+    //   type: 'express',
+    //   business_type: 'individual',
+
+    //   capabilities: {
+    //     card_payments: {
+    //       requested: true,
+    //     },
+    //     transfers: {
+    //       requested: true,
+    //     },
+    //   },
+    // });
+    await this.stripeService.createCustomer({
       email: body.email,
-      type: 'express',
-      business_type: 'individual',
-
-      capabilities: {
-        card_payments: {
-          requested: true,
-        },
-        transfers: {
-          requested: true,
-        },
-      },
+      name: `${body.firstName} ${body.lastName}`,
     });
-    await this.stripeService.createCustomer({ email: body.email });
-
-    const user = await this.userService.createRecord({
+    const user: UserDocument = await this.userService.createRecord({
       ...body,
       password: await hash(body.password, 10),
     });
-    return { msg: 'User registered successfully.', user };
+    const { access_token } = await this.authService.login(user.userName, user._id);
+    return {
+      message: 'User registered successfully.',
+      data: { user, access_token },
+      statusCode: 200,
+    };
+  }
+
+  @Post('check-email')
+  async checkEmail(@Body('email') email: string) {
+    const emailExists = await this.userService.findOneRecord({ email });
+    if (emailExists)
+      throw new HttpException('User already exists with this email.', HttpStatus.BAD_REQUEST);
+    return { statusCode: 200, message: 'User does not exist with this email' };
   }
 
   @Post('social-login')
@@ -65,19 +85,19 @@ export class AuthController {
     const userFound: UserDocument = await this.userService.findOneRecord(body);
     if (!userFound) {
       // first create stripe connect(express) account and customer account of newly register user.
-      await this.stripeService.createAccount({
-        email: body.email,
-        type: 'express',
-        business_type: 'individual',
-        capabilities: {
-          card_payments: {
-            requested: true,
-          },
-          transfers: {
-            requested: true,
-          },
-        },
-      });
+      // await this.stripeService.createAccount({
+      //   email: body.email,
+      //   type: 'express',
+      //   business_type: 'individual',
+      //   capabilities: {
+      //     card_payments: {
+      //       requested: true,
+      //     },
+      //     transfers: {
+      //       requested: true,
+      //     },
+      //   },
+      // });
       await this.stripeService.createCustomer({ email: body.email });
       const user: UserDocument = await this.userService.createRecord({
         email: body.email,
@@ -85,10 +105,10 @@ export class AuthController {
         authType: body.authType,
       });
       const { access_token } = await this.authService.login(user.userName, user._id);
-      return { access_token, user };
+      return { statusCode: 200, data: { access_token, user } };
     } else {
       const { access_token } = await this.authService.login(userFound.userName, userFound._id);
-      return { access_token, user: userFound };
+      return { statusCode: 200, data: { access_token, user: userFound } };
     }
   }
 
