@@ -20,8 +20,4 @@ export class UpdateUserDto {
   @IsOptional()
   @IsString()
   avatar: string;
-
-  @IsOptional()
-  @IsString()
-  status: string;
 }
