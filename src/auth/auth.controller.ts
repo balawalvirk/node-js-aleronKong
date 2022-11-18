@@ -23,10 +23,9 @@ export class AuthController {
 
   @UseGuards(LocalAuthGuard)
   @Post('login')
-  async login(@Body() @GetUser() user: UserDocument) {
+  async login(@GetUser() user: UserDocument) {
     const { access_token } = await this.authService.login(user.userName, user._id);
-    const userFound = await this.userService.findOneRecord({ email: user.email });
-    return { statusCode: 200, data: { access_token, user: userFound } };
+    return { statusCode: 200, data: { access_token, user } };
   }
 
   @Post('register')
