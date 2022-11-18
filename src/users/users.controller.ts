@@ -15,8 +15,9 @@ export class UserController {
   ) {}
 
   @Put('update')
-  async setupProfile(@Body() body: UpdateUserDto, @GetUser() user: UserDocument): Promise<User> {
-    return await this.usersService.findOneRecordAndUpdate({ _id: user._id }, body);
+  async setupProfile(@Body() body: UpdateUserDto, @GetUser() user: UserDocument) {
+    const userFound = await this.usersService.findOneRecordAndUpdate({ _id: user._id }, body);
+    return { statusCode: 200, data: userFound };
   }
 
   //become a guild member
