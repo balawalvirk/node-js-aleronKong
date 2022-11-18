@@ -106,7 +106,7 @@ export class AuthController {
   }
 
   @Post('forget-password')
-  async forgetPassword(@Body('email') email: string): Promise<string> {
+  async forgetPassword(@Body('email') email: string) {
     const userFound = await this.userService.findOneRecord({ email });
     if (!userFound) throw new HttpException('Email does not exists.', HttpStatus.BAD_REQUEST);
     const otp: OtpDocument = await this.authService.createOtp({
@@ -123,16 +123,16 @@ export class AuthController {
       html: `<h1>password reset otp</h1> <br/> ${otp.otp} </br> This otp will expires in 5 minuutes`,
     };
     await this.emailService.send(mail);
-    return 'Otp sent to your email.';
+    return { statusCode: 200, message: 'Otp sent to your email.' };
   }
 
   @Post('reset-password')
-  async resetPassword(@Body() { password, otp }: ResetPasswordDto): Promise<string> {
+  async resetPassword(@Body() { password, otp }: ResetPasswordDto) {
     const otpFound: OtpDocument = await this.authService.findOneOtp({ otp });
     if (!otpFound) throw new HttpException('Invalid Otp.', HttpStatus.BAD_REQUEST);
     const diff = otpFound.expireIn - new Date().getTime();
     if (diff < 0) throw new HttpException('Otp expired.', HttpStatus.BAD_REQUEST);
     await this.userService.findOneRecordAndUpdate({ email: otpFound.email }, { password });
-    return 'Password changed successfully.';
+    return { statusCode: 200, message: 'Password changed successfully.' };
   }
 }
