@@ -25,7 +25,7 @@ export class AuthController {
   @Post('login')
   async login(@GetUser() user: UserDocument) {
     const { access_token } = await this.authService.login(user.userName, user._id);
-    return { statusCode: 200, data: { access_token, user } };
+    return { access_token, user };
   }
 
   @Post('register')
@@ -61,7 +61,6 @@ export class AuthController {
     return {
       message: 'User registered successfully.',
       data: { user, access_token },
-      statusCode: 200,
     };
   }
 
@@ -70,7 +69,7 @@ export class AuthController {
     const emailExists = await this.userService.findOneRecord({ email });
     if (emailExists)
       throw new HttpException('User already exists with this email.', HttpStatus.BAD_REQUEST);
-    return { statusCode: 200, message: 'User does not exist with this email' };
+    return { message: 'User does not exist with this email' };
   }
 
   @Post('social-login')
@@ -98,10 +97,10 @@ export class AuthController {
         authType: body.authType,
       });
       const { access_token } = await this.authService.login(user.userName, user._id);
-      return { statusCode: 200, data: { access_token, user } };
+      return { access_token, user };
     } else {
       const { access_token } = await this.authService.login(userFound.userName, userFound._id);
-      return { statusCode: 200, data: { access_token, user: userFound } };
+      return { access_token, user: userFound };
     }
   }
 
@@ -123,7 +122,7 @@ export class AuthController {
       html: `<h1>password reset otp</h1> <br/> ${otp.otp} </br> This otp will expires in 5 minuutes`,
     };
     await this.emailService.send(mail);
-    return { statusCode: 200, message: 'Otp sent to your email.' };
+    return { message: 'Otp sent to your email.' };
   }
 
   @Post('reset-password')
@@ -133,6 +132,6 @@ export class AuthController {
     const diff = otpFound.expireIn - new Date().getTime();
     if (diff < 0) throw new HttpException('Otp expired.', HttpStatus.BAD_REQUEST);
     await this.userService.findOneRecordAndUpdate({ email: otpFound.email }, { password });
-    return { statusCode: 200, message: 'Password changed successfully.' };
+    return { message: 'Password changed successfully.' };
   }
 }

@@ -12,6 +12,8 @@ import { PackageModule } from './package/package.module';
 import { PaymentMethodModule } from './payment-method/payment-method.module';
 import { AddressModule } from './address/address.module';
 import { PurchaseModule } from './purchase/purchase.module';
+import { APP_INTERCEPTOR } from '@nestjs/core';
+import { TransformInterceptor } from './helpers';
 
 @Module({
   imports: [
@@ -27,6 +29,13 @@ import { PurchaseModule } from './purchase/purchase.module';
     PaymentMethodModule,
     AddressModule,
     PurchaseModule,
+  ],
+  // global interceptor for teransforming response.
+  providers: [
+    {
+      provide: APP_INTERCEPTOR,
+      useClass: TransformInterceptor,
+    },
   ],
 })
 export class AppModule {}
