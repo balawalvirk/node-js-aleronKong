@@ -29,4 +29,8 @@ export class CreateProductDto {
 
   @IsBoolean()
   syncWithAmazon: boolean;
+
+  @IsOptional()
+  @IsString({ each: true })
+  tags?: string[];
 }

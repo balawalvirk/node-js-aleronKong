@@ -55,12 +55,22 @@ export class ProductController {
 
   @Put('/:id')
   async update(@Param('id') id: string, @Body() updateProductDto: UpdateProductDto) {
-    return await this.productService.findOneRecordAndUpdate({ _id: id }, updateProductDto);
+    const product = await this.productService.findOneRecordAndUpdate({ _id: id }, updateProductDto);
+    return { statusCode: 200, data: product };
   }
 
   @Get('/inventory')
   async inventory(@GetUser() user: UserDocument) {
     await this.productService.findAllRecords({ creator: user._id });
+  }
+
+  @Get('find-all')
+  async findAll(
+    @GetUser() user: UserDocument,
+    @Query('type', new ParseEnumPipe(['all', 'active', 'draft', 'archived'])) type: string
+  ) {
+    const product = await this.productService.findAllRecords({ type, creator: user._id });
+    return { data: product, statusCode: 200 };
   }
 
   @Post('collection/create')

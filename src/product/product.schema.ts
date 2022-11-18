@@ -41,6 +41,9 @@ export class Product {
 
   @Prop({ required: true, default: 0 })
   soldUnits: number;
+
+  @Prop({ type: [String] })
+  tags: string[];
 }
 
 export const ProductSchema = SchemaFactory.createForClass(Product);

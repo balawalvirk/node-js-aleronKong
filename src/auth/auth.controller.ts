@@ -25,7 +25,8 @@ export class AuthController {
   @Post('login')
   async login(@Body() @GetUser() user: UserDocument) {
     const { access_token } = await this.authService.login(user.userName, user._id);
-    return { statusCode: 200, data: { access_token, user } };
+    const userFound = await this.userService.findOneRecord({ email: user.email });
+    return { statusCode: 200, data: { access_token, user: userFound } };
   }
 
   @Post('register')
