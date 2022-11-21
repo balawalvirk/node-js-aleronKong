@@ -1,6 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
 import { Group } from 'src/group/group.schema';
+import { PostPrivacy, PostType } from 'src/types';
 import { User } from 'src/users/users.schema';
 import { CommentSchema, Comment } from './comment.schema';
 
@@ -22,7 +23,7 @@ export class Posts {
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true })
   creator: User;
 
-  @Prop({ enum: ['guildMembers', 'public', 'followers'], required: true })
+  @Prop({ enum: PostPrivacy, required: true })
   privacy: string;
 
   @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }] })
@@ -33,6 +34,9 @@ export class Posts {
 
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Group' })
   group: Group;
+
+  @Prop({ enum: PostType, default: PostType.SIMPLE })
+  type: string;
 }
 
 export const PostSchema = SchemaFactory.createForClass(Posts);

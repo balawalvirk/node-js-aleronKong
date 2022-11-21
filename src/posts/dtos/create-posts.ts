@@ -1,4 +1,5 @@
-import { IsEnum, IsString } from 'class-validator';
+import { IsEnum, IsMongoId, IsOptional, IsString } from 'class-validator';
+import { PostPrivacy } from 'src/types';
 
 export class CreatePostsDto {
   @IsString()
@@ -7,6 +8,10 @@ export class CreatePostsDto {
   @IsString({ each: true })
   media: string;
 
-  @IsEnum(['guildMembers', 'followers', 'public'])
+  @IsEnum(PostPrivacy)
   privacy: string;
+
+  @IsOptional()
+  @IsMongoId()
+  group?: string;
 }

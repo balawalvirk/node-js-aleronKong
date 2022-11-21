@@ -11,9 +11,9 @@ import { GroupModule } from './group/group.module';
 import { PackageModule } from './package/package.module';
 import { PaymentMethodModule } from './payment-method/payment-method.module';
 import { AddressModule } from './address/address.module';
-import { PurchaseModule } from './purchase/purchase.module';
 import { APP_INTERCEPTOR } from '@nestjs/core';
 import { TransformInterceptor } from './helpers';
+import { OrderModule } from './order/order.module';
 
 @Module({
   imports: [
@@ -28,9 +28,9 @@ import { TransformInterceptor } from './helpers';
     PackageModule,
     PaymentMethodModule,
     AddressModule,
-    PurchaseModule,
+    OrderModule,
   ],
-  // global interceptor for teransforming response.
+  // global interceptor for transforming response.
   providers: [
     {
       provide: APP_INTERCEPTOR,

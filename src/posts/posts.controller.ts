@@ -4,7 +4,6 @@ import { GetUser } from 'src/helpers/decorators/user.decorator';
 import { UserDocument } from 'src/users/users.schema';
 import { UsersService } from 'src/users/users.service';
 import { CreateCommentDto } from './dtos/create-comment';
-import { CreatePostsDto } from './dtos/create-posts';
 import { Posts } from './posts.schema';
 import { PostsService } from './posts.service';
 
@@ -12,11 +11,6 @@ import { PostsService } from './posts.service';
 @UseGuards(JwtAuthGuard)
 export class PostsController {
   constructor(private postsService: PostsService, private usersService: UsersService) {}
-
-  @Post('create')
-  async create(@Body() body: CreatePostsDto, @GetUser() user: UserDocument): Promise<Posts> {
-    return await this.postsService.createRecord({ creator: user._id, ...body });
-  }
 
   //find all post that are on feeds
   @Get('find-all')

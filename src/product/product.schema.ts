@@ -36,12 +36,6 @@ export class Product {
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true })
   creator: User;
 
-  @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }] })
-  buyers: User[];
-
-  @Prop({ required: true, default: 0 })
-  soldUnits: number;
-
   @Prop({ type: [String] })
   tags: string[];
 }

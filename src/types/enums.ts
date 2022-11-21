@@ -40,3 +40,15 @@ export enum CollectionConditions {
   All = 'all',
   ANY = 'any',
 }
+
+export enum PostPrivacy {
+  GUILD_MEMBERS = 'guildMembers',
+  FOLLOWERS = 'followers',
+  PUBLIC = 'public',
+  GROUP = 'group',
+}
+
+export enum PostType {
+  SIMPLE = 'simple',
+  FUNDRAISING = 'fundraising',
+}

@@ -5,7 +5,6 @@ import {
   Get,
   Param,
   ParseEnumPipe,
-  Patch,
   Post,
   Put,
   Query,
@@ -16,7 +15,7 @@ import { AddressService } from 'src/address/address.service';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { StripeService } from 'src/helpers';
 import { GetUser } from 'src/helpers/decorators/user.decorator';
-import { CollectionConditions, CollectionTypes, ProductState } from 'src/types';
+import { CollectionConditions, CollectionTypes } from 'src/types';
 import { UserDocument } from 'src/users/users.schema';
 import { CollectionDocument } from './collection.schema';
 import { CollectionService } from './collection.service';
@@ -55,8 +54,7 @@ export class ProductController {
 
   @Put('/:id')
   async update(@Param('id') id: string, @Body() updateProductDto: UpdateProductDto) {
-    const product = await this.productService.findOneRecordAndUpdate({ _id: id }, updateProductDto);
-    return { statusCode: 200, data: product };
+    return await this.productService.findOneRecordAndUpdate({ _id: id }, updateProductDto);
   }
 
   @Get('/inventory')
@@ -69,59 +67,12 @@ export class ProductController {
     @GetUser() user: UserDocument,
     @Query('type', new ParseEnumPipe(['all', 'active', 'draft', 'archived'])) type: string
   ) {
-    const product = await this.productService.findAllRecords({ type, creator: user._id });
-    return { data: product, statusCode: 200 };
-  }
-
-  @Post('collection/create')
-  async createCollection(
-    @Body() createCollectionDto: CreateCollectionDto,
-    @GetUser() user: UserDocument
-  ) {
-    const collection: CollectionDocument = await this.collectionService.createRecord({
-      ...createCollectionDto,
-      creator: user._id,
-    });
-
-    let products: ProductDocument[];
-    // check if collection type is automated
-    if (collection.type === CollectionTypes.AUTOMATED) {
-      //check if collection condition is any
-      if (collection.conditions === CollectionConditions.ANY) {
-        products = await this.productService.findAllRecords({ tags: { $in: collection.tags } });
-      } else if (collection.conditions === CollectionConditions.All) {
-        products = await this.productService.findAllRecords({ tags: { $all: collection.tags } });
-      }
-      return await this.collectionService.findOneRecordAndUpdate(
-        { _id: collection._id },
-        { $push: { products } }
-      );
-    }
-    return collection;
-  }
-
-  @Get('collection/find-all')
-  async findAllCollections(
-    @Query('type', new ParseEnumPipe(['automated', 'manual', 'all'])) type: string,
-    @GetUser() user: UserDocument
-  ) {
-    let collections: CollectionDocument[];
+    let products = [];
     if (type === 'all') {
-      collections = await this.collectionService.findAllRecords({ creator: user._id }).populate({
-        path: 'products',
-      });
-    } else {
-      collections = await this.collectionService.findAllRecords({ type: type, creator: user._id });
+      products = await this.productService.findAllRecords({ type, creator: user._id });
     }
-    return collections;
-  }
-
-  @Patch('collection/add-product')
-  async addProduct(@Body() { collection, product }: AddProductDto) {
-    return await this.collectionService.findOneRecordAndUpdate(
-      { _id: collection },
-      { $push: { products: product } }
-    );
+    products = await this.productService.findAllRecords({ type, creator: user._id });
+    return products;
   }
 
   @Post('checkout')
@@ -177,5 +128,63 @@ export class ProductController {
     }
 
     return paymentIntent.client_secret;
+  }
+
+  //-----------------------------------------------collection apis---------------------------------------
+  @Post('collection/create')
+  async createCollection(
+    @Body() createCollectionDto: CreateCollectionDto,
+    @GetUser() user: UserDocument
+  ) {
+    const collection: CollectionDocument = await this.collectionService.createRecord({
+      ...createCollectionDto,
+      creator: user._id,
+    });
+
+    let products: ProductDocument[];
+    // check if collection type is automated
+    if (collection.type === CollectionTypes.AUTOMATED) {
+      //check if collection condition is any
+      if (collection.conditions === CollectionConditions.ANY) {
+        products = await this.productService.findAllRecords({ tags: { $in: collection.tags } });
+      } else if (collection.conditions === CollectionConditions.All) {
+        products = await this.productService.findAllRecords({ tags: { $all: collection.tags } });
+      }
+      return await this.collectionService.findOneRecordAndUpdate(
+        { _id: collection._id },
+        { $push: { products } }
+      );
+    }
+    return collection;
+  }
+
+  @Get('collection/find-all')
+  async findAllCollections(
+    @Query('type', new ParseEnumPipe(['automated', 'manual', 'all'])) type: string,
+    @GetUser() user: UserDocument
+  ) {
+    let collections: CollectionDocument[];
+    if (type === 'all') {
+      collections = await this.collectionService.findAllCollections({ creator: user._id });
+    } else {
+      collections = await this.collectionService.findAllCollections({
+        type: type,
+        creator: user._id,
+      });
+    }
+    return collections;
+  }
+
+  @Get('collection/find-one')
+  async findOneCollections(@GetUser() user: UserDocument) {
+    return await this.collectionService.findOneRecord({ creator: user._id });
+  }
+
+  @Put('collection/add-product')
+  async addProduct(@Body() { collection, product }: AddProductDto) {
+    return await this.collectionService.findOneRecordAndUpdate(
+      { _id: collection },
+      { $push: { products: product } }
+    );
   }
 }

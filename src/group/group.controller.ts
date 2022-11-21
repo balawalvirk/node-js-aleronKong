@@ -23,6 +23,7 @@ import { CreatePostsDto } from 'src/posts/dtos/create-posts';
 import { GroupDocument } from './group.schema';
 import { GroupPrivacy } from 'src/types';
 import { ParseObjectId } from 'src/helpers';
+import { PostDocument } from 'src/posts/posts.schema';
 
 @Controller('group')
 @UseGuards(JwtAuthGuard)
@@ -37,18 +38,18 @@ export class GroupController {
     return await this.groupService.createRecord({ ...createGroupDto, creator: user._id });
   }
 
-  @Post('create-post/:id')
-  async createPost(
-    @Body() createPostDto: CreatePostsDto,
-    @GetUser() user: UserDocument,
-    @Param('id') id: string
-  ) {
-    const post = await this.postService.createRecord({
+  @Post('post/create')
+  async createPost(@Body() createPostDto: CreatePostsDto, @GetUser() user: UserDocument) {
+    const post: PostDocument = await this.postService.createRecord({
       ...createPostDto,
       creator: user._id,
-      group: id,
     });
-    await this.groupService.findOneRecordAndUpdate({ _id: id }, { $push: { posts: post._id } });
+    if (post.group) {
+      await this.groupService.findOneRecordAndUpdate(
+        { _id: post.group },
+        { $push: { posts: post._id } }
+      );
+    }
     return post;
   }
 

@@ -1,4 +1,6 @@
-import { Body, Controller, Put, UseGuards } from '@nestjs/common';
+import { Body, Controller, Post, Put, UseGuards } from '@nestjs/common';
+import { hash } from 'bcrypt';
+import { ChangePasswordDto } from 'src/auth/dtos/change-pass.dto';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { StripeService } from 'src/helpers';
 import { GetUser } from 'src/helpers/decorators/user.decorator';
@@ -17,6 +19,15 @@ export class UserController {
   @Put('update')
   async setupProfile(@Body() body: UpdateUserDto, @GetUser() user: UserDocument) {
     return await this.usersService.findOneRecordAndUpdate({ _id: user._id }, body);
+  }
+
+  @Post('change-password')
+  async changePassword(@Body() { newPassword }: ChangePasswordDto, @GetUser() user: UserDocument) {
+    await this.usersService.findOneRecordAndUpdate(
+      { _id: user._id },
+      { password: await hash(newPassword, 10) }
+    );
+    return { message: 'Password changed successfully.' };
   }
 
   //become a guild member

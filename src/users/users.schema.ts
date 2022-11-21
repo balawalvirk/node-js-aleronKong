@@ -46,6 +46,9 @@ export class User {
 
   @Prop()
   paymentMethod: string;
+
+  @Prop()
+  fcmToken: string;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

@@ -7,7 +7,7 @@ import { GetUser } from 'src/helpers/decorators/user.decorator';
 import { UserDocument } from 'src/users/users.schema';
 import { RegisterDto } from './dtos/register.dto';
 import { OtpDocument } from './otp.schema';
-import { ResetPasswordDto } from './dtos/reset-password.dto';
+import { ResetPasswordDto } from './dtos/reset-pass.dto';
 import { SocialLoginDto } from './dtos/social-login.dto';
 import { EmailService } from 'src/helpers/services/email.service';
 import { StripeService } from 'src/helpers';
