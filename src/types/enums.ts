@@ -8,6 +8,7 @@ export enum AuthTypes {
   INSTAGRAM = 'instagram',
   TWITTER = 'twitter',
   FACEBOOK = 'facebook',
+  GOOGLE = 'google',
 }
 
 export enum UserStatus {

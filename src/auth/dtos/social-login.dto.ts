@@ -1,4 +1,5 @@
 import { IsNotEmpty, IsEmail, IsEnum } from 'class-validator';
+import { AuthTypes } from 'src/types';
 
 export class SocialLoginDto {
   @IsNotEmpty()
@@ -6,6 +7,6 @@ export class SocialLoginDto {
   email: string;
 
   @IsNotEmpty()
-  @IsEnum(['local', 'facebook', 'twitter', 'linkedin', 'instagram'])
+  @IsEnum(AuthTypes, { each: true })
   authType: string;
 }
