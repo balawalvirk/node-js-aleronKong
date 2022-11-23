@@ -1,4 +1,4 @@
-import { Body, Controller, HttpException, HttpStatus, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, HttpException, HttpStatus, Ip, Post, UseGuards } from '@nestjs/common';
 import { hash } from 'bcrypt';
 import { UsersService } from '../users/users.service';
 import { AuthService } from './auth.service';
@@ -26,6 +26,37 @@ export class AuthController {
   async login(@GetUser() user: UserDocument) {
     const { access_token } = await this.authService.login(user.userName, user._id);
     return { access_token, user };
+  }
+
+  @Post('connect')
+  async Connect(@Ip() ip: string) {
+    // return await this.stripeService.createAccount({
+    //   type: 'custom',
+    //   business_type: 'individual',
+    //   country: 'US',
+    //   individual: {
+    //     first_name: 'awais',
+    //     last_name: 'mehr',
+    //     dob: {
+    //       day: 2,
+    //       month: 11,
+    //       year: 1998,
+    //     },
+    //     email: 'awaistest@gmail.com',
+    //   },
+    //   business_profile: {
+    //     mcc: '5942',
+    //     url: 'https://www.litrpg.com/',
+    //   },
+    //   tos_acceptance: {
+    //     date: 1669128686,
+    //     ip: ip,
+    //   },
+    //   capabilities: {
+    //     card_payments: { requested: true },
+    //     transfers: { requested: true },
+    //   },
+    // });
   }
 
   @Post('register')
@@ -73,8 +104,11 @@ export class AuthController {
   }
 
   @Post('social-login')
-  async socialLogin(@Body() body: SocialLoginDto) {
-    const userFound: UserDocument = await this.userService.findOneRecord(body);
+  async socialLogin(@Body() socialLoginDto: SocialLoginDto) {
+    const userFound: UserDocument = await this.userService.findOneRecord({
+      email: socialLoginDto.email,
+      authType: socialLoginDto.authType,
+    });
     if (!userFound) {
       // first create stripe connect(express) account and customer account of newly register user.
       // await this.stripeService.createAccount({
@@ -90,17 +124,18 @@ export class AuthController {
       //     },
       //   },
       // });
-      await this.stripeService.createCustomer({ email: body.email });
+      await this.stripeService.createCustomer({ email: socialLoginDto.email });
       const user: UserDocument = await this.userService.createRecord({
-        email: body.email,
+        email: socialLoginDto.email,
         password: await hash(`${new Date().getTime()}`, 10),
-        authType: body.authType,
+        authType: socialLoginDto.authType,
+        ...socialLoginDto,
       });
       const { access_token } = await this.authService.login(user.userName, user._id);
-      return { access_token, user };
+      return { access_token, user, newUser: true };
     } else {
       const { access_token } = await this.authService.login(userFound.userName, userFound._id);
-      return { access_token, user: userFound };
+      return { access_token, user: userFound, newUser: false };
     }
   }
 
