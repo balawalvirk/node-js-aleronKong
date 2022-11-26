@@ -1,39 +1,42 @@
-import { S3 } from 'aws-sdk';
 import { Injectable } from '@nestjs/common';
-import { MultipartFile } from '@fastify/multipart';
 import { ConfigService } from '@nestjs/config';
+import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
 import { IEnvironmentVariables } from 'src/types';
 
 @Injectable()
 export class FileService {
-  private readonly s3: S3;
+  private readonly s3: S3Client;
   private readonly bucket: string;
   constructor(private readonly configService: ConfigService<IEnvironmentVariables>) {
-    this.s3 = new S3({
-      accessKeyId: this.configService.get('AWS_ACCESS_KEY'),
-      secretAccessKey: this.configService.get('AWS_SECRET_KEY'),
+    this.s3 = new S3Client({
+      credentials: {
+        accessKeyId: this.configService.get('AWS_ACCESS_KEY'),
+        secretAccessKey: this.configService.get('AWS_SECRET_KEY'),
+      },
       region: this.configService.get('AWS_REGION'),
     });
     this.bucket = this.configService.get('S3_BUCKET_NAME');
   }
 
-  async upload(file: MultipartFile, privacy: boolean) {
-    let Key: string;
-    if (privacy) {
-      Key = `books/${file.filename}`;
-    } else {
-      Key = file.filename;
-    }
-    return await this.s3
-      .upload({
-        Bucket: this.bucket,
-        Key: Key,
-        Body: file.file,
-      })
-      .promise();
+  getRandomFileName() {
+    const timestamp = new Date().toISOString().replace(/[-:.]/g, '');
+    const random = ('' + Math.random()).substring(2, 8);
+    const random_number = timestamp + random;
+    return random_number;
   }
 
-  download(key: string) {
-    return this.s3.getObject({ Bucket: this.bucket, Key: key }).createReadStream();
+  async upload(file: Express.Multer.File, Key: string) {
+    const command = new PutObjectCommand({
+      Bucket: this.bucket,
+      Key: Key,
+      Body: file.buffer,
+      ContentType: file.mimetype,
+    });
+    await this.s3.send(command);
+  }
+
+  async download(key: string) {
+    const command = new GetObjectCommand({ Key: key, Bucket: this.bucket });
+    return (await this.s3.send(command)).Body.transformToByteArray();
   }
 }
