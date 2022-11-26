@@ -19,9 +19,20 @@ __decorate([
     __metadata("design:type", String)
 ], CreatePostsDto.prototype, "content", void 0);
 __decorate([
+    (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)({ each: true }),
     __metadata("design:type", String)
-], CreatePostsDto.prototype, "media", void 0);
+], CreatePostsDto.prototype, "images", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)({ each: true }),
+    __metadata("design:type", String)
+], CreatePostsDto.prototype, "videos", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)(),
+    __metadata("design:type", String)
+], CreatePostsDto.prototype, "status", void 0);
 __decorate([
     (0, class_validator_1.IsEnum)(types_1.PostPrivacy),
     __metadata("design:type", String)

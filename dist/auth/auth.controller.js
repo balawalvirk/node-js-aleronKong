@@ -35,7 +35,9 @@ let AuthController = class AuthController {
         const { access_token } = await this.authService.login(user.userName, user._id);
         return { access_token, user };
     }
-    async Connect(ip) {
+    async Connect(file) {
+        console.log({ file });
+        return 'this';
     }
     async register(body) {
         const emailExists = await this.userService.findOneRecord({ email: body.email });
@@ -114,9 +116,10 @@ __decorate([
 ], AuthController.prototype, "login", null);
 __decorate([
     (0, common_1.Post)('connect'),
-    __param(0, (0, common_1.Ip)()),
+    (0, common_1.UseGuards)(helpers_1.UploadGuard),
+    __param(0, (0, helpers_1.File)()),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String]),
+    __metadata("design:paramtypes", [Object]),
     __metadata("design:returntype", Promise)
 ], AuthController.prototype, "Connect", null);
 __decorate([

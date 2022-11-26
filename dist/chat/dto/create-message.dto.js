@@ -14,12 +14,10 @@ const class_validator_1 = require("class-validator");
 class CreateMessageDto {
 }
 __decorate([
-    (0, class_validator_1.IsNotEmpty)(),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
 ], CreateMessageDto.prototype, "content", void 0);
 __decorate([
-    (0, class_validator_1.IsNotEmpty)(),
     (0, class_validator_1.IsMongoId)(),
     __metadata("design:type", String)
 ], CreateMessageDto.prototype, "chat", void 0);
@@ -27,6 +25,16 @@ __decorate([
     (0, class_validator_1.IsOptional)(),
     (0, class_validator_1.IsString)(),
     __metadata("design:type", String)
-], CreateMessageDto.prototype, "media", void 0);
+], CreateMessageDto.prototype, "gif", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)({ each: true }),
+    __metadata("design:type", Array)
+], CreateMessageDto.prototype, "videos", void 0);
+__decorate([
+    (0, class_validator_1.IsOptional)(),
+    (0, class_validator_1.IsString)({ each: true }),
+    __metadata("design:type", Array)
+], CreateMessageDto.prototype, "images", void 0);
 exports.CreateMessageDto = CreateMessageDto;
 //# sourceMappingURL=create-message.dto.js.map

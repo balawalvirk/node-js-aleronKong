@@ -1,6 +1,8 @@
 export declare class CreatePostsDto {
     content: string;
-    media: string;
+    images: string;
+    videos: string;
+    status: string;
     privacy: string;
     group?: string;
 }

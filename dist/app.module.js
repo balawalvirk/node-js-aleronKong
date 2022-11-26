@@ -22,6 +22,7 @@ const address_module_1 = require("./address/address.module");
 const core_1 = require("@nestjs/core");
 const helpers_1 = require("./helpers");
 const order_module_1 = require("./order/order.module");
+const file_module_1 = require("./file/file.module");
 let AppModule = class AppModule {
 };
 AppModule = __decorate([
@@ -39,6 +40,7 @@ AppModule = __decorate([
             payment_method_module_1.PaymentMethodModule,
             address_module_1.AddressModule,
             order_module_1.OrderModule,
+            file_module_1.FileModule,
         ],
         providers: [
             {

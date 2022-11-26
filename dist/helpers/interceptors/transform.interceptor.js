@@ -18,6 +18,12 @@ let TransformInterceptor = class TransformInterceptor {
             else if (data.message && data.data) {
                 return { data: data.data, statusCode: 200, message: data.message };
             }
+            else if (data.fileUrl) {
+                return data.fileUrl;
+            }
+            else if (data.file) {
+                return data.file;
+            }
             else {
                 return { data, statusCode: 200 };
             }

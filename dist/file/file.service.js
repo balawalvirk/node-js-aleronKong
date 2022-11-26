@@ -29,7 +29,7 @@ let FileService = class FileService {
             Key = `books/${file.filename}`;
         }
         else {
-            file.filename;
+            Key = file.filename;
         }
         return await this.s3
             .upload({

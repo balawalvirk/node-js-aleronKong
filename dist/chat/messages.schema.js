@@ -31,7 +31,15 @@ __decorate([
 __decorate([
     (0, mongoose_1.Prop)(),
     __metadata("design:type", String)
-], Message.prototype, "media", void 0);
+], Message.prototype, "gif", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ type: [String] }),
+    __metadata("design:type", Array)
+], Message.prototype, "videos", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ type: [String] }),
+    __metadata("design:type", Array)
+], Message.prototype, "images", void 0);
 Message = __decorate([
     (0, mongoose_1.Schema)({ timestamps: true })
 ], Message);

@@ -143,7 +143,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], GroupController.prototype, "findOne", null);
 __decorate([
-    (0, common_1.Patch)('update/:id'),
+    (0, common_1.Put)('update/:id'),
     __param(0, (0, common_1.Param)('id')),
     __param(1, (0, common_1.Body)()),
     __metadata("design:type", Function),
@@ -151,7 +151,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], GroupController.prototype, "update", null);
 __decorate([
-    (0, common_1.Patch)('join/:id'),
+    (0, common_1.Put)('join/:id'),
     __param(0, (0, user_decorator_1.GetUser)()),
     __param(1, (0, common_1.Param)('id')),
     __metadata("design:type", Function),
@@ -159,7 +159,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], GroupController.prototype, "joinGroup", null);
 __decorate([
-    (0, common_1.Patch)('leave/:id'),
+    (0, common_1.Put)('leave/:id'),
     __param(0, (0, user_decorator_1.GetUser)()),
     __param(1, (0, common_1.Param)('id', helpers_1.ParseObjectId)),
     __metadata("design:type", Function),
@@ -188,7 +188,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], GroupController.prototype, "findAllRequests", null);
 __decorate([
-    (0, common_1.Patch)('request/:id/:userId'),
+    (0, common_1.Put)('request/:id/:userId'),
     __param(0, (0, common_1.Query)('isApproved', new common_1.ParseBoolPipe())),
     __param(1, (0, common_1.Param)('id', helpers_1.ParseObjectId)),
     __param(2, (0, common_1.Param)('userId', helpers_1.ParseObjectId)),
@@ -206,7 +206,7 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], GroupController.prototype, "findAllGroups", null);
 __decorate([
-    (0, common_1.Patch)('report/:id'),
+    (0, common_1.Put)('report/:id'),
     __param(0, (0, common_1.Param)('id', helpers_1.ParseObjectId)),
     __param(1, (0, user_decorator_1.GetUser)()),
     __param(2, (0, common_1.Body)('reason')),

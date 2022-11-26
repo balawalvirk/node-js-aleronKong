@@ -6,6 +6,8 @@ export declare class Message {
     chat: Chat;
     sender: User;
     content: string;
-    media: string;
+    gif: string;
+    videos: string[];
+    images: string[];
 }
 export declare const MessageSchema: mongoose.Schema<Message, mongoose.Model<Message, any, any, any, any>, {}, {}, {}, {}, "type", Message>;

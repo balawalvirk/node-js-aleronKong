@@ -13,6 +13,7 @@ exports.PostSchema = exports.Posts = void 0;
 const mongoose_1 = require("@nestjs/mongoose");
 const mongoose = require("mongoose");
 const group_schema_1 = require("../group/group.schema");
+const report_schema_1 = require("../group/report.schema");
 const types_1 = require("../types");
 const users_schema_1 = require("../users/users.schema");
 const comment_schema_1 = require("./comment.schema");
@@ -33,7 +34,11 @@ __decorate([
 __decorate([
     (0, mongoose_1.Prop)({ required: true, type: [String] }),
     __metadata("design:type", Array)
-], Posts.prototype, "media", void 0);
+], Posts.prototype, "images", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ required: true, type: [String] }),
+    __metadata("design:type", Array)
+], Posts.prototype, "videos", void 0);
 __decorate([
     (0, mongoose_1.Prop)({ type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }),
     __metadata("design:type", users_schema_1.User)
@@ -43,13 +48,21 @@ __decorate([
     __metadata("design:type", String)
 ], Posts.prototype, "privacy", void 0);
 __decorate([
+    (0, mongoose_1.Prop)(),
+    __metadata("design:type", Boolean)
+], Posts.prototype, "isBlocked", void 0);
+__decorate([
+    (0, mongoose_1.Prop)(),
+    __metadata("design:type", String)
+], Posts.prototype, "status", void 0);
+__decorate([
     (0, mongoose_1.Prop)({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }] }),
     __metadata("design:type", Array)
 ], Posts.prototype, "blockers", void 0);
 __decorate([
-    (0, mongoose_1.Prop)({ type: mongoose.Schema.Types.ObjectId, ref: 'User' }),
-    __metadata("design:type", users_schema_1.User)
-], Posts.prototype, "reporter", void 0);
+    (0, mongoose_1.Prop)({ type: [report_schema_1.ReportSchema] }),
+    __metadata("design:type", Array)
+], Posts.prototype, "reports", void 0);
 __decorate([
     (0, mongoose_1.Prop)({ type: mongoose.Schema.Types.ObjectId, ref: 'Group' }),
     __metadata("design:type", group_schema_1.Group)

@@ -23,6 +23,8 @@ __exportStar(require("./gateway/socket.gateway"), exports);
 __exportStar(require("./pipes/objectId.pipe"), exports);
 __exportStar(require("./services/stripe.service"), exports);
 __exportStar(require("./interceptors/transform.interceptor"), exports);
+__exportStar(require("./decorators/file.decorator"), exports);
+__exportStar(require("./guards/upload.guard"), exports);
 const makeQuery = (q) => {
     const limit = parseInt(q.limit) || 10;
     const page = parseInt(q.page) || 1;

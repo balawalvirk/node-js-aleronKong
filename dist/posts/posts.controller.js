@@ -18,6 +18,7 @@ const jwt_auth_guard_1 = require("../auth/jwt-auth.guard");
 const user_decorator_1 = require("../helpers/decorators/user.decorator");
 const users_service_1 = require("../users/users.service");
 const create_comment_1 = require("./dtos/create-comment");
+const create_fundraiser_dto_1 = require("./dtos/create-fundraiser.dto");
 const posts_service_1 = require("./posts.service");
 let PostsController = class PostsController {
     constructor(postsService, usersService) {
@@ -51,9 +52,13 @@ let PostsController = class PostsController {
             $push: { blockers: user._id },
         });
     }
-    async reportPost(postId, user) {
-        return await this.postsService.findOneRecordAndUpdate({ _id: postId }, { reporter: user._id });
+    async reportPost(id, user, reason) {
+        const updatedPost = await this.postsService.findOneRecordAndUpdate({ _id: id }, { $push: { reports: { reporter: user._id, reason } } });
+        if (!updatedPost)
+            throw new common_1.HttpException('Post not found', common_1.HttpStatus.BAD_REQUEST);
+        return { message: 'Report submitted successfully.' };
     }
+    async createFundraiser(createFundraiserDto) { }
 };
 __decorate([
     (0, common_1.Get)('find-all'),
@@ -96,13 +101,20 @@ __decorate([
     __metadata("design:returntype", Promise)
 ], PostsController.prototype, "blockPost", null);
 __decorate([
-    (0, common_1.Put)('report/:postId'),
-    __param(0, (0, common_1.Param)('postId')),
+    (0, common_1.Put)('report/:id'),
+    __param(0, (0, common_1.Param)('id')),
     __param(1, (0, user_decorator_1.GetUser)()),
+    __param(2, (0, common_1.Body)('reason')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:paramtypes", [String, Object, String]),
     __metadata("design:returntype", Promise)
 ], PostsController.prototype, "reportPost", null);
+__decorate([
+    (0, common_1.Post)('fundraiser/create'),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [create_fundraiser_dto_1.CreateFundraiserDto]),
+    __metadata("design:returntype", Promise)
+], PostsController.prototype, "createFundraiser", null);
 PostsController = __decorate([
     (0, common_1.Controller)('post'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),

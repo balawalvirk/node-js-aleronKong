@@ -49,10 +49,10 @@ let ChatController = class ChatController {
             select: 'avatar firstName lastName',
         });
     }
-    async createMessage(body, user) {
-        const message = await this.messageService.createRecord(Object.assign(Object.assign({}, body), { sender: user._id }));
-        this.socketService.triggerMessage(body.chat, message);
-        return 'message sent successfully.';
+    async createMessage(createMessageDto, user) {
+        const message = await this.messageService.createRecord(Object.assign(Object.assign({}, createMessageDto), { sender: user._id }));
+        this.socketService.triggerMessage(createMessageDto.chat, message);
+        return { message: 'message sent successfully.' };
     }
     async findAllMessage(chatId) {
         return await this.messageService.findAllRecords({ chat: chatId }).sort({ createdAt: -1 });
