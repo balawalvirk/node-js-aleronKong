@@ -27,18 +27,18 @@ export declare class BaseService {
     private model;
     constructor(model: Model<any>);
     createRecord: (data: any) => Promise<any>;
-    insertManyRecords: (data: any) => Promise<((import("mongoose").Document<unknown, any, Omit<any, "_id"> & Required<{
-        _id: unknown;
-    }>> & Omit<any, "_id"> & Required<{
-        _id: unknown;
-    }> & Required<{
-        _id: unknown;
-    }>) | (import("mongoose").Document<unknown, any, Omit<any, "_id"> & {
+    insertManyRecords: (data: any) => Promise<((import("mongoose").Document<unknown, any, Omit<any, "_id"> & {
         _id: import("mongoose").Types.ObjectId;
     }> & Omit<any, "_id"> & {
         _id: import("mongoose").Types.ObjectId;
     } & Required<{
         _id: import("mongoose").Types.ObjectId;
+    }>) | (import("mongoose").Document<unknown, any, Omit<any, "_id"> & Required<{
+        _id: unknown;
+    }>> & Omit<any, "_id"> & Required<{
+        _id: unknown;
+    }> & Required<{
+        _id: unknown;
     }>))[]>;
     findAllRecords: (filter?: FilterQuery<any>) => import("mongoose").Query<any[], any, {}, any>;
     findOneRecord: (filter?: FilterQuery<any>) => import("mongoose").Query<any, any, {}, any>;

@@ -6,7 +6,6 @@ import { ResetPasswordDto } from './dtos/reset-pass.dto';
 import { SocialLoginDto } from './dtos/social-login.dto';
 import { EmailService } from 'src/helpers/services/email.service';
 import { StripeService } from 'src/helpers';
-import { MultipartFile } from '@fastify/multipart';
 export declare class AuthController {
     private readonly authService;
     private readonly userService;
@@ -17,7 +16,6 @@ export declare class AuthController {
         access_token: string;
         user: UserDocument;
     }>;
-    Connect(file: MultipartFile): Promise<string>;
     register(body: RegisterDto): Promise<{
         message: string;
         data: {

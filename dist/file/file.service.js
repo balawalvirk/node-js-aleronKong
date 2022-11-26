@@ -10,37 +10,39 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.FileService = void 0;
-const aws_sdk_1 = require("aws-sdk");
 const common_1 = require("@nestjs/common");
 const config_1 = require("@nestjs/config");
+const client_s3_1 = require("@aws-sdk/client-s3");
 let FileService = class FileService {
     constructor(configService) {
         this.configService = configService;
-        this.s3 = new aws_sdk_1.S3({
-            accessKeyId: this.configService.get('AWS_ACCESS_KEY'),
-            secretAccessKey: this.configService.get('AWS_SECRET_KEY'),
+        this.s3 = new client_s3_1.S3Client({
+            credentials: {
+                accessKeyId: this.configService.get('AWS_ACCESS_KEY'),
+                secretAccessKey: this.configService.get('AWS_SECRET_KEY'),
+            },
             region: this.configService.get('AWS_REGION'),
         });
         this.bucket = this.configService.get('S3_BUCKET_NAME');
     }
-    async upload(file, privacy) {
-        let Key;
-        if (privacy) {
-            Key = `books/${file.filename}`;
-        }
-        else {
-            Key = file.filename;
-        }
-        return await this.s3
-            .upload({
+    getRandomFileName() {
+        const timestamp = new Date().toISOString().replace(/[-:.]/g, '');
+        const random = ('' + Math.random()).substring(2, 8);
+        const random_number = timestamp + random;
+        return random_number;
+    }
+    async upload(file, Key) {
+        const command = new client_s3_1.PutObjectCommand({
             Bucket: this.bucket,
             Key: Key,
-            Body: file.file,
-        })
-            .promise();
+            Body: file.buffer,
+            ContentType: file.mimetype,
+        });
+        await this.s3.send(command);
     }
-    download(key) {
-        return this.s3.getObject({ Bucket: this.bucket, Key: key }).createReadStream();
+    async download(key) {
+        const command = new client_s3_1.GetObjectCommand({ Key: key, Bucket: this.bucket });
+        return (await this.s3.send(command)).Body.transformToByteArray();
     }
 };
 FileService = __decorate([

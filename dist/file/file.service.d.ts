@@ -1,6 +1,4 @@
-/// <reference types="node" />
-import { S3 } from 'aws-sdk';
-import { MultipartFile } from '@fastify/multipart';
+/// <reference types="multer" />
 import { ConfigService } from '@nestjs/config';
 import { IEnvironmentVariables } from 'src/types';
 export declare class FileService {
@@ -8,6 +6,7 @@ export declare class FileService {
     private readonly s3;
     private readonly bucket;
     constructor(configService: ConfigService<IEnvironmentVariables>);
-    upload(file: MultipartFile, privacy: boolean): Promise<S3.ManagedUpload.SendData>;
-    download(key: string): import("stream").Readable;
+    getRandomFileName(): string;
+    upload(file: Express.Multer.File, Key: string): Promise<void>;
+    download(key: string): Promise<Uint8Array>;
 }

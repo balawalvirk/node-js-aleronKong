@@ -15,31 +15,50 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.FileController = void 0;
 const common_1 = require("@nestjs/common");
 const file_service_1 = require("./file.service");
-const helpers_1 = require("../helpers");
 const jwt_auth_guard_1 = require("../auth/jwt-auth.guard");
+const platform_express_1 = require("@nestjs/platform-express");
+const helpers_1 = require("../helpers");
 let FileController = class FileController {
     constructor(fileService) {
         this.fileService = fileService;
     }
-    async create(file, host, isPrivate) {
-        const s3Object = await this.fileService.upload(file, isPrivate === true ? true : false);
-        return { fileUrl: `${host}/v1/file/find-one/${s3Object.Key}` };
+    async create(file, host) {
+        const key = this.fileService.getRandomFileName();
+        await this.fileService.upload(file, key);
+        return { fileUrl: `${host}/v1/file/find-one/${key}` };
+    }
+    async createPrivate(file, host) {
+        const key = `books/${this.fileService.getRandomFileName()}`;
+        await this.fileService.upload(file, key);
+        return { fileUrl: `${host}/v1/file/find-one/private/${key}` };
     }
     async findOne(key) {
-        const file = this.fileService.download(key);
+        const file = await this.fileService.download(key);
+        return { file: new common_1.StreamableFile(file) };
+    }
+    async findOnePrivate(key, user) {
+        const file = await this.fileService.download(key);
         return { file: new common_1.StreamableFile(file) };
     }
 };
 __decorate([
     (0, common_1.Post)('create'),
-    (0, common_1.UseGuards)(helpers_1.UploadGuard),
-    __param(0, (0, helpers_1.File)()),
+    (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('file')),
+    __param(0, (0, common_1.UploadedFile)()),
     __param(1, (0, common_1.Headers)('host')),
-    __param(2, (0, common_1.Body)('isPrivate')),
     __metadata("design:type", Function),
-    __metadata("design:paramtypes", [Object, String, Boolean]),
+    __metadata("design:paramtypes", [Object, String]),
     __metadata("design:returntype", Promise)
 ], FileController.prototype, "create", null);
+__decorate([
+    (0, common_1.Post)('private/create'),
+    (0, common_1.UseInterceptors)((0, platform_express_1.FileInterceptor)('file')),
+    __param(0, (0, common_1.UploadedFile)()),
+    __param(1, (0, common_1.Headers)('host')),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [Object, String]),
+    __metadata("design:returntype", Promise)
+], FileController.prototype, "createPrivate", null);
 __decorate([
     (0, common_1.Get)('find-one/:key'),
     __param(0, (0, common_1.Param)('key')),
@@ -47,6 +66,14 @@ __decorate([
     __metadata("design:paramtypes", [String]),
     __metadata("design:returntype", Promise)
 ], FileController.prototype, "findOne", null);
+__decorate([
+    (0, common_1.Get)('find-one/private/:key'),
+    __param(0, (0, common_1.Param)('key')),
+    __param(1, (0, helpers_1.GetUser)()),
+    __metadata("design:type", Function),
+    __metadata("design:paramtypes", [String, Object]),
+    __metadata("design:returntype", Promise)
+], FileController.prototype, "findOnePrivate", null);
 FileController = __decorate([
     (0, common_1.Controller)('file'),
     (0, common_1.UseGuards)(jwt_auth_guard_1.JwtAuthGuard),
