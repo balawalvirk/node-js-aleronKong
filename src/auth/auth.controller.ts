@@ -10,8 +10,7 @@ import { OtpDocument } from './otp.schema';
 import { ResetPasswordDto } from './dtos/reset-pass.dto';
 import { SocialLoginDto } from './dtos/social-login.dto';
 import { EmailService } from 'src/helpers/services/email.service';
-import { StripeService, UploadGuard, File } from 'src/helpers';
-import { MultipartFile } from '@fastify/multipart';
+import { StripeService } from 'src/helpers';
 
 @Controller('auth')
 export class AuthController {
@@ -27,40 +26,6 @@ export class AuthController {
   async login(@GetUser() user: UserDocument) {
     const { access_token } = await this.authService.login(user.userName, user._id);
     return { access_token, user };
-  }
-
-  @Post('connect')
-  @UseGuards(UploadGuard)
-  async Connect(@File() file: MultipartFile) {
-    console.log({ file });
-    return 'this';
-    // return await this.stripeService.createAccount({
-    //   type: 'custom',
-    //   business_type: 'individual',
-    //   country: 'US',
-    //   individual: {
-    //     first_name: 'awais',
-    //     last_name: 'mehr',
-    //     dob: {
-    //       day: 2,
-    //       month: 11,
-    //       year: 1998,
-    //     },
-    //     email: 'awaistest@gmail.com',
-    //   },
-    //   business_profile: {
-    //     mcc: '5942',
-    //     url: 'https://www.litrpg.com/',
-    //   },
-    //   tos_acceptance: {
-    //     date: 1669128686,
-    //     ip: ip,
-    //   },
-    //   capabilities: {
-    //     card_payments: { requested: true },
-    //     transfers: { requested: true },
-    //   },
-    // });
   }
 
   @Post('register')
