@@ -41,10 +41,7 @@ export class ChatController {
   }
 
   @Get('/find-one/:receiverId')
-  async findOne(
-    @Param('receiverId') receiverId: string,
-    @GetUser() user: UserDocument
-  ): Promise<LeanDocument<UserDocument>[]> {
+  async findOne(@Param('receiverId') receiverId: string, @GetUser() user: UserDocument) {
     return await this.chatService
       .findOneRecord({ members: { $all: [receiverId, user._id] } })
       .populate({
@@ -55,17 +52,17 @@ export class ChatController {
   }
 
   @Post('/message/create')
-  async createMessage(
-    @Body() body: CreateMessageDto,
-    @GetUser() user: UserDocument
-  ): Promise<string> {
-    const message = await this.messageService.createRecord({ ...body, sender: user._id });
-    this.socketService.triggerMessage(body.chat, message);
-    return 'message sent successfully.';
+  async createMessage(@Body() createMessageDto: CreateMessageDto, @GetUser() user: UserDocument) {
+    const message = await this.messageService.createRecord({
+      ...createMessageDto,
+      sender: user._id,
+    });
+    this.socketService.triggerMessage(createMessageDto.chat, message);
+    return { message: 'message sent successfully.' };
   }
 
   @Get('/message/find-all/:chatId')
-  async findAllMessage(@Param('chatId') chatId: string): Promise<LeanDocument<MessageDocument>[]> {
+  async findAllMessage(@Param('chatId') chatId: string) {
     return await this.messageService.findAllRecords({ chat: chatId }).sort({ createdAt: -1 });
   }
 

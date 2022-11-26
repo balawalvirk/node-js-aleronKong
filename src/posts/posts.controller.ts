@@ -1,9 +1,21 @@
-import { Body, Controller, Get, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpException,
+  HttpStatus,
+  Param,
+  Post,
+  Put,
+  Query,
+  UseGuards,
+} from '@nestjs/common';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { GetUser } from 'src/helpers/decorators/user.decorator';
 import { UserDocument } from 'src/users/users.schema';
 import { UsersService } from 'src/users/users.service';
 import { CreateCommentDto } from './dtos/create-comment';
+import { CreateFundraiserDto } from './dtos/create-fundraiser.dto';
 import { Posts } from './posts.schema';
 import { PostsService } from './posts.service';
 
@@ -14,10 +26,7 @@ export class PostsController {
 
   //find all post that are on feeds
   @Get('find-all')
-  async findAll(
-    @GetUser() user: UserDocument,
-    @Query('privacy') privacy: string
-  ): Promise<Posts[]> {
+  async findAll(@GetUser() user: UserDocument, @Query('privacy') privacy: string) {
     return await this.postsService.findAllPosts({
       privacy,
       blockers: { $nin: [user._id] },
@@ -25,7 +34,7 @@ export class PostsController {
   }
 
   @Get('find-all/mine')
-  async findMine(@GetUser() user: UserDocument): Promise<Posts[]> {
+  async findMine(@GetUser() user: UserDocument) {
     return await this.postsService.findAllPosts({
       creator: user._id,
     });
@@ -60,8 +69,20 @@ export class PostsController {
     );
   }
 
-  @Put('report/:postId')
-  async reportPost(@Param('postId') postId: string, @GetUser() user: UserDocument) {
-    return await this.postsService.findOneRecordAndUpdate({ _id: postId }, { reporter: user._id });
+  @Put('report/:id')
+  async reportPost(
+    @Param('id') id: string,
+    @GetUser() user: UserDocument,
+    @Body('reason') reason: string
+  ) {
+    const updatedPost = await this.postsService.findOneRecordAndUpdate(
+      { _id: id },
+      { $push: { reports: { reporter: user._id, reason } } }
+    );
+    if (!updatedPost) throw new HttpException('Post not found', HttpStatus.BAD_REQUEST);
+    return { message: 'Report submitted successfully.' };
   }
+
+  @Post('fundraiser/create')
+  async createFundraiser(createFundraiserDto: CreateFundraiserDto) {}
 }

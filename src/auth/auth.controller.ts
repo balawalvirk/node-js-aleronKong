@@ -1,4 +1,4 @@
-import { Body, Controller, HttpException, HttpStatus, Ip, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, HttpException, HttpStatus, Post, UseGuards } from '@nestjs/common';
 import { hash } from 'bcrypt';
 import { UsersService } from '../users/users.service';
 import { AuthService } from './auth.service';
@@ -10,7 +10,8 @@ import { OtpDocument } from './otp.schema';
 import { ResetPasswordDto } from './dtos/reset-pass.dto';
 import { SocialLoginDto } from './dtos/social-login.dto';
 import { EmailService } from 'src/helpers/services/email.service';
-import { StripeService } from 'src/helpers';
+import { StripeService, UploadGuard, File } from 'src/helpers';
+import { MultipartFile } from '@fastify/multipart';
 
 @Controller('auth')
 export class AuthController {
@@ -29,7 +30,10 @@ export class AuthController {
   }
 
   @Post('connect')
-  async Connect(@Ip() ip: string) {
+  @UseGuards(UploadGuard)
+  async Connect(@File() file: MultipartFile) {
+    console.log({ file });
+    return 'this';
     // return await this.stripeService.createAccount({
     //   type: 'custom',
     //   business_type: 'individual',

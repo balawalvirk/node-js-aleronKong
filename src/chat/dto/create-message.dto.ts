@@ -1,15 +1,29 @@
-import { IsMongoId, IsNotEmpty, IsOptional, IsString } from 'class-validator';
+import { Type } from 'class-transformer';
+import {
+  IsArray,
+  IsMongoId,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  ValidateNested,
+} from 'class-validator';
 
 export class CreateMessageDto {
-  @IsNotEmpty()
   @IsString()
   content: string;
 
-  @IsNotEmpty()
   @IsMongoId()
   chat: string;
 
   @IsOptional()
   @IsString()
-  media?: string;
+  gif?: string;
+
+  @IsOptional()
+  @IsString({ each: true })
+  videos?: string[];
+
+  @IsOptional()
+  @IsString({ each: true })
+  images?: string[];
 }

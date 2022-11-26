@@ -17,7 +17,13 @@ export class Message {
   content: string;
 
   @Prop()
-  media: string;
+  gif: string;
+
+  @Prop({ type: [String] })
+  videos: string[];
+
+  @Prop({ type: [String] })
+  images: string[];
 }
 
 export const MessageSchema = SchemaFactory.createForClass(Message);

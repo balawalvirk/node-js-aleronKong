@@ -3,7 +3,6 @@ import {
   Get,
   Post,
   Body,
-  Patch,
   Param,
   Delete,
   UseGuards,
@@ -11,6 +10,7 @@ import {
   Query,
   DefaultValuePipe,
   ParseBoolPipe,
+  Put,
 } from '@nestjs/common';
 import { GroupService } from './group.service';
 import { CreateGroupDto } from './dto/create-group.dto';
@@ -58,12 +58,12 @@ export class GroupController {
     return await this.groupService.findOne({ _id: id });
   }
 
-  @Patch('update/:id')
+  @Put('update/:id')
   async update(@Param('id') id: string, @Body() updateGroupDto: UpdateGroupDto) {
     return await this.groupService.findOneRecordAndUpdate({ _id: id }, updateGroupDto);
   }
 
-  @Patch('join/:id')
+  @Put('join/:id')
   async joinGroup(@GetUser() user: UserDocument, @Param('id') id: string) {
     const group: GroupDocument = await this.groupService.findOneRecord({ _id: id });
     if (group) {
@@ -89,7 +89,7 @@ export class GroupController {
     } else throw new BadRequestException('Group does not exists.');
   }
 
-  @Patch('leave/:id')
+  @Put('leave/:id')
   async leaveGroup(@GetUser() user: UserDocument, @Param('id', ParseObjectId) id: string) {
     await this.groupService.findOneRecordAndUpdate(
       { _id: id },
@@ -117,7 +117,7 @@ export class GroupController {
     return group.requests;
   }
 
-  @Patch('request/:id/:userId')
+  @Put('request/:id/:userId')
   async approveRejectRequest(
     @Query('isApproved', new ParseBoolPipe()) isApproved: boolean,
     @Param('id', ParseObjectId) id: string,
@@ -165,7 +165,7 @@ export class GroupController {
     return groups;
   }
 
-  @Patch('report/:id')
+  @Put('report/:id')
   async report(
     @Param('id', ParseObjectId) id: string,
     @GetUser() user: UserDocument,

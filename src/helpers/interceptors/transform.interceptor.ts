@@ -18,6 +18,10 @@ export class TransformInterceptor<T> implements NestInterceptor<T, Response<T>> 
           return { statusCode: 200, message: data.message };
         } else if (data.message && data.data) {
           return { data: data.data, statusCode: 200, message: data.message };
+        } else if (data.fileUrl) {
+          return data.fileUrl;
+        } else if (data.file) {
+          return data.file;
         } else {
           return { data, statusCode: 200 };
         }

@@ -5,8 +5,17 @@ export class CreatePostsDto {
   @IsString()
   content: string;
 
+  @IsOptional()
   @IsString({ each: true })
-  media: string;
+  images: string;
+
+  @IsOptional()
+  @IsString({ each: true })
+  videos: string;
+
+  @IsOptional()
+  @IsString()
+  status: string;
 
   @IsEnum(PostPrivacy)
   privacy: string;

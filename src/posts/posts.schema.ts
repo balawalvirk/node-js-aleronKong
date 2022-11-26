@@ -1,6 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
 import { Group } from 'src/group/group.schema';
+import { Report, ReportSchema } from 'src/group/report.schema';
 import { PostPrivacy, PostType } from 'src/types';
 import { User } from 'src/users/users.schema';
 import { CommentSchema, Comment } from './comment.schema';
@@ -18,7 +19,10 @@ export class Posts {
   comments: Comment[];
 
   @Prop({ required: true, type: [String] })
-  media: string[];
+  images: string[];
+
+  @Prop({ required: true, type: [String] })
+  videos: string[];
 
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true })
   creator: User;
@@ -26,11 +30,17 @@ export class Posts {
   @Prop({ enum: PostPrivacy, required: true })
   privacy: string;
 
+  @Prop()
+  isBlocked: boolean;
+
+  @Prop()
+  status: string;
+
   @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }] })
   blockers: User[];
 
-  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User' })
-  reporter: User;
+  @Prop({ type: [ReportSchema] })
+  reports: Report[];
 
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Group' })
   group: Group;
