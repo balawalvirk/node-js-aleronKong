@@ -1,0 +1,32 @@
+import { ConfigService } from '@nestjs/config';
+import { IEnvironmentVariables } from 'src/types';
+import Stripe from 'stripe';
+export declare class StripeService {
+    private readonly configService;
+    constructor(configService: ConfigService<IEnvironmentVariables>);
+    private readonly stripe;
+    createCustomer(body: Stripe.CustomerCreateParams): Promise<Stripe.Response<Stripe.Customer>>;
+    updateCustomer(id: string, params?: Stripe.CustomerUpdateParams, options?: Stripe.RequestOptions): Promise<Stripe.Response<Stripe.Customer>>;
+    findOneCustomer(id: string): Promise<Stripe.Response<Stripe.Customer | Stripe.DeletedCustomer>>;
+    createPaymentMethod(body: Stripe.PaymentMethodCreateParams): Promise<Stripe.Response<Stripe.PaymentMethod>>;
+    attachPaymentMethord(paymentMethodId: string, params: Stripe.PaymentMethodAttachParams): Promise<Stripe.Response<Stripe.PaymentMethod>>;
+    findAllPaymentMethords(customerId: string, params: Stripe.CustomerListPaymentMethodsParams): Promise<Stripe.Response<Stripe.ApiList<Stripe.PaymentMethod>>>;
+    findOnePaymentMethod(id: string): Promise<Stripe.Response<Stripe.PaymentMethod>>;
+    deAttachPaymentMethord(paymentMethodId: string): Promise<Stripe.Response<Stripe.PaymentMethod>>;
+    updatePaymentMethord(paymentMethodId: string, params: Stripe.PaymentMethodUpdateParams): Promise<Stripe.Response<Stripe.PaymentMethod>>;
+    createPaymentIntent(params: Stripe.PaymentIntentCreateParams, options?: Stripe.RequestOptions): Promise<Stripe.Response<Stripe.PaymentIntent>>;
+    createProduct(params: Stripe.ProductCreateParams, options?: Stripe.RequestOptions): Promise<Stripe.Response<Stripe.Product>>;
+    updateProduct(id: string, params?: Stripe.ProductUpdateParams, options?: Stripe.RequestOptions): Promise<Stripe.Response<Stripe.Product>>;
+    findOneProduct(id: string, params?: Stripe.ProductRetrieveParams, options?: Stripe.RequestOptions): Promise<Stripe.Response<Stripe.Product>>;
+    createPrice(params: Stripe.PriceCreateParams, options?: Stripe.RequestOptions): Promise<Stripe.Response<Stripe.Price>>;
+    updatePrice(id: string, params?: Stripe.PriceUpdateParams, options?: Stripe.RequestOptions): Promise<Stripe.Response<Stripe.Price>>;
+    createSubscription(params: Stripe.SubscriptionCreateParams, options?: Stripe.RequestOptions): Promise<Stripe.Response<Stripe.Subscription>>;
+    findAllSubscriptions(params?: Stripe.SubscriptionListParams, options?: Stripe.RequestOptions): Promise<Stripe.Response<Stripe.ApiList<Stripe.Subscription>>>;
+    findOneSubscription(id: string, params?: Stripe.SubscriptionRetrieveParams, options?: Stripe.RequestOptions): Promise<Stripe.Response<Stripe.Subscription>>;
+    cancelSubscription(id: string, params?: Stripe.SubscriptionDeleteParams, options?: Stripe.RequestOptions): Promise<Stripe.Response<Stripe.Subscription>>;
+    findAllInvoices(params?: Stripe.InvoiceListParams, options?: Stripe.RequestOptions): Promise<Stripe.Response<Stripe.ApiList<Stripe.Invoice>>>;
+    createAccount(params?: Stripe.AccountCreateParams, options?: Stripe.RequestOptions): Promise<Stripe.Response<Stripe.Account>>;
+    updateAccount(id: string, params?: Stripe.AccountUpdateParams, options?: Stripe.RequestOptions): Promise<Stripe.Response<Stripe.Account>>;
+    deleteAccount(id: string, params?: Stripe.AccountDeleteParams, options?: Stripe.RequestOptions): Promise<Stripe.Response<Stripe.DeletedAccount>>;
+    createTransfer(params: Stripe.TransferCreateParams, options?: Stripe.RequestOptions): Promise<Stripe.Response<Stripe.Transfer>>;
+}
