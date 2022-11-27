@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import { S3Client, PutObjectCommand, GetObjectCommand } from '@aws-sdk/client-s3';
+import { S3Client, PutObjectCommand } from '@aws-sdk/client-s3';
 import { IEnvironmentVariables } from 'src/types';
 
 @Injectable()
@@ -25,7 +25,8 @@ export class FileService {
     return random_number;
   }
 
-  async upload(file: Express.Multer.File, Key: string) {
+  async upload(file: Express.Multer.File) {
+    const Key = this.getRandomFileName();
     const command = new PutObjectCommand({
       Bucket: this.bucket,
       Key: Key,
@@ -33,10 +34,6 @@ export class FileService {
       ContentType: file.mimetype,
     });
     await this.s3.send(command);
-  }
-
-  async download(key: string) {
-    const command = new GetObjectCommand({ Key: key, Bucket: this.bucket });
-    return (await this.s3.send(command)).Body.transformToByteArray();
+    return Key;
   }
 }

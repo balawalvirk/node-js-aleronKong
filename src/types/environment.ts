@@ -8,5 +8,5 @@ export interface IEnvironmentVariables {
   AWS_SECRET_KEY: string;
   S3_BUCKET_NAME: string;
   AWS_REGION: string;
-  BASE_URL: string;
+  S3_URL: string;
 }
