@@ -7,6 +7,7 @@ export * from './gateway/socket.gateway';
 export * from './pipes/objectId.pipe';
 export * from './services/stripe.service';
 export * from './interceptors/transform.interceptor';
+export * from './decorators/role.decorator';
 
 export const makeQuery = (q: IQuery) => {
   const limit = parseInt(q.limit) || 10;

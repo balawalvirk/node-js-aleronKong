@@ -15,6 +15,7 @@ import { APP_INTERCEPTOR } from '@nestjs/core';
 import { TransformInterceptor } from './helpers';
 import { OrderModule } from './order/order.module';
 import { FileModule } from './file/file.module';
+import { FudraisingModule } from './fundraising/fudraising.module';
 
 @Module({
   imports: [
@@ -31,6 +32,7 @@ import { FileModule } from './file/file.module';
     AddressModule,
     OrderModule,
     FileModule,
+    FudraisingModule,
   ],
   // global interceptor for transforming response.
   providers: [

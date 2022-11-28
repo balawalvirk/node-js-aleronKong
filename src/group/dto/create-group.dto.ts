@@ -1,4 +1,5 @@
 import { IsEnum, IsString } from 'class-validator';
+import { GroupPrivacy } from 'src/types';
 
 export class CreateGroupDto {
   @IsString()
@@ -13,6 +14,6 @@ export class CreateGroupDto {
   @IsString()
   name: string;
 
-  @IsEnum(['private', 'public'])
+  @IsEnum(GroupPrivacy)
   privacy: string;
 }

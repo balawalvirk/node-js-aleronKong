@@ -38,5 +38,5 @@ yarn.lock
 # env files
 .env
 .env.dev
-.env.staging
+.env.stag
 .env.prod
