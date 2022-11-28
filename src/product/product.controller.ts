@@ -13,13 +13,16 @@ import {
 import { AddressDocument } from 'src/address/address.schema';
 import { AddressService } from 'src/address/address.service';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
-import { StripeService } from 'src/helpers';
+import { RolesGuard } from 'src/auth/role.guard';
+import { ParseObjectId, Roles, StripeService } from 'src/helpers';
 import { GetUser } from 'src/helpers/decorators/user.decorator';
-import { CollectionConditions, CollectionTypes } from 'src/types';
+import { CollectionConditions, CollectionTypes, UserRole } from 'src/types';
 import { UserDocument } from 'src/users/users.schema';
+import { ProductCategoryService } from './category.service';
 import { CollectionDocument } from './collection.schema';
 import { CollectionService } from './collection.service';
 import { AddProductDto } from './dtos/add-product.dto';
+import { CreateProductCategoryDto } from './dtos/create-category.dto';
 import { CreateCheckoutDto } from './dtos/create-checkout.dto';
 import { CreateCollectionDto } from './dtos/create-collection.dto';
 import { CreateProductDto } from './dtos/create-product.dto';
@@ -28,13 +31,14 @@ import { ProductDocument } from './product.schema';
 import { ProductService } from './product.service';
 
 @Controller('product')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class ProductController {
   constructor(
     private readonly productService: ProductService,
     private readonly collectionService: CollectionService,
     private readonly stripeService: StripeService,
-    private readonly addressService: AddressService
+    private readonly addressService: AddressService,
+    private readonly categoryService: ProductCategoryService
   ) {}
 
   @Post('create')
@@ -43,7 +47,7 @@ export class ProductController {
   }
 
   @Delete('/:id')
-  async remove(@Param('id') id: string) {
+  async remove(@Param('id', ParseObjectId) id: string) {
     const product: ProductDocument = await this.productService.deleteSingleRecord({ _id: id });
     await this.collectionService.updateManyRecords(
       { products: { $in: [product._id] } },
@@ -186,5 +190,23 @@ export class ProductController {
       { _id: collection },
       { $push: { products: product } }
     );
+  }
+
+  // categories apis
+  @Roles(UserRole.ADMIN)
+  @Post('category/create')
+  async createCategory(@Body() createProductCategoryDto: CreateProductCategoryDto) {
+    const { value, ...rest } = createProductCategoryDto;
+    return await this.categoryService.createRecord({ ...rest });
+  }
+
+  @Get('category/find-all')
+  async findAllCategories() {
+    return await this.categoryService.findAllRecords();
+  }
+
+  @Delete('category/:id/delete')
+  async deleteCategory(@Param('id', ParseObjectId) id: string) {
+    return await this.categoryService.deleteSingleRecord({ _id: id });
   }
 }

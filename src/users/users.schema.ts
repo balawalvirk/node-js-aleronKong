@@ -30,8 +30,8 @@ export class User {
   @Prop({ default: AuthTypes.LOCAL, enum: AuthTypes })
   authType: string;
 
-  @Prop({ default: UserRole.CUSTOMER, enum: UserRole })
-  role: string;
+  @Prop({ default: [UserRole.CUSTOMER], enum: UserRole, type: [String] })
+  role: string[];
 
   @Prop({ default: UserStatus.ACTIVE, enum: UserStatus })
   status: string;

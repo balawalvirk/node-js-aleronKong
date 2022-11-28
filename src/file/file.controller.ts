@@ -27,6 +27,6 @@ export class FileController {
   async create(@UploadedFile() file: Express.Multer.File) {
     if (!file) throw new HttpException('file is a required field.', HttpStatus.BAD_REQUEST);
     const key = await this.fileService.upload(file);
-    return { fileUrl: `${this.configService.get('S3_URL')}${key}` };
+    return { file: `${this.configService.get('S3_URL')}${key}` };
   }
 }

@@ -1,6 +1,7 @@
 export enum UserRole {
   CUSTOMER = 'customer',
   SELLER = 'seller',
+  ADMIN = 'admin',
 }
 
 export enum AuthTypes {
@@ -50,6 +51,11 @@ export enum PostPrivacy {
 }
 
 export enum PostType {
-  SIMPLE = 'simple',
+  POST = 'post',
   FUNDRAISING = 'fundraising',
+}
+
+export enum PostStatus {
+  ACTIVE = 'active',
+  INACTIVE = 'inActive',
 }

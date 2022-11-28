@@ -11,6 +11,8 @@ import {
   DefaultValuePipe,
   ParseBoolPipe,
   Put,
+  HttpException,
+  HttpStatus,
 } from '@nestjs/common';
 import { GroupService } from './group.service';
 import { CreateGroupDto } from './dto/create-group.dto';
@@ -59,7 +61,9 @@ export class GroupController {
   }
 
   @Put('update/:id')
-  async update(@Param('id') id: string, @Body() updateGroupDto: UpdateGroupDto) {
+  async update(@Param('id', ParseObjectId) id: string, @Body() updateGroupDto: UpdateGroupDto) {
+    const group = await this.groupService.findOneRecord({ _id: id });
+    if (!group) throw new HttpException('Group not found.', HttpStatus.BAD_REQUEST);
     return await this.groupService.findOneRecordAndUpdate({ _id: id }, updateGroupDto);
   }
 

@@ -1,4 +1,4 @@
-import { IsBoolean, IsEnum, IsNumber, IsOptional, IsString } from 'class-validator';
+import { IsBoolean, IsEnum, IsMongoId, IsNumber, IsOptional, IsString } from 'class-validator';
 import { ProductState, ProductTypes } from 'src/types';
 
 export class CreateProductDto {
@@ -33,4 +33,7 @@ export class CreateProductDto {
   @IsOptional()
   @IsString({ each: true })
   tags?: string[];
+
+  @IsMongoId()
+  category: string;
 }

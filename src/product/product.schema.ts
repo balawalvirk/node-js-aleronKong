@@ -2,6 +2,7 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
 import { ProductState, ProductTypes } from 'src/types';
 import { User } from 'src/users/users.schema';
+import { ProductCategory } from './category.schema';
 
 export type ProductDocument = Product & mongoose.Document;
 @Schema({ timestamps: true })
@@ -11,6 +12,9 @@ export class Product {
 
   @Prop({ required: true })
   description: string;
+
+  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'ProductCategory' })
+  category: ProductCategory;
 
   @Prop({ enum: ProductState, required: true })
   state: string;

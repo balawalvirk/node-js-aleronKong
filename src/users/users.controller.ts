@@ -1,4 +1,13 @@
-import { Body, Controller, Post, Put, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  HttpException,
+  HttpStatus,
+  Post,
+  Put,
+  UseGuards,
+} from '@nestjs/common';
 import { hash } from 'bcrypt';
 import { ChangePasswordDto } from 'src/auth/dtos/change-pass.dto';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
@@ -19,6 +28,13 @@ export class UserController {
   @Put('update')
   async setupProfile(@Body() body: UpdateUserDto, @GetUser() user: UserDocument) {
     return await this.usersService.findOneRecordAndUpdate({ _id: user._id }, body);
+  }
+
+  @Get('find-one')
+  async findOne(@GetUser() user: UserDocument) {
+    const userFound = await this.usersService.findOneRecord({ _id: user._id });
+    if (!userFound) throw new HttpException('User not found', HttpStatus.BAD_REQUEST);
+    return userFound;
   }
 
   @Post('change-password')

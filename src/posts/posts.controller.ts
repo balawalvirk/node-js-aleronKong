@@ -12,10 +12,10 @@ import {
 } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { GetUser } from 'src/helpers/decorators/user.decorator';
+import { PostStatus, PostType } from 'src/types';
 import { UserDocument } from 'src/users/users.schema';
 import { UsersService } from 'src/users/users.service';
 import { CreateCommentDto } from './dtos/create-comment';
-import { CreateFundraiserDto } from './dtos/create-fundraiser.dto';
 import { Posts } from './posts.schema';
 import { PostsService } from './posts.service';
 
@@ -82,7 +82,4 @@ export class PostsController {
     if (!updatedPost) throw new HttpException('Post not found', HttpStatus.BAD_REQUEST);
     return { message: 'Report submitted successfully.' };
   }
-
-  @Post('fundraiser/create')
-  async createFundraiser(createFundraiserDto: CreateFundraiserDto) {}
 }
