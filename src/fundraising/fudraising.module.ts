@@ -1,10 +1,11 @@
 import { Module } from '@nestjs/common';
-import { FudraisingService } from './fudraising.service';
 import { FudraisingController } from './fudraising.controller';
 import { PostsModule } from 'src/posts/posts.module';
 import { MongooseModule } from '@nestjs/mongoose';
 import { FundraisingCategory, FundraisingCategorySchema } from './category.schema';
 import { FundraisingSubcategory, FundraisingSubcategorySchema } from './subCategory.schema';
+import { FudraisingCategoryService } from './category.service';
+import { FudraisingSubCategoryService } from './subcategory.service';
 
 @Module({
   imports: [
@@ -17,6 +18,6 @@ import { FundraisingSubcategory, FundraisingSubcategorySchema } from './subCateg
     ]),
   ],
   controllers: [FudraisingController],
-  providers: [FudraisingService],
+  providers: [FudraisingCategoryService, FudraisingSubCategoryService],
 })
 export class FudraisingModule {}

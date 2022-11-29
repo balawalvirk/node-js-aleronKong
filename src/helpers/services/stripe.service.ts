@@ -152,4 +152,42 @@ export class StripeService {
   async createTransfer(params: Stripe.TransferCreateParams, options?: Stripe.RequestOptions) {
     return await this.stripe.transfers.create(params, options);
   }
+
+  async createBankAccount(
+    id: string,
+    params: Stripe.ExternalAccountCreateParams,
+    options?: Stripe.RequestOptions
+  ) {
+    return await this.stripe.accounts.createExternalAccount(id, params, options);
+  }
+
+  async deleteBankAccount(
+    accountId: string,
+    id: string,
+    params?: Stripe.ExternalAccountDeleteParams,
+    options?: Stripe.RequestOptions
+  ) {
+    return await this.stripe.accounts.deleteExternalAccount(accountId, id, params, options);
+  }
+
+  async findAllBankAccounts(
+    id: string,
+    params?: Stripe.ExternalAccountListParams,
+    options?: Stripe.RequestOptions
+  ) {
+    return await this.stripe.accounts.listExternalAccounts(id, params, options);
+  }
+
+  async updateBankAccount(
+    accountId: string,
+    id: string,
+    params?: Stripe.ExternalAccountUpdateParams,
+    options?: Stripe.RequestOptions
+  ) {
+    return await this.stripe.accounts.updateExternalAccount(accountId, id, params, options);
+  }
+
+  async createBankToken(params?: Stripe.TokenCreateParams, options?: Stripe.RequestOptions) {
+    return await this.stripe.tokens.create(params, options);
+  }
 }

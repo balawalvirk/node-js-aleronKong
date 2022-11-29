@@ -1,7 +1,8 @@
 import { Strategy } from 'passport-local';
 import { PassportStrategy } from '@nestjs/passport';
-import { Injectable, UnauthorizedException } from '@nestjs/common';
+import { HttpException, HttpStatus, Injectable, UnauthorizedException } from '@nestjs/common';
 import { AuthService } from './auth.service';
+import { UserStatus } from 'src/types';
 
 @Injectable()
 export class LocalStrategy extends PassportStrategy(Strategy) {
@@ -14,6 +15,13 @@ export class LocalStrategy extends PassportStrategy(Strategy) {
     if (!user) {
       throw new UnauthorizedException('Invalid email/password.');
     }
+    // check if user is blocked or not.
+    if (user.status === UserStatus.BLOCKED)
+      throw new HttpException(
+        'You are blocked kindly contact with administration support.',
+        HttpStatus.FORBIDDEN
+      );
+
     return user;
   }
 }
