@@ -46,7 +46,7 @@ export class ProductController {
     return await this.productService.createRecord({ ...body, creator: user._id });
   }
 
-  @Delete('/:id')
+  @Delete('/:id/delete')
   async remove(@Param('id', ParseObjectId) id: string) {
     const product: ProductDocument = await this.productService.deleteSingleRecord({ _id: id });
     await this.collectionService.updateManyRecords(
@@ -56,7 +56,7 @@ export class ProductController {
     return product;
   }
 
-  @Put('/:id')
+  @Put('/:id/update')
   async update(@Param('id') id: string, @Body() updateProductDto: UpdateProductDto) {
     return await this.productService.findOneRecordAndUpdate({ _id: id }, updateProductDto);
   }

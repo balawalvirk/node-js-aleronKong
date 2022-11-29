@@ -10,7 +10,7 @@ export class PostsService extends BaseService {
     super(postModel);
   }
 
-  async findAllPosts(query: any): Promise<Posts[]> {
+  async findAllPosts(query: any) {
     return await this.postModel.find(query).populate([
       {
         path: 'comments',

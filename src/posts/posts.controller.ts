@@ -11,26 +11,35 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
+import { RolesGuard } from 'src/auth/role.guard';
+import { ParseObjectId, Roles } from 'src/helpers';
 import { GetUser } from 'src/helpers/decorators/user.decorator';
-import { PostStatus, PostType } from 'src/types';
+import { UserRole } from 'src/types';
 import { UserDocument } from 'src/users/users.schema';
 import { UsersService } from 'src/users/users.service';
 import { CreateCommentDto } from './dtos/create-comment';
-import { Posts } from './posts.schema';
+import { PostDocument, Posts } from './posts.schema';
 import { PostsService } from './posts.service';
 
 @Controller('post')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class PostsController {
   constructor(private postsService: PostsService, private usersService: UsersService) {}
 
   //find all post that are on feeds
   @Get('find-all')
   async findAll(@GetUser() user: UserDocument, @Query('privacy') privacy: string) {
-    return await this.postsService.findAllPosts({
-      privacy,
-      blockers: { $nin: [user._id] },
-    });
+    let posts: PostDocument[];
+    // check if role is user
+    if (user.role.includes(UserRole.ADMIN)) {
+      posts = await this.postsService.findAllRecords();
+    } else {
+      posts = await this.postsService.findAllPosts({
+        privacy,
+        blockers: { $nin: [user._id] },
+      });
+    }
+    return posts;
   }
 
   @Get('find-all/mine')
@@ -59,14 +68,20 @@ export class PostsController {
     });
   }
 
-  @Put('block/:postId')
-  async blockPost(@Param('postId') postId: string, @GetUser() user: UserDocument) {
-    return await this.postsService.findOneRecordAndUpdate(
-      { _id: postId },
-      {
-        $push: { blockers: user._id },
-      }
-    );
+  @Put('block/:id')
+  async blockPost(@Param('id', ParseObjectId) id: string, @GetUser() user: UserDocument) {
+    // check if role is user
+    if (user.role.includes(UserRole.ADMIN)) {
+      await this.postsService.findOneRecordAndUpdate({ _id: id }, { isBlocked: true });
+      return { message: 'Post blocked successfully.' };
+    } else {
+      return await this.postsService.findOneRecordAndUpdate(
+        { _id: id },
+        {
+          $push: { blockers: user._id },
+        }
+      );
+    }
   }
 
   @Put('report/:id')
