@@ -1,4 +1,4 @@
-import { FilterQuery, Model, UpdateQuery } from 'mongoose';
+import { FilterQuery, Model, QueryOptions, UpdateQuery } from 'mongoose';
 
 export class BaseService {
   constructor(private model: Model<any>) {}
@@ -32,7 +32,7 @@ export class BaseService {
    * @param condition Paginated
    * @returns Paginations
    */
-  paginate = (condition?: FilterQuery<any>, paginate?: {}) =>
+  paginate = (condition?: FilterQuery<any>, paginate?:QueryOptions<any>) =>
     this.model.find(condition, {}, paginate);
 
   /**

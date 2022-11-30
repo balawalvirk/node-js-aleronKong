@@ -55,6 +55,14 @@ export class GroupController {
     return post;
   }
 
+  @Get('feed')
+  async feed(@GetUser() user: UserDocument) {
+    return await this.groupService.feed({
+      'members.member': user._id,
+      blockers: { $nin: [user._id] },
+    });
+  }
+
   @Get('find-one/:id')
   async findOne(@Param('id') id: string) {
     return await this.groupService.findOne({ _id: id });

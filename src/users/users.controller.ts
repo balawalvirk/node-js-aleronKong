@@ -13,8 +13,10 @@ import {
 import { hash } from 'bcrypt';
 import { ChangePasswordDto } from 'src/auth/dtos/change-pass.dto';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
+import { RolesGuard } from 'src/auth/role.guard';
 import { ParseObjectId, Roles, StripeService } from 'src/helpers';
 import { GetUser } from 'src/helpers/decorators/user.decorator';
+import { PostsService } from 'src/posts/posts.service';
 import { UserRole, UserStatus } from 'src/types';
 import { UserDocument } from 'src/users/users.schema';
 import { CreateBankAccountDto } from './dtos/create-bank-account.dto';
@@ -22,11 +24,12 @@ import { UpdateUserDto } from './dtos/update-user';
 import { UsersService } from './users.service';
 
 @Controller('user')
-@UseGuards(JwtAuthGuard)
+@UseGuards(JwtAuthGuard, RolesGuard)
 export class UserController {
   constructor(
     private readonly usersService: UsersService,
-    private readonly stripeService: StripeService
+    private readonly stripeService: StripeService,
+    private readonly postService: PostsService
   ) {}
 
   @Put('update')
@@ -34,9 +37,11 @@ export class UserController {
     return await this.usersService.findOneRecordAndUpdate({ _id: user._id }, body);
   }
 
-  @Get('find-one')
-  async findOne(@GetUser() user: UserDocument) {
-    const userFound = await this.usersService.findOneRecord({ _id: user._id });
+  // find a specific user details by its id
+  @Roles(UserRole.ADMIN)
+  @Get('find-one/:id')
+  async findOne(@Param('id', ParseObjectId) id: string) {
+    const userFound = await this.usersService.findOneRecord({ _id: id });
     if (!userFound) throw new HttpException('User not found', HttpStatus.BAD_REQUEST);
     return userFound;
   }
@@ -126,5 +131,11 @@ export class UserController {
       { _id: user._id },
       { isGuildMember: true }
     );
+  }
+
+  @Roles(UserRole.ADMIN)
+  @Get(':id/post/find-all')
+  async findAllPosts(@Param('id', ParseObjectId) id: string) {
+    return await this.postService.findAllRecords({ creator: id });
   }
 }

@@ -45,4 +45,25 @@ export class GroupService extends BaseService {
       .populate({ path: 'requests', select: 'firstName lastName avatar' })
       .select('-_id requests');
   }
+
+  async feed(query: FilterQuery<any>) {
+    return await this.groupModel
+      .find(query)
+      .select('posts  -_id')
+      .populate({
+        path: 'posts',
+        populate: [
+          {
+            path: 'comments',
+            select: 'firstName lastName avatar',
+            populate: { path: 'creator', select: 'firstName lastName avatar' },
+          },
+
+          {
+            path: 'likes',
+            select: 'firstName lastName avatar',
+          },
+        ],
+      });
+  }
 }

@@ -12,36 +12,38 @@ import {
 } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/role.guard';
-import { ParseObjectId, Roles } from 'src/helpers';
+import { makeQuery, ParseObjectId, Roles } from 'src/helpers';
 import { GetUser } from 'src/helpers/decorators/user.decorator';
 import { UserRole } from 'src/types';
 import { UserDocument } from 'src/users/users.schema';
-import { UsersService } from 'src/users/users.service';
 import { CreateCommentDto } from './dtos/create-comment';
-import { PostDocument, Posts } from './posts.schema';
+import { Posts } from './posts.schema';
 import { PostsService } from './posts.service';
 
 @Controller('post')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class PostsController {
-  constructor(private postsService: PostsService, private usersService: UsersService) {}
+  constructor(private postsService: PostsService) {}
 
-  //find all post that are on feeds
+  @Roles(UserRole.ADMIN)
   @Get('find-all')
-  async findAll(@GetUser() user: UserDocument, @Query('privacy') privacy: string) {
-    let posts: PostDocument[];
-    // check if role is user
-    if (user.role.includes(UserRole.ADMIN)) {
-      posts = await this.postsService.findAllRecords();
-    } else {
-      posts = await this.postsService.findAllPosts({
-        privacy,
-        blockers: { $nin: [user._id] },
-      });
-    }
-    return posts;
+  async findAll(@Query('page') page: string, @Query('limit') limit: string) {
+    const $q = makeQuery({ page, limit });
+    const options = { limit: $q.limit, skip: $q.skip, sort: $q.sort };
+    const posts = await this.postsService.paginate({}, options);
+    const total = await this.postsService.countRecords({});
+    const paginated = {
+      total: total,
+      pages: Math.floor(total / $q.limit),
+      page: $q.page,
+      limit: $q.limit,
+      data: posts,
+    };
+
+    return paginated;
   }
 
+  //find posts of  user that is logged in
   @Get('find-all/mine')
   async findMine(@GetUser() user: UserDocument) {
     return await this.postsService.findAllPosts({
