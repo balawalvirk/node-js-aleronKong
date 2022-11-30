@@ -1,5 +1,5 @@
 import { IsEnum, IsString } from 'class-validator';
-import { ProductState } from 'src/types';
+import { ProductType } from 'src/types';
 
 export class CreateProductCategoryDto {
   @IsString()
@@ -8,6 +8,6 @@ export class CreateProductCategoryDto {
   @IsString()
   value: string;
 
-  @IsEnum(ProductState)
-  state: string;
+  @IsEnum(ProductType)
+  type: string;
 }

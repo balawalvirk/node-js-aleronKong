@@ -32,7 +32,7 @@ export class ChatController {
   }
 
   @Get('/recent-chat')
-  async recentChat(@GetUser() user: UserDocument): Promise<LeanDocument<UserDocument>[]> {
+  async recentChat(@GetUser() user: UserDocument) {
     return await this.chatService.findAllRecords({ members: { $in: [user._id] } }).populate({
       path: 'members',
       match: { _id: { $ne: user._id } },

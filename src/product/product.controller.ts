@@ -69,13 +69,13 @@ export class ProductController {
   @Get('find-all')
   async findAll(
     @GetUser() user: UserDocument,
-    @Query('type', new ParseEnumPipe(['all', 'active', 'draft', 'archived'])) type: string
+    @Query('status', new ParseEnumPipe(['all', 'active', 'draft', 'archived'])) status: string
   ) {
     let products = [];
-    if (type === 'all') {
-      products = await this.productService.findAllRecords({ type, creator: user._id });
+    if (status === 'all') {
+      products = await this.productService.findAllRecords({ status, creator: user._id });
     }
-    products = await this.productService.findAllRecords({ type, creator: user._id });
+    products = await this.productService.findAllRecords({ status, creator: user._id });
     return products;
   }
 

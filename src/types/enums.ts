@@ -22,13 +22,13 @@ export enum GroupPrivacy {
   PRIVATE = 'private',
 }
 
-export enum ProductTypes {
+export enum ProductStatus {
   ACTIVE = 'active',
   ARCHIEVED = 'archieved',
   DRAFT = 'draft',
 }
 
-export enum ProductState {
+export enum ProductType {
   PHYSICAL = 'physical',
   DIGITAL = 'digital',
 }

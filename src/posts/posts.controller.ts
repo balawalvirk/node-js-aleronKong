@@ -49,12 +49,18 @@ export class PostsController {
     });
   }
 
-  @Post('like/:postId')
-  async addLike(@Param('postId') postId: string, @GetUser() user: UserDocument): Promise<Posts> {
-    await this.usersService.findOneRecord({ _id: user._id });
-    return await this.postsService.updatePost(postId, {
+  @Post('like/:id')
+  async addLike(@Param('id', ParseObjectId) id: string, @GetUser() user: UserDocument) {
+    const post = await this.postsService.findOneRecord({ _id: id, likes: { $in: [user._id] } });
+    if (post) throw new HttpException('You already liked this post.', HttpStatus.BAD_REQUEST);
+    return await this.postsService.updatePost(id, {
       $push: { likes: user._id },
     });
+  }
+
+  @Put('un-like/:id')
+  async unLike(@Param('id', ParseObjectId) id: string, @GetUser() user: UserDocument) {
+    return await this.postsService.updatePost(id, { $pull: { likes: user._id } });
   }
 
   @Post('comment/:postId')
