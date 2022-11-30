@@ -10,12 +10,14 @@ export * from './interceptors/transform.interceptor';
 export * from './decorators/role.decorator';
 
 export const makeQuery = (q: IQuery) => {
+  let page = parseInt(q.page) || 1;
   const limit = parseInt(q.limit) || 10;
-  const page = parseInt(q.page) || 1;
+  if (page === 0) page = 1;
   return {
     limit: limit,
     skip: (page - 1) * limit,
     page: page,
     search: q.search || '',
+    sort: { createdAt: -1 },
   };
 };

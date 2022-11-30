@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { FilterQuery, Model, QueryOptions } from 'mongoose';
 import { BaseService } from 'src/helpers/services/base.service';
 import { PostDocument, Posts } from './posts.schema';
 
@@ -10,8 +10,8 @@ export class PostsService extends BaseService {
     super(postModel);
   }
 
-  async findAllPosts(query: any) {
-    return await this.postModel.find(query).populate([
+  async findAllPosts(query: FilterQuery<any>, options?: QueryOptions<any>) {
+    return await this.postModel.find(query, {}, options).populate([
       {
         path: 'comments',
         select: 'content',
