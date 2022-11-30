@@ -1,5 +1,13 @@
-import { IsBoolean, IsEnum, IsMongoId, IsNumber, IsOptional, IsString } from 'class-validator';
-import { ProductState, ProductTypes } from 'src/types';
+import {
+  IsBoolean,
+  IsEnum,
+  IsMongoId,
+  IsNotEmpty,
+  IsNumber,
+  IsOptional,
+  IsString,
+} from 'class-validator';
+import { ProductStatus, ProductType } from 'src/types';
 
 export class CreateProductDto {
   @IsString()
@@ -11,18 +19,19 @@ export class CreateProductDto {
   @IsString({ each: true })
   media: string[];
 
-  @IsEnum(ProductState)
-  state: string;
+  @IsEnum(ProductType)
+  type: string;
 
-  @IsOptional()
+  @IsNotEmpty()
   @IsString()
+  @IsOptional()
   file?: string;
 
   @IsNumber()
   price: number;
 
-  @IsEnum(ProductTypes)
-  type: string;
+  @IsEnum(ProductStatus)
+  status: string;
 
   @IsNumber()
   quantity: number;

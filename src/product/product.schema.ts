@@ -1,6 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
-import { ProductState, ProductTypes } from 'src/types';
+import { ProductStatus, ProductType } from 'src/types';
 import { User } from 'src/users/users.schema';
 import { ProductCategory } from './category.schema';
 
@@ -16,13 +16,13 @@ export class Product {
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'ProductCategory' })
   category: ProductCategory;
 
-  @Prop({ enum: ProductState, required: true })
-  state: string;
+  @Prop({ enum: ProductType, required: true })
+  type: string;
 
   @Prop({ required: true, type: [String] })
   media: string[];
 
-  @Prop({ required: true })
+  @Prop()
   file: string;
 
   @Prop({ required: true })
@@ -31,8 +31,8 @@ export class Product {
   @Prop({ required: true })
   quantity: number;
 
-  @Prop({ enum: ProductTypes, required: true })
-  type: string;
+  @Prop({ enum: ProductStatus, required: true })
+  status: string;
 
   @Prop({ required: true })
   syncWithAmazon: boolean;
