@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Body, Param, Delete, UseGuards } from '@nestjs/common';
 import { CreateFudraisingDto } from './dtos/create-fudraising.dto';
 import { PostsService } from 'src/posts/posts.service';
-import { PostStatus, PostType, UserRole } from 'src/types';
+import { PostPrivacy, PostStatus, PostType, UserRole } from 'src/types';
 import { GetUser, ParseObjectId, Roles } from 'src/helpers';
 import { UserDocument } from 'src/users/users.schema';
 import { CreateFudraisingCategoryDto } from './dtos/create-category';
@@ -27,6 +27,7 @@ export class FudraisingController {
       creator: user._id,
       type: PostType.FUNDRAISING,
       status: PostStatus.INACTIVE,
+      privacy: PostPrivacy.PUBLIC,
     });
   }
 

@@ -21,7 +21,7 @@ export class PostsService extends BaseService {
         path: 'likes',
         select: 'firstName lastName avatar',
       },
-      { path: 'creator', select: 'firstName lastName avatar' },
+      { path: 'creator', select: 'firstName lastName avatar userName isGuildMember' },
       { path: 'group', select: 'name' },
     ]);
   }

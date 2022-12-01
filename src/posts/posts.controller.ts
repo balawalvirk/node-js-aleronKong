@@ -14,7 +14,7 @@ import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/role.guard';
 import { makeQuery, ParseObjectId, Roles } from 'src/helpers';
 import { GetUser } from 'src/helpers/decorators/user.decorator';
-import { UserRole } from 'src/types';
+import { PostPrivacy, UserRole } from 'src/types';
 import { UserDocument } from 'src/users/users.schema';
 import { CreateCommentDto } from './dtos/create-comment';
 import { Posts } from './posts.schema';
@@ -43,12 +43,30 @@ export class PostsController {
     return paginated;
   }
 
-  //find posts of  user that is logged in
+  //find posts of user that is logged in
   @Get('find-all/mine')
   async findMine(@GetUser() user: UserDocument) {
     return await this.postsService.findAllPosts({
       creator: user._id,
     });
+  }
+
+  @Get('home')
+  async findFeedPosts(@Query('page') page: string, @Query('limit') limit: string) {
+    const $q = makeQuery({ page, limit });
+    const condition = { privacy: PostPrivacy.PUBLIC };
+    const options = { limit: $q.limit, skip: $q.skip, sort: $q.sort };
+    const total = await this.postsService.countRecords({});
+    const posts = await this.postsService.findAllPosts(condition, { options });
+    const paginated = {
+      total,
+      pages: Math.floor(total / $q.limit),
+      page: $q.page,
+      limit: $q.limit,
+      data: posts,
+    };
+
+    return paginated;
   }
 
   @Post('like/:id')

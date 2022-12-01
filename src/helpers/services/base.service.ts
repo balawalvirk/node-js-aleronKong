@@ -19,20 +19,20 @@ export class BaseService {
    * Creates a find query: gets a list of documents that match filter.
    * @param filter
    */
-  findAllRecords = (filter?: FilterQuery<any>) => this.model.find(filter);
+  findAllRecords = (filter?: FilterQuery<any>) => this.model.find(filter).sort({ createdAt: -1 });
 
   /**
    * Finds one document.
    *  @param filter
    */
-  findOneRecord = (filter?: FilterQuery<any>) => this.model.findOne(filter).lean();
+  findOneRecord = (filter?: FilterQuery<any>) => this.model.findOne(filter);
 
   /**
    * Paginated Data
    * @param condition Paginated
    * @returns Paginations
    */
-  paginate = (condition?: FilterQuery<any>, paginate?:QueryOptions<any>) =>
+  paginate = (condition?: FilterQuery<any>, paginate?: QueryOptions<any>) =>
     this.model.find(condition, {}, paginate);
 
   /**
@@ -45,7 +45,7 @@ export class BaseService {
    * Finds a single document by its _id field.
    * @param id string
    */
-  findRecordById = (id: string) => this.model.findById(id).lean();
+  findRecordById = (id: string) => this.model.findById(id);
 
   /**
    * Finds a single document by its _id field and delete it.

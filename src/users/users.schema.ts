@@ -49,6 +49,9 @@ export class User {
 
   @Prop()
   fcmToken: string;
+
+  @Prop({ default: false })
+  isGuildMember: boolean;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
