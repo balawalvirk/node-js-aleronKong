@@ -55,6 +55,7 @@ export class GroupController {
     return post;
   }
 
+  // this api is not of feed page
   @Get('feed')
   async feed(@GetUser() user: UserDocument) {
     return await this.groupService.feed({
