@@ -25,7 +25,7 @@ export class BaseService {
    * Finds one document.
    *  @param filter
    */
-  findOneRecord = (filter?: FilterQuery<any>) => this.model.findOne(filter);
+  findOneRecord = (filter?: FilterQuery<any>) => this.model.findOne(filter).lean();
 
   /**
    * Paginated Data
