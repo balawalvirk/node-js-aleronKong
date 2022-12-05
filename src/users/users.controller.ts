@@ -28,8 +28,7 @@ import { UsersService } from './users.service';
 export class UserController {
   constructor(
     private readonly usersService: UsersService,
-    private readonly stripeService: StripeService,
-    private readonly postService: PostsService
+    private readonly stripeService: StripeService
   ) {}
 
   @Put('update')
@@ -41,9 +40,7 @@ export class UserController {
   @Roles(UserRole.ADMIN)
   @Get('find-one/:id')
   async findOne(@Param('id', ParseObjectId) id: string) {
-    const userFound = await this.usersService.findOneRecord({ _id: id });
-    if (!userFound) throw new HttpException('User not found', HttpStatus.BAD_REQUEST);
-    return userFound;
+    return await this.usersService.findOneRecord({ _id: id });
   }
 
   @Roles(UserRole.ADMIN)
@@ -54,14 +51,21 @@ export class UserController {
 
   @Put(':id/block')
   async blockUser(@Param('id', ParseObjectId) id: string, @GetUser() user: UserDocument) {
+    // if admin is doing this request then permanently block this user.
     if (user.role.includes(UserRole.ADMIN)) {
-      const updatedUser = await this.usersService.findOneRecordAndUpdate(
-        { _id: id },
-        { status: UserStatus.BLOCKED }
+      await this.usersService.findOneRecordAndUpdate({ _id: id }, { status: UserStatus.BLOCKED });
+    } else {
+      const userFound = await this.usersService.findOneRecord({
+        _id: user._id,
+        blockedUsers: { $in: [id] },
+      });
+      if (userFound)
+        throw new HttpException('You already blocked this user.', HttpStatus.BAD_REQUEST);
+      await this.usersService.findOneRecordAndUpdate(
+        { _id: user._id },
+        { $push: { blockedUsers: id } }
       );
-      if (!updatedUser) throw new HttpException('User does not exists', HttpStatus.BAD_REQUEST);
     }
-
     return { message: 'User blocked successfully.' };
   }
 

@@ -65,8 +65,8 @@ export class PostsController {
     const $q = makeQuery({ page, limit });
     const condition = {
       privacy: PostPrivacy.PUBLIC,
-      blockers: { $nin: [user._id] },
-      'reports.reporter': { $ne: user._id },
+      creator: { $nin: user.blockedUsers },
+      isBlocked: false,
     };
     const options = { limit: $q.limit, skip: $q.skip };
     const total = await this.postsService.countRecords({});
@@ -78,7 +78,6 @@ export class PostsController {
       limit: $q.limit,
       data: posts,
     };
-
     return paginated;
   }
 
@@ -106,79 +105,4 @@ export class PostsController {
       $push: { comments: { content: body.content, creator: user._id } },
     });
   }
-
-  //block a specifc post
-  @Put('block/:id')
-  async blockPost(@Param('id', ParseObjectId) id: string, @GetUser() user: UserDocument) {
-    // check if role is user
-    if (user.role.includes(UserRole.ADMIN)) {
-      await this.postsService.findOneRecordAndUpdate({ _id: id }, { isBlocked: true });
-      return { message: 'Post blocked successfully.' };
-    } else {
-      const post = await this.postsService.findOneRecord({
-        _id: id,
-        blockers: { $in: [user._id] },
-      });
-      if (post) throw new HttpException('You already blocked this post', HttpStatus.BAD_REQUEST);
-      const updatedpost = await this.postsService.findOneRecordAndUpdate(
-        { _id: id },
-        {
-          $push: { blockers: user._id },
-        }
-      );
-      return { message: 'Post blocked successfully.', data: updatedpost };
-    }
-  }
-
-  //report a specific post
-  @Put('report/:id')
-  async reportPost(
-    @Param('id') id: string,
-    @GetUser() user: UserDocument,
-    @Body('reason') reason: string
-  ) {
-    const post = await this.postsService.findOneRecord({ _id: id, 'reports.reporter': user._id });
-    if (post) throw new HttpException('You already reported this post', HttpStatus.BAD_REQUEST);
-    const updatedPost = await this.postsService.findOneRecordAndUpdate(
-      { _id: id },
-      { $push: { reports: { reporter: user._id, reason } } }
-    );
-    if (!updatedPost) throw new HttpException('Post not found', HttpStatus.BAD_REQUEST);
-    return { message: 'Report submitted successfully.' };
-  }
-
-  // block the creator of post
-  // @Put('user/:id/block')
-  // async blockUser(@Param('id', ParseObjectId) id: string, @GetUser() user: UserDocument) {
-  //     const post = await this.postsService.findOneRecord({
-  //       _id: id,
-  //       blockers: { $in: [user._id] },
-  //     });
-  //     if (post) throw new HttpException('You already blocked this post', HttpStatus.BAD_REQUEST);
-  //     const updatedpost = await this.postsService.findOneRecordAndUpdate(
-  //       { _id: id },
-  //       {
-  //         $push: { blockers: user._id },
-  //       }
-  //     );
-  //     return { message: 'Post blocked successfully.', data: updatedpost };
-  //   }
-  // }
-
-  //report the creator of post
-  // @Put('report/:id')
-  // async reportPost(
-  //   @Param('id') id: string,
-  //   @GetUser() user: UserDocument,
-  //   @Body('reason') reason: string
-  // ) {
-  //   const post = await this.postsService.findOneRecord({ _id: id, 'reports.reporter': user._id });
-  //   if (post) throw new HttpException('You already reported this post', HttpStatus.BAD_REQUEST);
-  //   const updatedPost = await this.postsService.findOneRecordAndUpdate(
-  //     { _id: id },
-  //     { $push: { reports: { reporter: user._id, reason } } }
-  //   );
-  //   if (!updatedPost) throw new HttpException('Post not found', HttpStatus.BAD_REQUEST);
-  //   return { message: 'Report submitted successfully.' };
-  // }
 }

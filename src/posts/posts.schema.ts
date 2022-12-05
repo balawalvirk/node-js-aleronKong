@@ -2,7 +2,6 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
 import { Fundraising } from 'src/fundraising/fundraising.schema';
 import { Group } from 'src/group/group.schema';
-import { Report, ReportSchema } from 'src/group/report.schema';
 import { PostPrivacy, PostStatus, PostType } from 'src/types';
 import { User } from 'src/users/users.schema';
 import { CommentSchema, Comment } from './comment.schema';
@@ -36,12 +35,6 @@ export class Posts {
 
   @Prop({ enum: PostStatus, default: PostStatus.ACTIVE })
   status: string;
-
-  @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }] })
-  blockers: User[];
-
-  @Prop({ type: [ReportSchema] })
-  reports: Report[];
 
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Group' })
   group: Group;
