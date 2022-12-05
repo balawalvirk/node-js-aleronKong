@@ -52,14 +52,16 @@ export class UserController {
     return await this.usersService.findAllRecords();
   }
 
-  @Roles(UserRole.ADMIN)
   @Put(':id/block')
-  async blockUser(@Param('id', ParseObjectId) id: string) {
-    const user = await this.usersService.findOneRecordAndUpdate(
-      { _id: id },
-      { status: UserStatus.BLOCKED }
-    );
-    if (!user) throw new HttpException('User does not exists', HttpStatus.BAD_REQUEST);
+  async blockUser(@Param('id', ParseObjectId) id: string, @GetUser() user: UserDocument) {
+    if (user.role.includes(UserRole.ADMIN)) {
+      const updatedUser = await this.usersService.findOneRecordAndUpdate(
+        { _id: id },
+        { status: UserStatus.BLOCKED }
+      );
+      if (!updatedUser) throw new HttpException('User does not exists', HttpStatus.BAD_REQUEST);
+    }
+
     return { message: 'User blocked successfully.' };
   }
 
@@ -133,9 +135,11 @@ export class UserController {
     );
   }
 
-  @Roles(UserRole.ADMIN)
-  @Get(':id/post/find-all')
-  async findAllPosts(@Param('id', ParseObjectId) id: string) {
-    return await this.postService.findAllRecords({ creator: id });
+  @Put('friend/:id/create')
+  async addFriend(@Param('id', ParseObjectId) id: string, @GetUser() user: UserDocument) {
+    return await this.usersService.findOneRecordAndUpdate(
+      { _id: user._id },
+      { $push: { friends: id } }
+    );
   }
 }

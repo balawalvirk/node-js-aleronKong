@@ -33,7 +33,7 @@ export class BaseService {
    * @returns Paginations
    */
   paginate = (condition?: FilterQuery<any>, paginate?: QueryOptions<any>) =>
-    this.model.find(condition, {}, paginate);
+    this.model.find(condition, {}, paginate).sort({ createdAt: -1 });
 
   /**
    * Creates a countDocuments query: counts the number of documents that match filter.

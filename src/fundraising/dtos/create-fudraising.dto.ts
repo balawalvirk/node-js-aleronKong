@@ -3,42 +3,44 @@ import { IsDateString, IsNumber, IsOptional, IsString } from 'class-validator';
 export class CreateFudraisingDto {
   @IsOptional()
   @IsString()
-  productImage: string;
+  image: string;
 
   @IsOptional()
   @IsString()
-  productvideo: string;
+  video: string;
 
   @IsString()
-  projectTitle: string;
+  title: string;
 
   @IsString()
-  projectSubtitle: string;
+  subtitle: string;
 
   @IsString()
-  projectDescription: string;
+  description: string;
 
   @IsString()
-  projectCategory: string;
+  category: string;
 
   @IsString()
-  projectSubCategory: string;
+  subCategory: string;
 
   @IsString()
-  projectLocation: string;
+  location: string;
 
   @IsDateString()
-  projectLaunchDate: Date;
+  launchDate: Date;
 
   @IsNumber()
-  projectCompaignDuration: number;
+  compaignDuration: number;
 
   @IsNumber()
-  projectFundingGoal: number;
+  fundingGoal: number;
 
+  @IsOptional()
   @IsString()
-  projectBank: string;
+  bank: string;
 
+  @IsOptional()
   @IsString()
-  projectBankAccount: string;
+  bankAccount: string;
 }

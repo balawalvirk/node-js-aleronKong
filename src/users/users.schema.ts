@@ -1,6 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
-import { Document } from 'mongoose';
+import mongoose, { Document } from 'mongoose';
 import { AuthTypes, UserRole, UserStatus } from 'src/types';
+import { Report, ReportSchema } from './report.schema';
 
 export type UserDocument = User & Document;
 
@@ -52,6 +53,15 @@ export class User {
 
   @Prop({ default: false })
   isGuildMember: boolean;
+
+  @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }] })
+  friends: User[];
+
+  @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }] })
+  blockedUsers: User[];
+
+  @Prop({ type: [ReportSchema] })
+  reports: Report[];
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

@@ -11,7 +11,26 @@ export class PostsService extends BaseService {
   }
 
   async findAllPosts(query: FilterQuery<any>, options?: QueryOptions<any>) {
-    return await this.postModel.find(query, {}, options).populate([
+    return await this.postModel
+      .find(query, {}, options)
+      .populate([
+        {
+          path: 'comments',
+          select: 'content',
+          populate: { path: 'creator', select: 'firstName lastName avatar' },
+        },
+        {
+          path: 'likes',
+          select: 'firstName lastName avatar',
+        },
+        { path: 'creator', select: 'firstName lastName avatar userName isGuildMember' },
+        { path: 'group', select: 'name' },
+      ])
+      .sort({ createdAt: -1 });
+  }
+
+  async updatePost(postId: string, query: any) {
+    return await this.postModel.findOneAndUpdate({ _id: postId }, query, { new: true }).populate([
       {
         path: 'comments',
         select: 'content',
@@ -26,19 +45,10 @@ export class PostsService extends BaseService {
     ]);
   }
 
-  async updatePost(postId: string, query: any) {
-    return await this.postModel.findOneAndUpdate({ _id: postId }, query, { new: true }).populate([
-      {
-        path: 'comments',
-        select: 'content',
-        populate: { path: 'creator', select: 'firstName lastName avatar' },
-      },
-      {
-        path: 'likes',
-        select: 'firstName lastName avatar',
-      },
-      { path: 'creator', select: 'firstName lastName avatar' },
-      { path: 'group', select: 'name' },
+  async createPost(query: FilterQuery<any>) {
+    return (await this.postModel.create(query)).populate([
+      { path: 'fundraising' },
+      { path: 'creator', select: 'firstName lastName avatar userName isGuildMember' },
     ]);
   }
 }

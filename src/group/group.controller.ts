@@ -42,7 +42,7 @@ export class GroupController {
 
   @Post('post/create')
   async createPost(@Body() createPostDto: CreatePostsDto, @GetUser() user: UserDocument) {
-    const post: PostDocument = await this.postService.createRecord({
+    const post: PostDocument = await this.postService.createPost({
       ...createPostDto,
       creator: user._id,
     });

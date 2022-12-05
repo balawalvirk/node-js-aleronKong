@@ -6,6 +6,8 @@ import { FundraisingCategory, FundraisingCategorySchema } from './category.schem
 import { FundraisingSubcategory, FundraisingSubcategorySchema } from './subCategory.schema';
 import { FudraisingCategoryService } from './category.service';
 import { FudraisingSubCategoryService } from './subcategory.service';
+import { Fundraising, FundraisingSchema } from './fundraising.schema';
+import { FudraisingService } from './fundraising.service';
 
 @Module({
   imports: [
@@ -16,8 +18,9 @@ import { FudraisingSubCategoryService } from './subcategory.service';
     MongooseModule.forFeature([
       { name: FundraisingSubcategory.name, schema: FundraisingSubcategorySchema },
     ]),
+    MongooseModule.forFeature([{ name: Fundraising.name, schema: FundraisingSchema }]),
   ],
   controllers: [FudraisingController],
-  providers: [FudraisingCategoryService, FudraisingSubCategoryService],
+  providers: [FudraisingCategoryService, FudraisingSubCategoryService, FudraisingService],
 })
 export class FudraisingModule {}
