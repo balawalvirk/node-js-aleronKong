@@ -18,6 +18,5 @@ export const makeQuery = (q: IQuery) => {
     skip: (page - 1) * limit,
     page: page,
     search: q.search || '',
-    sort: { createdAt: -1 },
   };
 };

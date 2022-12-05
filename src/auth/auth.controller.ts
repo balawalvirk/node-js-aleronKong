@@ -135,7 +135,10 @@ export class AuthController {
     if (!otpFound) throw new HttpException('Invalid Otp.', HttpStatus.BAD_REQUEST);
     const diff = otpFound.expireIn - new Date().getTime();
     if (diff < 0) throw new HttpException('Otp expired.', HttpStatus.BAD_REQUEST);
-    await this.userService.findOneRecordAndUpdate({ email: otpFound.email }, { password });
+    await this.userService.findOneRecordAndUpdate(
+      { email: otpFound.email },
+      { password: await hash(password, 10) }
+    );
     return { message: 'Password changed successfully.' };
   }
 }

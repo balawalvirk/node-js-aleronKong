@@ -10,25 +10,35 @@ import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/role.guard';
 import { FudraisingCategoryService } from './category.service';
 import { FudraisingSubCategoryService } from './subcategory.service';
+import { FudraisingService } from './fundraising.service';
+import { FundraisingDocument } from './fundraising.schema';
 
-@Controller('fudraising')
+@Controller('fundraising')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class FudraisingController {
   constructor(
     private readonly postService: PostsService,
     private readonly categoryService: FudraisingCategoryService,
-    private readonly subCategoryService: FudraisingSubCategoryService
+    private readonly subCategoryService: FudraisingSubCategoryService,
+    private readonly fundraisingService: FudraisingService
   ) {}
 
   @Post('create')
-  async createFundraiser(createFudraisingDto: CreateFudraisingDto, @GetUser() user: UserDocument) {
-    await this.postService.createRecord({
-      ...createFudraisingDto,
+  async createFundraiser(
+    @Body() createFudraisingDto: CreateFudraisingDto,
+    @GetUser() user: UserDocument
+  ) {
+    const fundraising: FundraisingDocument = await this.fundraisingService.createRecord(
+      createFudraisingDto
+    );
+    const post = await this.postService.createPost({
+      fundraising: fundraising._id,
       creator: user._id,
       type: PostType.FUNDRAISING,
       status: PostStatus.INACTIVE,
       privacy: PostPrivacy.PUBLIC,
     });
+    return post;
   }
 
   @Roles(UserRole.ADMIN)

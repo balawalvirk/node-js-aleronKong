@@ -1,7 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
-import { FundraisingCategory } from 'src/fundraising/category.schema';
-import { FundraisingSubcategory } from 'src/fundraising/subCategory.schema';
+import { Fundraising } from 'src/fundraising/fundraising.schema';
 import { Group } from 'src/group/group.schema';
 import { Report, ReportSchema } from 'src/group/report.schema';
 import { PostPrivacy, PostStatus, PostType } from 'src/types';
@@ -50,48 +49,8 @@ export class Posts {
   @Prop({ enum: PostType, default: PostType.POST })
   type: string;
 
-  // fundraising  schema
-  @Prop()
-  projectTitle: string;
-
-  @Prop()
-  projectSubtitle: string;
-
-  @Prop()
-  projectDescription: string;
-
-  @Prop()
-  projectVideo: string;
-
-  @Prop()
-  projectImage: string;
-
-  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'FundraisingCategory' })
-  projectCategory: FundraisingCategory;
-
-  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'FundraisingSubcategory' })
-  projectSubCategory: FundraisingSubcategory;
-
-  @Prop()
-  projectLocation: string;
-
-  @Prop()
-  projectLaunchDate: Date;
-
-  @Prop()
-  projectCompaignDuration: number;
-
-  @Prop()
-  projectFundingGoal: number;
-
-  @Prop()
-  projectBank: string;
-
-  @Prop()
-  projectBankAccount: string;
-
-  @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }] })
-  supporters: User[];
+  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Fundraising' })
+  fundraising: Fundraising;
 }
 
 export const PostSchema = SchemaFactory.createForClass(Posts);

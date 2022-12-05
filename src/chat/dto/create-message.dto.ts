@@ -1,12 +1,4 @@
-import { Type } from 'class-transformer';
-import {
-  IsArray,
-  IsMongoId,
-  IsNotEmpty,
-  IsOptional,
-  IsString,
-  ValidateNested,
-} from 'class-validator';
+import { IsMongoId, IsOptional, IsString } from 'class-validator';
 
 export class CreateMessageDto {
   @IsString()

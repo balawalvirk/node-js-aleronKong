@@ -1,14 +1,25 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
-import { LeanDocument } from 'mongoose';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpException,
+  HttpStatus,
+  Param,
+  Post,
+  Put,
+  UseGuards,
+} from '@nestjs/common';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
+import { ParseObjectId } from 'src/helpers';
 import { GetUser } from 'src/helpers/decorators/user.decorator';
 import { SocketGateway } from 'src/helpers/gateway/socket.gateway';
 import { UserDocument } from 'src/users/users.schema';
 import { ChatDocument } from './chat.schema';
 import { ChatService } from './chat.service';
 import { CreateMessageDto } from './dto/create-message.dto';
+import { MuteChatDto } from './dto/mute-chat.dto';
 import { MessageService } from './message.service';
-import { MessageDocument } from './messages.schema';
 
 @Controller('chat')
 @UseGuards(JwtAuthGuard)
@@ -20,10 +31,10 @@ export class ChatController {
   ) {}
 
   @Post('/create')
-  async createChat(
-    @Body('receiverId') receiverId: string,
-    @GetUser() user: UserDocument
-  ): Promise<ChatDocument> {
+  async createChat(@Body('receiverId') receiverId: string, @GetUser() user: UserDocument) {
+    const chat = await this.chatService.findAllRecords({ members: { $in: [receiverId] } });
+    if (chat)
+      throw new HttpException('You already have chat with this member.', HttpStatus.BAD_REQUEST);
     return (await this.chatService.createRecord({ members: [user._id, receiverId] })).populate({
       path: 'members',
       match: { _id: { $ne: user._id } },
@@ -66,40 +77,16 @@ export class ChatController {
     return await this.messageService.findAllRecords({ chat: chatId }).sort({ createdAt: -1 });
   }
 
-  // // create a new chat or get chat details
-  // @Get('/user/:receiverId')
-  // async create(
-  //   @Param('receiverId') receiverId: string,
-  //   @GetUser() user: UserDocument
-  // ): Promise<ChatDocument> {
-  //   const chatExists = await this.chatService.findOne({
-  //     $or: [{ sender: user._id }, { receiver: receiverId }],
-  //   });
+  @Delete('/delete/:id')
+  async delete(@Param('id', ParseObjectId) id: string) {
+    const chat: ChatDocument = await this.chatService.deleteSingleRecord({ _id: id });
+    await this.messageService.deleteManyRecord({ chat: chat._id });
+    return { message: 'Conversation deleted successfully.' };
+  }
 
-  //   if (!chatExists) {
-  //     return await this.chatService.save(user._id, receiverId);
-  //   }
-  //   return chatExists;
-  // }
-
-  // send message in a chat
-  // @Post('/:chatId/sendMessage')
-  // async sendMessage(
-  //   @Param('chatId') chatId: string,
-  //   @Body('message') message: string,
-  //   @GetUser() user: UserDocument
-  // ) {
-  //   const messageCreated = await this.messageService.create({
-  //     message,
-  //     sender: user._id,
-  //     chat: chatId,
-  //   });
-  //   await this.chatService.findAndUpdate({ _id: chatId }, { $push: { messages: messageCreated } });
-  //   this.socketService.triggerMessage(chatId, messageCreated);
-  // }
-
-  // @Get('find-all')
-  // async findAll(@GetUser() user: UserDocument) {
-  //   await this.chatService.findAllChat({ $or: [{ sender: user._id }, { receiver: user._id }] });
-  // }
+  @Put('mute')
+  async muteChat(muteChatDto: MuteChatDto) {
+    const { chat, ...rest } = muteChatDto;
+    return await this.chatService.findOneRecordAndUpdate({ _id: chat }, { ...rest });
+  }
 }

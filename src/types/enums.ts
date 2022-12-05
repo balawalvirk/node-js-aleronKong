@@ -59,3 +59,9 @@ export enum PostStatus {
   ACTIVE = 'active',
   INACTIVE = 'inActive',
 }
+
+export enum ChatMuteType {
+  WEEK = 'week',
+  DAY = 'day',
+  CUSTOM = 'custom',
+}
