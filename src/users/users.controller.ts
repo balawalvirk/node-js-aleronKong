@@ -37,7 +37,7 @@ export class UserController {
   }
 
   // find a specific user details by its id
-  @Roles(UserRole.ADMIN)
+  // @Roles(UserRole.ADMIN)
   @Get('find-one/:id')
   async findOne(@Param('id', ParseObjectId) id: string) {
     return await this.usersService.findOneRecord({ _id: id });
@@ -141,6 +141,8 @@ export class UserController {
 
   @Put('friend/:id/create')
   async addFriend(@Param('id', ParseObjectId) id: string, @GetUser() user: UserDocument) {
+    const friend = await this.usersService.findOneRecord({ _id: user._id, friends: { $in: [id] } });
+    if (friend) throw new HttpException('User is already your friend.', HttpStatus.BAD_REQUEST);
     return await this.usersService.findOneRecordAndUpdate(
       { _id: user._id },
       { $push: { friends: id } }
