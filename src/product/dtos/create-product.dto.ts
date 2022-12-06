@@ -1,5 +1,6 @@
 import {
   IsBoolean,
+  IsDateString,
   IsEnum,
   IsMongoId,
   IsNotEmpty,
@@ -45,4 +46,48 @@ export class CreateProductDto {
 
   @IsMongoId()
   category: string;
+
+  @IsOptional()
+  @IsString()
+  audioSample?: string;
+
+  @IsOptional()
+  @IsString()
+  asin?: string;
+
+  @IsOptional()
+  @IsDateString()
+  publicationDate?: Date;
+
+  @IsOptional()
+  @IsString()
+  language?: string;
+
+  @IsOptional()
+  @IsNumber()
+  fileSize?: number;
+
+  @IsOptional()
+  @IsBoolean()
+  textToSpeech?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  enhancedTypeSetting?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  xRay?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  wordWise?: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  lending?: boolean;
+
+  @IsOptional()
+  @IsNumber()
+  printLength?: number;
 }
