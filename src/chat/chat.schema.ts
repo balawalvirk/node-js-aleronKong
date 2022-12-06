@@ -2,6 +2,7 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
 import { ChatMuteType } from 'src/types';
 import { User } from 'src/users/users.schema';
+import { Message } from './messages.schema';
 
 export type ChatDocument = Chat & mongoose.Document;
 
@@ -21,6 +22,9 @@ export class Chat {
 
   @Prop()
   endTime: Date;
+
+  @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Message' }] })
+  messages: Message[];
 }
 
 export const ChatSchema = SchemaFactory.createForClass(Chat);
