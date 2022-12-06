@@ -10,7 +10,7 @@ import {
   Put,
   UseGuards,
 } from '@nestjs/common';
-import { hash } from 'bcrypt';
+import { compare, hash } from 'bcrypt';
 import { ChangePasswordDto } from 'src/auth/dtos/change-pass.dto';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/role.guard';
@@ -70,7 +70,13 @@ export class UserController {
   }
 
   @Post('change-password')
-  async changePassword(@Body() { newPassword }: ChangePasswordDto, @GetUser() user: UserDocument) {
+  async changePassword(
+    @Body() { newPassword, oldPassword }: ChangePasswordDto,
+    @GetUser() user: UserDocument
+  ) {
+    const userFound = await this.usersService.findOneRecord({ _id: user._id });
+    const match = await compare(oldPassword, userFound.password);
+    if (!match) throw new HttpException('Invalid old password.', HttpStatus.BAD_REQUEST);
     await this.usersService.findOneRecordAndUpdate(
       { _id: user._id },
       { password: await hash(newPassword, 10) }
