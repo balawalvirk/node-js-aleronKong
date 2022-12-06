@@ -41,7 +41,7 @@ export class FudraisingController {
     return post;
   }
 
-  @Roles(UserRole.ADMIN)
+  // @Roles(UserRole.ADMIN)
   @Post('category/create')
   async createCategory(@Body() createFudraisingCategoryDto: CreateFudraisingCategoryDto) {
     return await this.categoryService.createRecord(createFudraisingCategoryDto);
@@ -52,24 +52,24 @@ export class FudraisingController {
     return await this.categoryService.findAllRecords();
   }
 
-  @Roles(UserRole.ADMIN)
+  // @Roles(UserRole.ADMIN)
   @Delete('category/:id/delete')
   async deleteCategory(@Param('id', ParseObjectId) id: string) {
     return await this.categoryService.deleteSingleRecord({ _id: id });
   }
 
-  @Roles(UserRole.ADMIN)
+  // @Roles(UserRole.ADMIN)
   @Post('sub-category/create')
   async createSubCategory(@Body() createFudraisingSubCategoryDto: CreateFudraisingSubCategoryDto) {
     return await this.subCategoryService.createRecord(createFudraisingSubCategoryDto);
   }
 
-  @Get('sub-category/find-all')
-  async findAllSubCategories() {
-    return await this.subCategoryService.findAllRecords();
+  @Get('sub-category/find-all/:categoryId')
+  async findAllSubCategories(@Param('categoryId', ParseObjectId) categoryId: string) {
+    return await this.subCategoryService.findAllRecords({ category: categoryId });
   }
 
-  @Roles(UserRole.ADMIN)
+  // @Roles(UserRole.ADMIN)
   @Delete('sub-category/:id/delete')
   async deleteSubCategory(@Param('id', ParseObjectId) id: string) {
     return await this.subCategoryService.deleteSingleRecord({ _id: id });
