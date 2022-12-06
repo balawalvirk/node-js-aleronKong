@@ -1,5 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { initializeApp, credential, messaging } from 'firebase-admin';
+import { Message } from 'firebase-admin/lib/messaging/messaging-api';
 
 @Injectable()
 export class NotificationsService {
@@ -8,5 +9,9 @@ export class NotificationsService {
     initializeApp({
       credential: credential.cert(firebaseCredentials),
     });
+  }
+
+  async sendNotification(message: Message) {
+    await messaging().send(message);
   }
 }
