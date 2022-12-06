@@ -16,7 +16,7 @@ import { TransformInterceptor } from './helpers';
 import { OrderModule } from './order/order.module';
 import { FileModule } from './file/file.module';
 import { FudraisingModule } from './fundraising/fudraising.module';
-import { TicketModule } from './ticket/ticket.module';
+import { NotificationModule } from './notification/notification.module';
 
 @Module({
   imports: [
@@ -34,7 +34,7 @@ import { TicketModule } from './ticket/ticket.module';
     OrderModule,
     FileModule,
     FudraisingModule,
-    TicketModule,
+    NotificationModule,
   ],
   // global interceptor for transforming response.
   providers: [
