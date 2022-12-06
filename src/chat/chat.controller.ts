@@ -20,6 +20,7 @@ import { ChatService } from './chat.service';
 import { CreateMessageDto } from './dto/create-message.dto';
 import { MuteChatDto } from './dto/mute-chat.dto';
 import { MessageService } from './message.service';
+import { MessageDocument } from './messages.schema';
 
 @Controller('chat')
 @UseGuards(JwtAuthGuard)
@@ -33,7 +34,7 @@ export class ChatController {
   @Post('/create')
   async createChat(@Body('receiverId') receiverId: string, @GetUser() user: UserDocument) {
     const chat = await this.chatService.findAllRecords({ members: { $in: [receiverId] } });
-    if (chat)
+    if (chat.length > 0)
       throw new HttpException('You already have chat with this member.', HttpStatus.BAD_REQUEST);
     return (await this.chatService.createRecord({ members: [user._id, receiverId] })).populate({
       path: 'members',
@@ -49,6 +50,9 @@ export class ChatController {
         path: 'members',
         match: { _id: { $ne: user._id } },
         select: 'avatar firstName lastName',
+      },
+      {
+        path: 'lastMessage',
       },
     ]);
   }
@@ -66,17 +70,21 @@ export class ChatController {
 
   @Post('/message/create')
   async createMessage(@Body() createMessageDto: CreateMessageDto, @GetUser() user: UserDocument) {
-    const message = await this.messageService.createRecord({
+    const message: MessageDocument = await this.messageService.createRecord({
       ...createMessageDto,
       sender: user._id,
     });
+    await this.chatService.findOneRecordAndUpdate(
+      { _id: createMessageDto.chat },
+      { lastMessage: message._id }
+    );
     this.socketService.triggerMessage(createMessageDto.chat, message);
     return { message: 'message sent successfully.' };
   }
 
   @Get('/message/find-all/:chatId')
   async findAllMessage(@Param('chatId') chatId: string) {
-    return await this.messageService.findAllRecords({ chat: chatId }).sort({ createdAt: -1 });
+    return await this.messageService.findAllRecords({ chat: chatId }).sort({ createdAt: 1 });
   }
 
   @Delete('/delete/:id')
