@@ -1,6 +1,4 @@
-import { ServiceAccount } from 'firebase-admin';
-
-export const serviceAccount = {
+export const firebaseCredientals = {
   type: 'service_account',
   project_id: 'aleron-kong',
   private_key_id: '4bd1c8d7c207a3a678e2cd0200e112d91781d643',
