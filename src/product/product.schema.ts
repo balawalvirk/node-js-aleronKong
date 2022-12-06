@@ -42,6 +42,39 @@ export class Product {
 
   @Prop({ type: [String] })
   tags: string[];
+
+  @Prop()
+  audioSample: string;
+
+  @Prop()
+  asin: string;
+
+  @Prop()
+  publicationDate: Date;
+
+  @Prop()
+  language: string;
+
+  @Prop()
+  fileSize: number;
+
+  @Prop()
+  textToSpeech: boolean;
+
+  @Prop()
+  enhancedTypeSetting: boolean;
+
+  @Prop()
+  xRay: boolean;
+
+  @Prop()
+  wordWise: boolean;
+
+  @Prop()
+  printLength: number;
+
+  @Prop()
+  lending: boolean;
 }
 
 export const ProductSchema = SchemaFactory.createForClass(Product);
