@@ -43,7 +43,7 @@ export class ProductController {
 
   @Post('create')
   async create(@Body() body: CreateProductDto, @GetUser() user: UserDocument) {
-    return await this.productService.createRecord({ ...body, creator: user._id });
+    return await this.productService.create({ ...body, creator: user._id });
   }
 
   @Delete('/:id/delete')
@@ -58,7 +58,9 @@ export class ProductController {
 
   @Put('/:id/update')
   async update(@Param('id') id: string, @Body() updateProductDto: UpdateProductDto) {
-    return await this.productService.findOneRecordAndUpdate({ _id: id }, updateProductDto);
+    return await this.productService
+      .findOneRecordAndUpdate({ _id: id }, updateProductDto)
+      .populate('category');
   }
 
   @Get('/inventory')
@@ -73,9 +75,13 @@ export class ProductController {
   ) {
     let products = [];
     if (status === 'all') {
-      products = await this.productService.findAllRecords({ status, creator: user._id });
+      products = await this.productService
+        .findAllRecords({ status, creator: user._id })
+        .populate('category');
     }
-    products = await this.productService.findAllRecords({ status, creator: user._id });
+    products = await this.productService
+      .findAllRecords({ status, creator: user._id })
+      .populate('category');
     return products;
   }
 

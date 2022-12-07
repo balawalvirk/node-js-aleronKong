@@ -25,6 +25,7 @@ export class PostsService extends BaseService {
         },
         { path: 'creator', select: 'firstName lastName avatar userName isGuildMember' },
         { path: 'group', select: 'name' },
+        { path: 'fundraising', populate: [{ path: 'category' }, { path: 'subCategory' }] },
       ])
       .sort({ createdAt: -1 });
   }
@@ -42,12 +43,13 @@ export class PostsService extends BaseService {
       },
       { path: 'creator', select: 'firstName lastName avatar userName isGuildMember' },
       { path: 'group', select: 'name' },
+      { path: 'fundraising', populate: [{ path: 'category' }, { path: 'subCategory' }] },
     ]);
   }
 
   async createPost(query: FilterQuery<any>) {
     return (await this.postModel.create(query)).populate([
-      { path: 'fundraising' },
+      { path: 'fundraising', populate: [{ path: 'category' }, { path: 'subCategory' }] },
       { path: 'creator', select: 'firstName lastName avatar userName isGuildMember' },
     ]);
   }

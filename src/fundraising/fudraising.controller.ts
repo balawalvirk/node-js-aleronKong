@@ -35,7 +35,10 @@ export class FudraisingController {
       fundraising: fundraising._id,
       creator: user._id,
       type: PostType.FUNDRAISING,
-      status: PostStatus.INACTIVE,
+      /**
+       * TODO : change statua to inactive as it will be approved from admin
+       */
+      status: PostStatus.ACTIVE,
       privacy: PostPrivacy.PUBLIC,
     });
     return post;
