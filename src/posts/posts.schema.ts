@@ -30,7 +30,7 @@ export class Posts {
   @Prop({ enum: PostPrivacy, required: true })
   privacy: string;
 
-  @Prop()
+  @Prop({ default: false })
   isBlocked: boolean;
 
   @Prop({ enum: PostStatus, default: PostStatus.ACTIVE })

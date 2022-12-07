@@ -14,7 +14,7 @@ import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/role.guard';
 import { makeQuery, ParseObjectId, Roles } from 'src/helpers';
 import { GetUser } from 'src/helpers/decorators/user.decorator';
-import { PostPrivacy, UserRole } from 'src/types';
+import { PostPrivacy, PostStatus, PostType, UserRole } from 'src/types';
 import { UserDocument } from 'src/users/users.schema';
 import { CreateCommentDto } from './dtos/create-comment';
 import { Posts } from './posts.schema';
@@ -67,6 +67,7 @@ export class PostsController {
       privacy: PostPrivacy.PUBLIC,
       creator: { $nin: user.blockedUsers },
       isBlocked: false,
+      status: PostStatus.ACTIVE,
     };
     const options = { limit: $q.limit, skip: $q.skip };
     const total = await this.postsService.countRecords({});
