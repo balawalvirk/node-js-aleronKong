@@ -131,7 +131,7 @@ export class ProductController {
       await this.stripeService.createTransfer({
         amount: product.price,
         currency: 'usd',
-        destination: product.creator.accountId,
+        destination: product.creator.sellerId,
         transfer_group,
         description: `${product.title} transfers`,
       });

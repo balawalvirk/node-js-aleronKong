@@ -65,3 +65,13 @@ export enum ChatMuteType {
   DAY = 'day',
   CUSTOM = 'custom',
 }
+
+export enum NotificationType {
+  POST = 'post',
+  MESSAGE = 'message',
+}
+
+export enum ReportType {
+  GROUP = 'group',
+  USER = 'user',
+}
