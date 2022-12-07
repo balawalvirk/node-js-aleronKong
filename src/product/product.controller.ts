@@ -201,8 +201,8 @@ export class ProductController {
   }
 
   @Get('category/find-all')
-  async findAllCategories() {
-    return await this.categoryService.findAllRecords();
+  async findAllCategories(@Query() query) {
+    return await this.categoryService.findAllRecords(query);
   }
 
   @Delete('category/:id/delete')
