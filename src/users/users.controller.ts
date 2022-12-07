@@ -84,12 +84,14 @@ export class UserController {
     return { message: 'Password changed successfully.' };
   }
 
+  // ------------------------------------------------------------bank account apis---------------------------------------
+  // all bank accounts used to withdraw funds
   @Post('bank-account/create')
   async createBankAccount(
     @GetUser() user: UserDocument,
     @Body() { accountHolderName, accountNumber, routingNumber }: CreateBankAccountDto
   ) {
-    return await this.stripeService.createBankAccount(user.accountId, {
+    return await this.stripeService.createBankAccount(user.sellerId, {
       // @ts-ignore
       external_account: {
         object: 'bank_account',
@@ -105,7 +107,7 @@ export class UserController {
 
   @Get('bank-account/find-all')
   async findAllBankAccounts(@GetUser() user: UserDocument) {
-    return await this.stripeService.findAllBankAccounts(user.accountId, { object: 'bank_account' });
+    return await this.stripeService.findAllBankAccounts(user.sellerId, { object: 'bank_account' });
   }
 
   @Delete('bank-account/:bankAccount/delete')
@@ -113,7 +115,7 @@ export class UserController {
     @GetUser() user: UserDocument,
     @Param('bankAccount') bankAccount: string
   ) {
-    return await this.stripeService.deleteBankAccount(user.accountId, bankAccount);
+    return await this.stripeService.deleteBankAccount(user.sellerId, bankAccount);
   }
 
   @Put('bank-account/:bankAccount/update')
@@ -121,7 +123,7 @@ export class UserController {
     @Param('bankAccount') bankAccount: string,
     @GetUser() user: UserDocument
   ) {
-    return await this.stripeService.updateBankAccount(user.accountId, bankAccount);
+    return await this.stripeService.updateBankAccount(user.sellerId, bankAccount);
   }
 
   //become a guild member

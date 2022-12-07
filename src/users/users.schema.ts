@@ -43,7 +43,7 @@ export class User {
 
   //stripe connect(express) account id
   @Prop()
-  accountId: string;
+  sellerId: string;
 
   @Prop()
   paymentMethod: string;

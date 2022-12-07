@@ -111,7 +111,7 @@ export class PackageController {
       items: [{ price: pkg.priceId }],
       currency: 'usd',
       transfer_data: {
-        destination: pkg.creator.accountId,
+        destination: pkg.creator.sellerId,
       },
     });
 

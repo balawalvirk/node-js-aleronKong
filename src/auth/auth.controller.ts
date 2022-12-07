@@ -1,4 +1,4 @@
-import { Body, Controller, HttpException, HttpStatus, Post, UseGuards } from '@nestjs/common';
+import { Body, Controller, HttpException, HttpStatus, Ip, Post, UseGuards } from '@nestjs/common';
 import { hash } from 'bcrypt';
 import { UsersService } from '../users/users.service';
 import { AuthService } from './auth.service';
@@ -10,7 +10,9 @@ import { OtpDocument } from './otp.schema';
 import { ResetPasswordDto } from './dtos/reset-pass.dto';
 import { SocialLoginDto } from './dtos/social-login.dto';
 import { EmailService } from 'src/helpers/services/email.service';
-import { StripeService } from 'src/helpers';
+import { NotificationService } from 'src/notification/notification.service';
+import { Notification } from 'src/notification/notification.schema';
+import { NotificationType } from 'src/types';
 
 @Controller('auth')
 export class AuthController {
@@ -18,49 +20,79 @@ export class AuthController {
     private readonly authService: AuthService,
     private readonly userService: UsersService,
     private readonly emailService: EmailService,
-    private readonly stripeService: StripeService
+    private readonly NotificationService: NotificationService
   ) {}
 
   @UseGuards(LocalAuthGuard)
   @Post('login')
   async login(@GetUser() user: UserDocument) {
     const { access_token } = await this.authService.login(user.userName, user._id);
-    return { access_token, user };
+
+    const Notifications: Notification[] = await this.NotificationService.findAllRecords({
+      receiver: user._id,
+      isRead: false,
+    });
+
+    //get un read messages and notifications
+    const unReadMessages = Notifications.filter(
+      (notification) => notification.type === NotificationType.MESSAGE
+    );
+
+    const unReadNotifications = Notifications.filter(
+      (notification) => notification.type !== NotificationType.MESSAGE
+    );
+    return {
+      access_token,
+      user: {
+        ...user,
+        unReadNotifications: unReadNotifications.length,
+        unReadMessages: unReadMessages.length,
+      },
+    };
   }
 
   @Post('register')
-  async register(@Body() body: RegisterDto) {
+  async register(@Body() body: RegisterDto, @Ip() ip: string) {
     const emailExists = await this.userService.findOneRecord({ email: body.email });
     if (emailExists)
       throw new HttpException('User already exists with this email.', HttpStatus.BAD_REQUEST);
-
-    // first create stripe connect(express) account and customer account of newly register user.
-    // await this.stripeService.createAccount({
-    //   email: body.email,
-    //   type: 'express',
-    //   business_type: 'individual',
-
-    //   capabilities: {
-    //     card_payments: {
-    //       requested: true,
-    //     },
-    //     transfers: {
-    //       requested: true,
-    //     },
-    //   },
-    // });
-    await this.stripeService.createCustomer({
-      email: body.email,
-      name: `${body.firstName} ${body.lastName}`,
-    });
+    // first create stripe connect (custom) account and customer account of newly register user.
+    const sellerAccount = await this.authService.createSellerAccount(body, ip);
+    const customerAccount = await this.authService.createCustomerAccount(
+      body.email,
+      `${body.firstName} ${body.lastName}`
+    );
     const user: UserDocument = await this.userService.createRecord({
       ...body,
       password: await hash(body.password, 10),
+      customerId: customerAccount.id,
+      sellerId: sellerAccount.id,
     });
     const { access_token } = await this.authService.login(user.userName, user._id);
+    const Notifications: Notification[] = await this.NotificationService.findAllRecords({
+      receiver: user._id,
+      isRead: false,
+    });
+
+    //get un read messages and notifications
+    const unReadMessages = Notifications.filter(
+      (notification) => notification.type === NotificationType.MESSAGE
+    );
+
+    const unReadNotifications = Notifications.filter(
+      (notification) => notification.type !== NotificationType.MESSAGE
+    );
+
     return {
       message: 'User registered successfully.',
-      data: { user, access_token },
+      data: {
+        user: {
+          ...user,
+          unReadNotifications: unReadNotifications.length,
+          unReadMessages: unReadMessages.length,
+        },
+        access_token,
+      },
     };
   }
 
@@ -73,31 +105,23 @@ export class AuthController {
   }
 
   @Post('social-login')
-  async socialLogin(@Body() socialLoginDto: SocialLoginDto) {
+  async socialLogin(@Body() socialLoginDto: SocialLoginDto, @Ip() ip: string) {
     const userFound: UserDocument = await this.userService.findOneRecord({
       email: socialLoginDto.email,
       authType: socialLoginDto.authType,
     });
     if (!userFound) {
-      // first create stripe connect(express) account and customer account of newly register user.
-      // await this.stripeService.createAccount({
-      //   email: body.email,
-      //   type: 'express',
-      //   business_type: 'individual',
-      //   capabilities: {
-      //     card_payments: {
-      //       requested: true,
-      //     },
-      //     transfers: {
-      //       requested: true,
-      //     },
-      //   },
-      // });
-      await this.stripeService.createCustomer({ email: socialLoginDto.email });
+      const sellerAccount = await this.authService.createSellerAccount(socialLoginDto, ip);
+      const customerAccount = await this.authService.createCustomerAccount(
+        socialLoginDto.email,
+        `${socialLoginDto.firstName} ${socialLoginDto.lastName}`
+      );
       const user: UserDocument = await this.userService.createRecord({
         email: socialLoginDto.email,
         password: await hash(`${new Date().getTime()}`, 10),
         authType: socialLoginDto.authType,
+        sellerId: sellerAccount.id,
+        customerId: customerAccount.id,
         ...socialLoginDto,
       });
       const { access_token } = await this.authService.login(user.userName, user._id);

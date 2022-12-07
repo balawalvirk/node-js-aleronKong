@@ -90,4 +90,12 @@ export class CreateProductDto {
   @IsOptional()
   @IsNumber()
   printLength?: number;
+
+  @IsOptional()
+  @IsString({ each: true })
+  availableColors?: string;
+
+  @IsOptional()
+  @IsString({ each: true })
+  availableSizes?: string;
 }

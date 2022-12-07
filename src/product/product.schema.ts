@@ -75,6 +75,12 @@ export class Product {
 
   @Prop()
   lending: boolean;
+
+  @Prop({ type: [String] })
+  availableColors: string[];
+
+  @Prop({ type: [String] })
+  availableSizes: string[];
 }
 
 export const ProductSchema = SchemaFactory.createForClass(Product);
