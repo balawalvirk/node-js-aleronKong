@@ -28,7 +28,7 @@ export class Product {
   @Prop({ required: true })
   price: number;
 
-  @Prop({ required: true })
+  @Prop()
   quantity: number;
 
   @Prop({ enum: ProductStatus, required: true })
