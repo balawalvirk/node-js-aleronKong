@@ -34,6 +34,7 @@ export class CreateProductDto {
   @IsEnum(ProductStatus)
   status: string;
 
+  @IsOptional()
   @IsNumber()
   quantity: number;
 
