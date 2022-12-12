@@ -101,7 +101,7 @@ export class PostsController {
     @Param('postId') postId: string,
     @GetUser() user: UserDocument,
     @Body() body: CreateCommentDto
-  ): Promise<Posts> {
+  ) {
     return await this.postsService.updatePost(postId, {
       $push: { comments: { content: body.content, creator: user._id } },
     });

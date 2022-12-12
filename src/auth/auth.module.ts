@@ -13,12 +13,14 @@ import { Otp, OtpSchema } from './otp.schema';
 import { EmailService } from 'src/helpers/services/email.service';
 import { StripeService } from 'src/helpers';
 import { NotificationModule } from 'src/notification/notification.module';
+import { CartModule } from 'src/cart/cart.module';
 
 @Module({
   imports: [
     UsersModule,
     PassportModule,
     NotificationModule,
+    CartModule,
     JwtModule.register({
       secret: new ConfigService<IEnvironmentVariables>().get('JWT_TOKEN_SECRET'),
       signOptions: { expiresIn: '15d' },

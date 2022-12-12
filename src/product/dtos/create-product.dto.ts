@@ -99,4 +99,8 @@ export class CreateProductDto {
   @IsOptional()
   @IsString({ each: true })
   availableSizes?: string;
+
+  @IsOptional()
+  @IsString()
+  simultaneousDeviceUsage: string;
 }

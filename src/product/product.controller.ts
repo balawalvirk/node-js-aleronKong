@@ -14,6 +14,7 @@ import { AddressDocument } from 'src/address/address.schema';
 import { AddressService } from 'src/address/address.service';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/role.guard';
+import { CartService } from 'src/cart/cart.service';
 import { ParseObjectId, Roles, StripeService } from 'src/helpers';
 import { GetUser } from 'src/helpers/decorators/user.decorator';
 import { CollectionConditions, CollectionTypes, UserRole } from 'src/types';
