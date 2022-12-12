@@ -81,6 +81,9 @@ export class Product {
 
   @Prop({ type: [String] })
   availableSizes: string[];
+
+  @Prop()
+  simultaneousDeviceUsage: string;
 }
 
 export const ProductSchema = SchemaFactory.createForClass(Product);

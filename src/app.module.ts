@@ -18,6 +18,7 @@ import { FileModule } from './file/file.module';
 import { FudraisingModule } from './fundraising/fudraising.module';
 import { NotificationModule } from './notification/notification.module';
 import { ReportModule } from './report/report.module';
+import { CartModule } from './cart/cart.module';
 
 @Module({
   imports: [
@@ -37,6 +38,7 @@ import { ReportModule } from './report/report.module';
     FudraisingModule,
     NotificationModule,
     ReportModule,
+    CartModule,
   ],
   // global interceptor for transforming response.
   providers: [

@@ -13,6 +13,8 @@ import { EmailService } from 'src/helpers/services/email.service';
 import { NotificationService } from 'src/notification/notification.service';
 import { Notification } from 'src/notification/notification.schema';
 import { NotificationType } from 'src/types';
+import { CartService } from 'src/cart/cart.service';
+import { CartDocument } from 'src/cart/cart.schema';
 
 @Controller('auth')
 export class AuthController {
@@ -20,34 +22,32 @@ export class AuthController {
     private readonly authService: AuthService,
     private readonly userService: UsersService,
     private readonly emailService: EmailService,
-    private readonly NotificationService: NotificationService
+    private readonly NotificationService: NotificationService,
+    private readonly cartService: CartService
   ) {}
 
   @UseGuards(LocalAuthGuard)
   @Post('login')
   async login(@GetUser() user: UserDocument) {
     const { access_token } = await this.authService.login(user.userName, user._id);
-
     const Notifications: Notification[] = await this.NotificationService.findAllRecords({
       receiver: user._id,
       isRead: false,
     });
-
+    const cart: CartDocument = await this.cartService.findOneRecord({ creator: user._id });
     //get un read messages and notifications
     const unReadMessages = Notifications.filter(
       (notification) => notification.type === NotificationType.MESSAGE
     );
-
     const unReadNotifications = Notifications.filter(
       (notification) => notification.type !== NotificationType.MESSAGE
     );
     return {
       access_token,
-      user: {
-        ...user,
-        unReadNotifications: unReadNotifications.length,
-        unReadMessages: unReadMessages.length,
-      },
+      user,
+      unReadNotifications: unReadNotifications.length,
+      unReadMessages: unReadMessages.length,
+      cartItems: cart.items.length,
     };
   }
 

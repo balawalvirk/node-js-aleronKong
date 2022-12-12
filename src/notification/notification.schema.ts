@@ -6,14 +6,11 @@ export type NotificationDocument = Notification & mongoose.Document;
 
 @Schema({ timestamps: true })
 export class Notification {
-  @Prop()
-  title: string;
-
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true })
   sender: User;
 
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true })
-  receivers: User;
+  receiver: User;
 
   @Prop({ required: true })
   type: string;

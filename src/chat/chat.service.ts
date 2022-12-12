@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { FilterQuery, Model } from 'mongoose';
 import { BaseService } from 'src/helpers/services/base.service';
 import { Chat, ChatDocument } from './chat.schema';
 
@@ -10,25 +10,32 @@ export class ChatService extends BaseService {
     super(ChatModel);
   }
 
-  async findOne(query: any) {
-    return await this.ChatModel.findOne(query).populate([
-      { path: 'sender', select: 'firstName lastName avatar' },
-      { path: 'receiver', select: 'firstName lastName avatar' },
-      { path: 'messages' },
-    ]);
+  async create(members: string[], userId: string) {
+    return (await this.ChatModel.create({ members })).populate({
+      path: 'members',
+      match: { _id: { $ne: userId } },
+      select: 'avatar firstName lastName',
+    });
   }
 
-  async save(senderId: string, receiverId: string) {
-    return (await new this.ChatModel({ sender: senderId, receiver: receiverId }).save()).populate([
-      { path: 'sender', select: 'firstName lastName avatar' },
-      { path: 'receiver', select: 'firstName lastName avatar' },
-    ]);
-  }
-
-  async findAllChat(query: any) {
+  async findAll(query: FilterQuery<any>, userId: string) {
     return await this.ChatModel.find(query).populate([
-      { path: 'sender', select: 'firstName lastName avatar' },
-      { path: 'receiver', select: 'firstName lastName avatar' },
+      {
+        path: 'members',
+        match: { _id: { $ne: userId } },
+        select: 'avatar firstName lastName',
+      },
+      {
+        path: 'lastMessage',
+      },
     ]);
+  }
+
+  async findOne(query: FilterQuery<any>, userId: string) {
+    return await this.ChatModel.find(query).populate({
+      path: 'members',
+      match: { _id: { $ne: userId } },
+      select: 'avatar firstName lastName',
+    });
   }
 }

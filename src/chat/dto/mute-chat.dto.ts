@@ -1,15 +1,12 @@
 import { IsDateString, IsEnum, IsMongoId, IsOptional } from 'class-validator';
-import { ChatMuteType } from 'src/types';
+import { MuteInterval } from 'src/types';
 
 export class MuteChatDto {
   @IsMongoId()
   chat: string;
 
-  @IsMongoId()
-  mutedBy: string;
-
-  @IsEnum(ChatMuteType, { each: true })
-  muteType: string;
+  @IsEnum(MuteInterval, { each: true })
+  interval: string;
 
   @IsOptional()
   @IsDateString()
