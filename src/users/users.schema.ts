@@ -1,6 +1,7 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose, { Document } from 'mongoose';
-import { AuthTypes, NotificationType, UserRole, UserStatus } from 'src/types';
+import { Package } from 'src/package/package.schema';
+import { AuthTypes, UserRole, UserStatus } from 'src/types';
 import { Report, ReportSchema } from './report.schema';
 
 export type UserDocument = User & Document;
@@ -63,8 +64,8 @@ export class User {
   @Prop({ type: [ReportSchema] })
   reports: Report[];
 
-  @Prop({ default: [NotificationType.POST, NotificationType.MESSAGE], type: [String] })
-  notificationEnabled: string[];
+  @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Package' }] })
+  supportingPackages: Package[];
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

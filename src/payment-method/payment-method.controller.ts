@@ -31,6 +31,7 @@ export class PaymentMethodController {
         name,
       },
     });
+
     return await this.stripeService.attachPaymentMethord(paymentMethod.id, {
       customer: user.customerId,
     });

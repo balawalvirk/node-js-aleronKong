@@ -10,6 +10,9 @@ import { UsersService } from '../users/users.service';
 import { RegisterDto } from './dtos/register.dto';
 import { SocialLoginDto } from './dtos/social-login.dto';
 import { Otp, OtpDocument } from './otp.schema';
+import { NotificationService } from 'src/notification/notification.service';
+import { NotificationType } from 'src/types';
+import { Notification } from 'src/notification/notification.schema';
 
 @Injectable()
 export class AuthService {
@@ -18,6 +21,7 @@ export class AuthService {
     private jwtService: JwtService,
     private configService: ConfigService<IEnvironmentVariables>,
     private stripeService: StripeService,
+    private readonly NotificationService: NotificationService,
     @InjectModel(Otp.name) private otpModal: Model<OtpDocument>
   ) {}
 
@@ -100,5 +104,23 @@ export class AuthService {
 
   async createCustomerAccount(email: string, name: string) {
     return await this.stripeService.createCustomer({ email, name });
+  }
+
+  async findNotifications(userId: string) {
+    const Notifications: Notification[] = await this.NotificationService.findAllRecords({
+      receiver: userId,
+      isRead: false,
+    });
+
+    //get un read messages and notifications
+    const unReadMessages = Notifications.filter(
+      (notification) => notification.type === NotificationType.MESSAGE
+    );
+
+    const unReadNotifications = Notifications.filter(
+      (notification) => notification.type !== NotificationType.MESSAGE
+    );
+
+    return { unReadMessages, unReadNotifications };
   }
 }
