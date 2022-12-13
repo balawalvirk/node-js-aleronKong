@@ -16,13 +16,15 @@ import { GetUser, ParseObjectId, StripeService } from 'src/helpers';
 import { UserDocument } from 'src/users/users.schema';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { PackageDocument } from './package.schema';
+import { UsersService } from 'src/users/users.service';
 
 @Controller('package')
 @UseGuards(JwtAuthGuard)
 export class PackageController {
   constructor(
     private readonly packageService: PackageService,
-    private readonly stripeService: StripeService
+    private readonly stripeService: StripeService,
+    private readonly userService: UsersService
   ) {}
 
   @Post('create')
@@ -54,11 +56,7 @@ export class PackageController {
   }
 
   @Patch('update/:id')
-  async update(
-    @Param('id') id: string,
-    @Body() updatePackageDto: UpdatePackageDto,
-    @GetUser() user: UserDocument
-  ) {
+  async update(@Param('id') id: string, @Body() updatePackageDto: UpdatePackageDto) {
     const packageFound: PackageDocument = await this.packageService.findOneRecord({ _id: id });
     // check if package price is changed
     if (packageFound.price === updatePackageDto.price) {
@@ -114,6 +112,11 @@ export class PackageController {
         destination: pkg.creator.sellerId,
       },
     });
+
+    await this.userService.findOneRecordAndUpdate(
+      { _id: user._id },
+      { $push: { supportingPackages: pkg._id } }
+    );
 
     return await this.packageService.findOneRecordAndUpdate(
       { _id: id },

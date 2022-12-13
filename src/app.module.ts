@@ -19,6 +19,7 @@ import { FudraisingModule } from './fundraising/fudraising.module';
 import { NotificationModule } from './notification/notification.module';
 import { ReportModule } from './report/report.module';
 import { CartModule } from './cart/cart.module';
+import { GuildPackageModule } from './guild-package/guild-package.module';
 
 @Module({
   imports: [
@@ -39,6 +40,7 @@ import { CartModule } from './cart/cart.module';
     NotificationModule,
     ReportModule,
     CartModule,
+    GuildPackageModule,
   ],
   // global interceptor for transforming response.
   providers: [

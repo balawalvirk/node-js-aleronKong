@@ -1,4 +1,16 @@
-import { Body, Controller, Get, Param, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Param,
+  Post,
+  UseGuards,
+  Query,
+  ParseIntPipe,
+  HttpException,
+  HttpStatus,
+} from '@nestjs/common';
+import mongoose from 'mongoose';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { GetUser, ParseObjectId } from 'src/helpers';
 import { UserDocument } from 'src/users/users.schema';
@@ -16,28 +28,49 @@ export class CartController {
     return await this.cartService.findOne({ creator: user._id });
   }
 
-  @Post('add-remove')
-  async addProduct(@Body() createCartDto: CreateCartDto, @GetUser() user: UserDocument) {
-    const cart: CartDocument = await this.cartService.findOneRecord({ creator: user._id });
+  @Post('item/add')
+  async addItem(@GetUser() user: UserDocument, @Body() createCartDto: CreateCartDto) {
+    const cart = await this.cartService.findOneRecord({ creator: user._id });
+    // check if item is added first time then create a cart object.
     if (!cart) {
       return await this.cartService.createRecord({
         creator: user._id,
-
-        items: [{ item: createCartDto.item, quantity: createCartDto.quantity || 1 }],
+        items: [
+          {
+            item: createCartDto.item,
+            quantity: createCartDto.quantity || 1,
+          },
+        ],
       });
+      // otherwise add item in items array
     } else {
+      const item = cart.items.find((item) => item.item == createCartDto.item);
+      if (item)
+        throw new HttpException('You already added this item in cart.', HttpStatus.BAD_REQUEST);
       return await this.cartService.findOneRecordAndUpdate(
-        { 'items.item': createCartDto.item },
-        { 'items.$.quantity': createCartDto.quantity }
+        { creator: user._id },
+        { $push: { items: { item: createCartDto.item, quantity: createCartDto.quantity || 1 } } }
       );
     }
   }
 
-  @Post('product/:id/remove')
+  @Post('item/:id/remove')
   async removeProduct(@Param('id', ParseObjectId) id: string, @GetUser() user: UserDocument) {
     return await this.cartService.findOneRecordAndUpdate(
       { creator: user._id },
-      { $pull: { 'products.product': id } }
+      { $pull: { items: { item: id } } }
+    );
+  }
+
+  @Post(':id/inc-dec')
+  async addProduct(
+    @Param('id', ParseObjectId) id: string,
+    @GetUser() user: UserDocument,
+    @Query('quantity', ParseIntPipe) quantity: string
+  ) {
+    return await this.cartService.findOneRecordAndUpdate(
+      { 'items.item': id, creator: user._id },
+      { 'items.$.quantity': quantity }
     );
   }
 }
