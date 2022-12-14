@@ -50,9 +50,9 @@ export class PackageController {
     });
   }
 
-  @Get('find-all')
-  async findAll(@GetUser() user: UserDocument) {
-    return await this.packageService.findAllRecords({ creator: user._id });
+  @Get('/user/:id/find-all')
+  async findAll(@Param('id', ParseObjectId) id: string) {
+    return await this.packageService.findAllRecords({ creator: id });
   }
 
   @Patch('update/:id')

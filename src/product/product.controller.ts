@@ -3,6 +3,8 @@ import {
   Controller,
   Delete,
   Get,
+  HttpException,
+  HttpStatus,
   Param,
   ParseEnumPipe,
   Post,
@@ -10,11 +12,11 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
+import mongoose from 'mongoose';
 import { AddressDocument } from 'src/address/address.schema';
 import { AddressService } from 'src/address/address.service';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/role.guard';
-import { CartService } from 'src/cart/cart.service';
 import { ParseObjectId, Roles, StripeService } from 'src/helpers';
 import { GetUser } from 'src/helpers/decorators/user.decorator';
 import { CollectionConditions, CollectionTypes, UserRole } from 'src/types';
@@ -47,7 +49,7 @@ export class ProductController {
     return await this.productService.create({ ...body, creator: user._id });
   }
 
-  @Delete('/:id/delete')
+  @Delete(':id/delete')
   async remove(@Param('id', ParseObjectId) id: string) {
     const product: ProductDocument = await this.productService.deleteSingleRecord({ _id: id });
     await this.collectionService.updateManyRecords(
@@ -57,11 +59,9 @@ export class ProductController {
     return product;
   }
 
-  @Put('/:id/update')
+  @Put(':id/update')
   async update(@Param('id') id: string, @Body() updateProductDto: UpdateProductDto) {
-    return await this.productService
-      .findOneRecordAndUpdate({ _id: id }, updateProductDto)
-      .populate('category');
+    return await this.productService.update({ _id: id }, updateProductDto);
   }
 
   @Get('/inventory')
@@ -69,21 +69,22 @@ export class ProductController {
     await this.productService.findAllRecords({ creator: user._id });
   }
 
-  @Get('find-all')
-  async findAll(
-    @GetUser() user: UserDocument,
-    @Query('status', new ParseEnumPipe(['all', 'active', 'draft', 'archived'])) status: string
-  ) {
-    let products = [];
-    if (status === 'all') {
-      products = await this.productService
-        .findAllRecords({ status, creator: user._id })
-        .populate('category');
+  // find user store products and all store products
+  @Get('store')
+  async findStoreProducts(@Query() query) {
+    let condition = {
+      ...query,
+    };
+    // loop through object and convert in into object id
+    const ObjectId = mongoose.Types.ObjectId;
+    for (const key of Object.keys(query)) {
+      if (key === 'creator') {
+        condition.creator = new ObjectId(query[key]);
+      } else if (key === 'category') {
+        condition.category = new ObjectId(query[key]);
+      }
     }
-    products = await this.productService
-      .findAllRecords({ status, creator: user._id })
-      .populate('category');
-    return products;
+    return await this.productService.findStoreProducts(condition);
   }
 
   @Post('checkout')
@@ -204,6 +205,11 @@ export class ProductController {
   @Post('category/create')
   async createCategory(@Body() createProductCategoryDto: CreateProductCategoryDto) {
     const { value, ...rest } = createProductCategoryDto;
+    const category = await this.categoryService.findOneRecord({
+      title: createProductCategoryDto.title,
+    });
+    if (category)
+      throw new HttpException('Category already exists with this title.', HttpStatus.BAD_REQUEST);
     return await this.categoryService.createRecord({ ...rest });
   }
 

@@ -5,7 +5,7 @@ import { ProductType } from 'src/types';
 export type ProductCategoryDocument = ProductCategory & mongoose.Document;
 @Schema({ timestamps: true })
 export class ProductCategory {
-  @Prop({ required: true })
+  @Prop({ required: true, unique: true })
   title: string;
 
   @Prop({ enum: ProductType, required: true })
