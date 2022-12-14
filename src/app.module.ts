@@ -20,6 +20,7 @@ import { NotificationModule } from './notification/notification.module';
 import { ReportModule } from './report/report.module';
 import { CartModule } from './cart/cart.module';
 import { GuildPackageModule } from './guild-package/guild-package.module';
+import { SearchModule } from './search/search.module';
 
 @Module({
   imports: [
@@ -41,6 +42,7 @@ import { GuildPackageModule } from './guild-package/guild-package.module';
     ReportModule,
     CartModule,
     GuildPackageModule,
+    SearchModule,
   ],
   // global interceptor for transforming response.
   providers: [
