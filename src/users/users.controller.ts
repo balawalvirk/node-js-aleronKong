@@ -68,6 +68,15 @@ export class UserController {
     return { message: 'User blocked successfully.' };
   }
 
+  @Put(':id/unblock')
+  async unBlock(@Param('id', ParseObjectId) id: string, @GetUser() user: UserDocument) {
+    await this.usersService.findOneRecordAndUpdate(
+      { _id: user._id },
+      { $pull: { blockedUsers: id } }
+    );
+    return { message: 'User unblocked successfully.' };
+  }
+
   @Post('change-password')
   async changePassword(
     @Body() { newPassword, oldPassword }: ChangePasswordDto,

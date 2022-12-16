@@ -134,11 +134,6 @@ export class ChatController {
 
   @Put('mute')
   async muteChat(@Body() muteChatDto: MuteChatDto, @GetUser() user: UserDocument) {
-    const chatFound = await this.chatService.findOneRecord({
-      _id: muteChatDto.chat,
-      'mutes.user': user._id,
-    });
-    if (chatFound) throw new HttpException('You already muted this chat.', HttpStatus.BAD_REQUEST);
     const now = new Date();
     let date = new Date(now);
     let updatedObj: any = { user: user._id, interval: muteChatDto.interval };
