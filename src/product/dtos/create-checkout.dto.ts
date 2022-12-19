@@ -6,7 +6,4 @@ export class CreateCheckoutDto {
 
   @IsMongoId()
   address: string;
-
-  @IsMongoId({ each: true })
-  products: string[];
 }

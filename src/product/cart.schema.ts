@@ -5,13 +5,16 @@ import { User } from 'src/users/users.schema';
 
 export type CartDocument = Cart & mongoose.Document;
 
-@Schema()
+@Schema({ versionKey: false, _id: false })
 class Item {
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true })
   item: Product;
 
   @Prop({ required: true })
   quantity: number;
+
+  @Prop({ required: true })
+  price: number;
 }
 
 const ItemSchema = SchemaFactory.createForClass(Item);

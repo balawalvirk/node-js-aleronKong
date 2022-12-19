@@ -10,8 +10,8 @@ import { OtpDocument } from './otp.schema';
 import { ResetPasswordDto } from './dtos/reset-pass.dto';
 import { SocialLoginDto } from './dtos/social-login.dto';
 import { EmailService } from 'src/helpers/services/email.service';
-import { CartService } from 'src/cart/cart.service';
-import { CartDocument } from 'src/cart/cart.schema';
+import { CartService } from 'src/product/cart.service';
+import { CartDocument } from 'src/product/cart.schema';
 
 @Controller('auth')
 export class AuthController {

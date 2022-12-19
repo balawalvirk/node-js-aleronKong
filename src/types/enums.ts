@@ -75,3 +75,9 @@ export enum ReportType {
   GROUP = 'group',
   USER = 'user',
 }
+
+export enum OrderStatus {
+  PENDING = 'pending',
+  DELIVERED = 'delivered',
+  CANCELLED = 'cancelled',
+}
