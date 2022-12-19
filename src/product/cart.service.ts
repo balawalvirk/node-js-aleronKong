@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { FilterQuery, Model } from 'mongoose';
+import { FilterQuery, Model, UpdateQuery } from 'mongoose';
 import { BaseService } from 'src/helpers/services/base.service';
 import { Cart, CartDocument } from './cart.schema';
 
@@ -10,8 +10,15 @@ export class CartService extends BaseService {
     super(CartModel);
   }
 
-  async findOne(query: FilterQuery<any>) {
+  async findOne(query: FilterQuery<any>): Promise<CartDocument> {
     return await this.CartModel.findOne(query).populate({
+      path: 'items.item',
+      select: 'color size avatar title price creator',
+    });
+  }
+
+  async update(query: FilterQuery<any>, updateQuery: UpdateQuery<any>) {
+    return await this.CartModel.findOneAndUpdate(query, updateQuery, { new: true }).populate({
       path: 'items.item',
       select: 'color size avatar title',
     });

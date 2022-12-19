@@ -17,6 +17,7 @@ import { AddressDocument } from 'src/address/address.schema';
 import { AddressService } from 'src/address/address.service';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/role.guard';
+import { CartService } from 'src/product/cart.service';
 import { ParseObjectId, Roles, StripeService } from 'src/helpers';
 import { GetUser } from 'src/helpers/decorators/user.decorator';
 import { CollectionConditions, CollectionTypes, UserRole } from 'src/types';
@@ -32,6 +33,9 @@ import { CreateProductDto } from './dtos/create-product.dto';
 import { UpdateProductDto } from './dtos/update-product.dto';
 import { ProductDocument } from './product.schema';
 import { ProductService } from './product.service';
+import { OrderService } from 'src/order/order.service';
+import { CartDocument } from './cart.schema';
+import { SaleService } from 'src/sale/sale.service';
 
 @Controller('product')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -41,7 +45,10 @@ export class ProductController {
     private readonly collectionService: CollectionService,
     private readonly stripeService: StripeService,
     private readonly addressService: AddressService,
-    private readonly categoryService: ProductCategoryService
+    private readonly categoryService: ProductCategoryService,
+    private readonly cartService: CartService,
+    private readonly orderService: OrderService,
+    private readonly saleService: SaleService
   ) {}
 
   @Post('create')
@@ -88,27 +95,17 @@ export class ProductController {
   }
 
   @Post('checkout')
-  async checkout(
-    @Body() { paymentMethod, address, products }: CreateCheckoutDto,
-    @GetUser() user: UserDocument
-  ) {
-    const { city, line1, line2, country, state, postalCode }: AddressDocument =
-      await this.addressService.findOneRecord({ _id: address });
-    //find all products from database
-    const allProducts: ProductDocument[] = await this.productService
-      .findAllRecords({
-        _id: { $in: products },
-      })
-      .populate({ path: 'creator', select: 'accountId' });
-    //total price of all products
-    const totalPrice = allProducts.reduce((n, { price }) => n + price, 0);
+  async checkout(@Body() { paymentMethod, address }: CreateCheckoutDto, @GetUser() user: UserDocument) {
+    const { city, line1, line2, country, state, postalCode }: AddressDocument = await this.addressService.findOneRecord(
+      { _id: address }
+    );
+    const cart: CartDocument = await this.cartService.findOne({ creator: user._id });
+    const subTotal = cart.items.reduce((n, { price }) => n + price, 0);
 
-    const transfer_group = `${Math.floor(Math.random() * 899999 + 100000)}`;
-    //create a payment intent in stripe
     const paymentIntent = await this.stripeService.createPaymentIntent({
       currency: 'usd',
       payment_method: paymentMethod,
-      amount: totalPrice * 100,
+      amount: subTotal * 100,
       customer: user.customerId,
       shipping: {
         address: {
@@ -125,29 +122,36 @@ export class ProductController {
        * TODO:need to change the application fee amount dynamically
        * TODO:currently hardcoded $5 is placed
        */
-      transfer_group,
+      // transfer_group,
       application_fee_amount: 500,
     });
 
-    for (const product of allProducts) {
-      await this.stripeService.createTransfer({
-        amount: product.price,
-        currency: 'usd',
-        destination: product.creator.sellerId,
-        transfer_group,
-        description: `${product.title} transfers`,
+    for (const item of cart.items) {
+      await this.saleService.createRecord({
+        // @ts-ignore
+        product: item.item._id,
+        customer: user._id,
+        price: item.price,
+        buyer: item.item.creator,
       });
     }
 
-    return paymentIntent.client_secret;
+    await this.orderService.createRecord({
+      customer: user._id,
+      address: address,
+      subTotal,
+      paymentIntent: paymentIntent.client_secret,
+      items: cart.items,
+    });
+
+    await this.cartService.findOneRecordAndUpdate({ creator: user._id }, { $set: { items: [] } });
+
+    return { message: 'Order placed successfully.' };
   }
 
   //-----------------------------------------------collection apis---------------------------------------
   @Post('collection/create')
-  async createCollection(
-    @Body() createCollectionDto: CreateCollectionDto,
-    @GetUser() user: UserDocument
-  ) {
+  async createCollection(@Body() createCollectionDto: CreateCollectionDto, @GetUser() user: UserDocument) {
     const collection: CollectionDocument = await this.collectionService.createRecord({
       ...createCollectionDto,
       creator: user._id,
@@ -158,26 +162,30 @@ export class ProductController {
     if (collection.type === CollectionTypes.AUTOMATED) {
       //check if collection condition is any
       if (collection.conditions === CollectionConditions.ANY) {
-        products = await this.productService.findAllRecords({ tags: { $in: collection.tags } });
+        products = await this.productService.findAllRecords({
+          tags: { $in: collection.tags },
+        });
       } else if (collection.conditions === CollectionConditions.All) {
-        products = await this.productService.findAllRecords({ tags: { $all: collection.tags } });
+        products = await this.productService.findAllRecords({
+          tags: { $all: collection.tags },
+        });
       }
-      return await this.collectionService.findOneRecordAndUpdate(
-        { _id: collection._id },
-        { $push: { products } }
-      );
+      return await this.collectionService.findOneRecordAndUpdate({ _id: collection._id }, { $push: { products } });
     }
     return collection;
   }
 
   @Get('collection/find-all')
   async findAllCollections(
-    @Query('type', new ParseEnumPipe(['automated', 'manual', 'all'])) type: string,
+    @Query('type', new ParseEnumPipe(['automated', 'manual', 'all']))
+    type: string,
     @GetUser() user: UserDocument
   ) {
     let collections: CollectionDocument[];
     if (type === 'all') {
-      collections = await this.collectionService.findAllCollections({ creator: user._id });
+      collections = await this.collectionService.findAllCollections({
+        creator: user._id,
+      });
     } else {
       collections = await this.collectionService.findAllCollections({
         type: type,
@@ -194,10 +202,7 @@ export class ProductController {
 
   @Put('collection/add-product')
   async addProduct(@Body() { collection, product }: AddProductDto) {
-    return await this.collectionService.findOneRecordAndUpdate(
-      { _id: collection },
-      { $push: { products: product } }
-    );
+    return await this.collectionService.findOneRecordAndUpdate({ _id: collection }, { $push: { products: product } });
   }
 
   // categories apis
@@ -208,8 +213,7 @@ export class ProductController {
     const category = await this.categoryService.findOneRecord({
       title: createProductCategoryDto.title,
     });
-    if (category)
-      throw new HttpException('Category already exists with this title.', HttpStatus.BAD_REQUEST);
+    if (category) throw new HttpException('Category already exists with this title.', HttpStatus.BAD_REQUEST);
     return await this.categoryService.createRecord({ ...rest });
   }
 
@@ -221,5 +225,75 @@ export class ProductController {
   @Delete('category/:id/delete')
   async deleteCategory(@Param('id', ParseObjectId) id: string) {
     return await this.categoryService.deleteSingleRecord({ _id: id });
+  }
+
+  // ----------------------------------------------------------------cart apis -----------------------------------------------
+
+  @Get('cart')
+  async findOne(@GetUser() user: UserDocument) {
+    return await this.cartService.findOne({ creator: user._id });
+  }
+
+  @Post(':id/add-to-cart')
+  async addItem(@GetUser() user: UserDocument, @Param('id', ParseObjectId) id: string) {
+    const product: ProductDocument = await this.productService.findOneRecord({
+      _id: id,
+    });
+    if (!product) throw new HttpException('Product does not exists', HttpStatus.BAD_REQUEST);
+    const cart = await this.cartService.findOneRecord({ creator: user._id });
+    // check if item is added first time then create a cart object.
+    if (!cart) {
+      return await this.cartService.createRecord({
+        creator: user._id,
+        items: [
+          {
+            item: id,
+            quantity: 1,
+            price: product.price,
+          },
+        ],
+      });
+      // otherwise add item in items array
+    } else {
+      const item = cart.items.find((item) => item.item == id);
+      if (item) throw new HttpException('You already added this item in cart.', HttpStatus.BAD_REQUEST);
+      return await this.cartService.findOneRecordAndUpdate(
+        { creator: user._id },
+        {
+          $push: { items: { item: id, quantity: 1, price: product.price } },
+        }
+      );
+    }
+  }
+
+  @Put(':id/remove-from-cart')
+  async removeProduct(@Param('id', ParseObjectId) id: string, @GetUser() user: UserDocument) {
+    return await this.cartService.findOneRecordAndUpdate(
+      { creator: user._id },
+      {
+        $pull: { items: { item: id } },
+      }
+    );
+  }
+
+  @Put(':id/cart/inc-dec')
+  async increaseDecreaseItem(
+    @Param('id', ParseObjectId) id: string,
+    @GetUser() user: UserDocument,
+    @Query('inc') inc: string,
+    @Query('dec') dec: string
+  ) {
+    const product = await this.productService.findOneRecord({ _id: id });
+    if (!inc && !dec) throw new HttpException('inc or dec query string is required', HttpStatus.BAD_REQUEST);
+    let updateQuery = {};
+    if (inc)
+      updateQuery = {
+        $inc: { 'items.$.quantity': 1, 'items.$.price': product.price },
+      };
+    else
+      updateQuery = {
+        $inc: { 'items.$.quantity': -1, 'items.$.price': -product.price },
+      };
+    return await this.cartService.update({ 'items.item': id, creator: user._id }, updateQuery);
   }
 }

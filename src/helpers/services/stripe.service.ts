@@ -4,6 +4,9 @@ import { IEnvironmentVariables } from 'src/types';
 import Stripe from 'stripe';
 
 @Injectable()
+/**
+ * @author Muhammad Awais
+ */
 export class StripeService {
   constructor(private readonly configService: ConfigService<IEnvironmentVariables>) {}
 
@@ -17,11 +20,7 @@ export class StripeService {
     });
   }
 
-  async updateCustomer(
-    id: string,
-    params?: Stripe.CustomerUpdateParams,
-    options?: Stripe.RequestOptions
-  ) {
+  async updateCustomer(id: string, params?: Stripe.CustomerUpdateParams, options?: Stripe.RequestOptions) {
     return await this.stripe.customers.update(id, params, options);
   }
 
@@ -37,10 +36,7 @@ export class StripeService {
     return await this.stripe.paymentMethods.attach(paymentMethodId, params);
   }
 
-  async findAllPaymentMethords(
-    customerId: string,
-    params: Stripe.CustomerListPaymentMethodsParams
-  ) {
+  async findAllPaymentMethords(customerId: string, params: Stripe.CustomerListPaymentMethodsParams) {
     return await this.stripe.customers.listPaymentMethods(customerId, params);
   }
 
@@ -56,30 +52,23 @@ export class StripeService {
     return await this.stripe.paymentMethods.update(paymentMethodId, params);
   }
 
-  async createPaymentIntent(
-    params: Stripe.PaymentIntentCreateParams,
-    options?: Stripe.RequestOptions
-  ) {
+  async createPaymentIntent(params: Stripe.PaymentIntentCreateParams, options?: Stripe.RequestOptions) {
     return await this.stripe.paymentIntents.create(params, options);
+  }
+
+  async updatePaymentIntent(id: string, params?: Stripe.PaymentIntentUpdateParams, options?: Stripe.RequestOptions) {
+    return await this.stripe.paymentIntents.update(id, params, options);
   }
 
   async createProduct(params: Stripe.ProductCreateParams, options?: Stripe.RequestOptions) {
     return await this.stripe.products.create(params, options);
   }
 
-  async updateProduct(
-    id: string,
-    params?: Stripe.ProductUpdateParams,
-    options?: Stripe.RequestOptions
-  ) {
+  async updateProduct(id: string, params?: Stripe.ProductUpdateParams, options?: Stripe.RequestOptions) {
     return await this.stripe.products.update(id, params, options);
   }
 
-  async findOneProduct(
-    id: string,
-    params?: Stripe.ProductRetrieveParams,
-    options?: Stripe.RequestOptions
-  ) {
+  async findOneProduct(id: string, params?: Stripe.ProductRetrieveParams, options?: Stripe.RequestOptions) {
     return await this.stripe.products.retrieve(id, params, options);
   }
 
@@ -87,41 +76,23 @@ export class StripeService {
     return await this.stripe.prices.create(params, options);
   }
 
-  async updatePrice(
-    id: string,
-    params?: Stripe.PriceUpdateParams,
-    options?: Stripe.RequestOptions
-  ) {
+  async updatePrice(id: string, params?: Stripe.PriceUpdateParams, options?: Stripe.RequestOptions) {
     return await this.stripe.prices.update(id, params, options);
   }
 
-  async createSubscription(
-    params: Stripe.SubscriptionCreateParams,
-    options?: Stripe.RequestOptions
-  ) {
+  async createSubscription(params: Stripe.SubscriptionCreateParams, options?: Stripe.RequestOptions) {
     return await this.stripe.subscriptions.create(params, options);
   }
 
-  async findAllSubscriptions(
-    params?: Stripe.SubscriptionListParams,
-    options?: Stripe.RequestOptions
-  ) {
+  async findAllSubscriptions(params?: Stripe.SubscriptionListParams, options?: Stripe.RequestOptions) {
     return await this.stripe.subscriptions.list(params, options);
   }
 
-  async findOneSubscription(
-    id: string,
-    params?: Stripe.SubscriptionRetrieveParams,
-    options?: Stripe.RequestOptions
-  ) {
+  async findOneSubscription(id: string, params?: Stripe.SubscriptionRetrieveParams, options?: Stripe.RequestOptions) {
     return await this.stripe.subscriptions.retrieve(id, params, options);
   }
 
-  async cancelSubscription(
-    id: string,
-    params?: Stripe.SubscriptionDeleteParams,
-    options?: Stripe.RequestOptions
-  ) {
+  async cancelSubscription(id: string, params?: Stripe.SubscriptionDeleteParams, options?: Stripe.RequestOptions) {
     return await this.stripe.subscriptions.del(id, params, options);
   }
 
@@ -133,19 +104,11 @@ export class StripeService {
     return await this.stripe.accounts.create(params, options);
   }
 
-  async updateAccount(
-    id: string,
-    params?: Stripe.AccountUpdateParams,
-    options?: Stripe.RequestOptions
-  ) {
+  async updateAccount(id: string, params?: Stripe.AccountUpdateParams, options?: Stripe.RequestOptions) {
     return await this.stripe.accounts.update(id, params, options);
   }
 
-  async deleteAccount(
-    id: string,
-    params?: Stripe.AccountDeleteParams,
-    options?: Stripe.RequestOptions
-  ) {
+  async deleteAccount(id: string, params?: Stripe.AccountDeleteParams, options?: Stripe.RequestOptions) {
     return await this.stripe.accounts.del(id, params, options);
   }
 
@@ -153,11 +116,7 @@ export class StripeService {
     return await this.stripe.transfers.create(params, options);
   }
 
-  async createBankAccount(
-    id: string,
-    params: Stripe.ExternalAccountCreateParams,
-    options?: Stripe.RequestOptions
-  ) {
+  async createBankAccount(id: string, params: Stripe.ExternalAccountCreateParams, options?: Stripe.RequestOptions) {
     return await this.stripe.accounts.createExternalAccount(id, params, options);
   }
 
@@ -170,11 +129,7 @@ export class StripeService {
     return await this.stripe.accounts.deleteExternalAccount(accountId, id, params, options);
   }
 
-  async findAllBankAccounts(
-    id: string,
-    params?: Stripe.ExternalAccountListParams,
-    options?: Stripe.RequestOptions
-  ) {
+  async findAllBankAccounts(id: string, params?: Stripe.ExternalAccountListParams, options?: Stripe.RequestOptions) {
     return await this.stripe.accounts.listExternalAccounts(id, params, options);
   }
 

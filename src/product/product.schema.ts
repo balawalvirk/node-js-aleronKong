@@ -84,6 +84,9 @@ export class Product {
 
   @Prop()
   simultaneousDeviceUsage: string;
+
+  @Prop()
+  reviews: number;
 }
 
 export const ProductSchema = SchemaFactory.createForClass(Product);

@@ -1,26 +1,21 @@
 import { Injectable } from '@nestjs/common';
-import { CreateOrderDto } from './dto/create-order.dto';
-import { UpdateOrderDto } from './dto/update-order.dto';
+import { InjectModel } from '@nestjs/mongoose';
+import { FilterQuery, Model } from 'mongoose';
+import { BaseService } from 'src/helpers';
+import { OrderModule } from './order.module';
+import { Order, OrderDocument } from './order.schema';
 
 @Injectable()
-export class OrderService {
-  create(createOrderDto: CreateOrderDto) {
-    return 'This action adds a new order';
+export class OrderService extends BaseService {
+  constructor(@InjectModel(Order.name) private OrderModel: Model<OrderDocument>) {
+    super(OrderModel);
   }
 
-  findAll() {
-    return `This action returns all order`;
-  }
-
-  findOne(id: number) {
-    return `This action returns a #${id} order`;
-  }
-
-  update(id: number, updateOrderDto: UpdateOrderDto) {
-    return `This action updates a #${id} order`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} order`;
+  async findOne(query: FilterQuery<OrderModule>) {
+    return await this.OrderModel.findOne(query).populate({
+      path: 'items.item',
+      select: 'creator title',
+      populate: { path: 'creator', select: 'sellerId' },
+    });
   }
 }
