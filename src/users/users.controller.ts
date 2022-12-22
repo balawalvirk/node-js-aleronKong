@@ -1,6 +1,7 @@
 import {
   Body,
   Controller,
+  DefaultValuePipe,
   Delete,
   Get,
   HttpException,
@@ -8,13 +9,14 @@ import {
   Param,
   Post,
   Put,
+  Query,
   UseGuards,
 } from '@nestjs/common';
 import { compare, hash } from 'bcrypt';
 import { ChangePasswordDto } from 'src/auth/dtos/change-pass.dto';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/role.guard';
-import { ParseObjectId, Roles, StripeService } from 'src/helpers';
+import { makeQuery, ParseObjectId, Roles, StripeService } from 'src/helpers';
 import { GetUser } from 'src/helpers/decorators/user.decorator';
 import { UserRole, UserStatus } from 'src/types';
 import { UserDocument } from 'src/users/users.schema';
@@ -25,10 +27,7 @@ import { UsersService } from './users.service';
 @Controller('user')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class UserController {
-  constructor(
-    private readonly usersService: UsersService,
-    private readonly stripeService: StripeService
-  ) {}
+  constructor(private readonly usersService: UsersService, private readonly stripeService: StripeService) {}
 
   @Put('update')
   async setupProfile(@Body() body: UpdateUserDto, @GetUser() user: UserDocument) {
@@ -44,8 +43,31 @@ export class UserController {
 
   @Roles(UserRole.ADMIN)
   @Get('find-all')
-  async findAll() {
-    return await this.usersService.findAllRecords();
+  async findAll(
+    @Query('page') page: string,
+    @Query('limit') limit: string,
+    @Query('query', new DefaultValuePipe('')) query: string
+  ) {
+    const $q = makeQuery({ page, limit });
+    const rjx = { $regex: query, $options: 'i' };
+    const options = { limit: $q.limit, skip: $q.skip };
+    const total = await this.usersService.countRecords({});
+    const users = await this.usersService.paginate(
+      {
+        role: { $nin: [UserRole.ADMIN] },
+        $or: [{ firstName: rjx }, { lastName: rjx }, { email: rjx }],
+      },
+      options
+    );
+
+    const paginated = {
+      total: total,
+      pages: Math.round(total / $q.limit),
+      page: $q.page,
+      limit: $q.limit,
+      data: users,
+    };
+    return paginated;
   }
 
   @Put(':id/block')
@@ -58,37 +80,24 @@ export class UserController {
         _id: user._id,
         blockedUsers: { $in: [id] },
       });
-      if (userFound)
-        throw new HttpException('You already blocked this user.', HttpStatus.BAD_REQUEST);
-      await this.usersService.findOneRecordAndUpdate(
-        { _id: user._id },
-        { $push: { blockedUsers: id } }
-      );
+      if (userFound) throw new HttpException('You already blocked this user.', HttpStatus.BAD_REQUEST);
+      await this.usersService.findOneRecordAndUpdate({ _id: user._id }, { $push: { blockedUsers: id } });
     }
     return { message: 'User blocked successfully.' };
   }
 
   @Put(':id/unblock')
   async unBlock(@Param('id', ParseObjectId) id: string, @GetUser() user: UserDocument) {
-    await this.usersService.findOneRecordAndUpdate(
-      { _id: user._id },
-      { $pull: { blockedUsers: id } }
-    );
+    await this.usersService.findOneRecordAndUpdate({ _id: user._id }, { $pull: { blockedUsers: id } });
     return { message: 'User unblocked successfully.' };
   }
 
   @Post('change-password')
-  async changePassword(
-    @Body() { newPassword, oldPassword }: ChangePasswordDto,
-    @GetUser() user: UserDocument
-  ) {
+  async changePassword(@Body() { newPassword, oldPassword }: ChangePasswordDto, @GetUser() user: UserDocument) {
     const userFound = await this.usersService.findOneRecord({ _id: user._id });
     const match = await compare(oldPassword, userFound.password);
     if (!match) throw new HttpException('Invalid old password.', HttpStatus.BAD_REQUEST);
-    await this.usersService.findOneRecordAndUpdate(
-      { _id: user._id },
-      { password: await hash(newPassword, 10) }
-    );
+    await this.usersService.findOneRecordAndUpdate({ _id: user._id }, { password: await hash(newPassword, 10) });
     return { message: 'Password changed successfully.' };
   }
 
@@ -119,18 +128,12 @@ export class UserController {
   }
 
   @Delete('bank-account/:bankAccount/delete')
-  async deleteBankAccount(
-    @GetUser() user: UserDocument,
-    @Param('bankAccount') bankAccount: string
-  ) {
+  async deleteBankAccount(@GetUser() user: UserDocument, @Param('bankAccount') bankAccount: string) {
     return await this.stripeService.deleteBankAccount(user.sellerId, bankAccount);
   }
 
   @Put('bank-account/:bankAccount/update')
-  async updateBankAccount(
-    @Param('bankAccount') bankAccount: string,
-    @GetUser() user: UserDocument
-  ) {
+  async updateBankAccount(@Param('bankAccount') bankAccount: string, @GetUser() user: UserDocument) {
     return await this.stripeService.updateBankAccount(user.sellerId, bankAccount);
   }
 
@@ -149,19 +152,13 @@ export class UserController {
       currency: 'usd',
     });
 
-    return await this.usersService.findOneRecordAndUpdate(
-      { _id: user._id },
-      { isGuildMember: true }
-    );
+    return await this.usersService.findOneRecordAndUpdate({ _id: user._id }, { isGuildMember: true });
   }
 
   @Put('friend/:id/create')
   async addFriend(@Param('id', ParseObjectId) id: string, @GetUser() user: UserDocument) {
     const friend = await this.usersService.findOneRecord({ _id: user._id, friends: { $in: [id] } });
     if (friend) throw new HttpException('User is already your friend.', HttpStatus.BAD_REQUEST);
-    return await this.usersService.findOneRecordAndUpdate(
-      { _id: user._id },
-      { $push: { friends: id } }
-    );
+    return await this.usersService.findOneRecordAndUpdate({ _id: user._id }, { $push: { friends: id } });
   }
 }
