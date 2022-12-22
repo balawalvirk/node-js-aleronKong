@@ -12,6 +12,7 @@ import { SocialLoginDto } from './dtos/social-login.dto';
 import { EmailService } from 'src/helpers/services/email.service';
 import { CartService } from 'src/product/cart.service';
 import { CartDocument } from 'src/product/cart.schema';
+import { UserRole } from 'src/types';
 
 @Controller('auth')
 export class AuthController {
@@ -26,9 +27,7 @@ export class AuthController {
   @Post('login')
   async login(@GetUser() user: UserDocument) {
     const { access_token } = await this.authService.login(user.userName, user._id);
-    const { unReadMessages, unReadNotifications } = await this.authService.findNotifications(
-      user._id
-    );
+    const { unReadMessages, unReadNotifications } = await this.authService.findNotifications(user._id);
     const cart: CartDocument = await this.cartService.findOneRecord({ creator: user._id });
     return {
       access_token,
@@ -41,11 +40,18 @@ export class AuthController {
     };
   }
 
+  @UseGuards(LocalAuthGuard)
+  @Post('admin/login')
+  async adminLogin(@GetUser() user: UserDocument) {
+    if (!user.role.includes(UserRole.ADMIN)) throw new HttpException('Invalid email/password', HttpStatus.UNAUTHORIZED);
+    const { access_token } = await this.authService.login(user.userName, user._id);
+    return { access_token, user };
+  }
+
   @Post('register')
   async register(@Body() body: RegisterDto, @Ip() ip: string) {
     const emailExists = await this.userService.findOneRecord({ email: body.email });
-    if (emailExists)
-      throw new HttpException('User already exists with this email.', HttpStatus.BAD_REQUEST);
+    if (emailExists) throw new HttpException('User already exists with this email.', HttpStatus.BAD_REQUEST);
     // first create stripe connect (custom) account and customer account of newly register user.
     const sellerAccount = await this.authService.createSellerAccount(body, ip);
     const customerAccount = await this.authService.createCustomerAccount(
@@ -76,8 +82,7 @@ export class AuthController {
   @Post('check-email')
   async checkEmail(@Body('email') email: string) {
     const emailExists = await this.userService.findOneRecord({ email });
-    if (emailExists)
-      throw new HttpException('User already exists with this email.', HttpStatus.BAD_REQUEST);
+    if (emailExists) throw new HttpException('User already exists with this email.', HttpStatus.BAD_REQUEST);
     return { message: 'User does not exist with this email' };
   }
 
@@ -110,9 +115,7 @@ export class AuthController {
       };
     } else {
       const { access_token } = await this.authService.login(userFound.userName, userFound._id);
-      const { unReadMessages, unReadNotifications } = await this.authService.findNotifications(
-        userFound._id
-      );
+      const { unReadMessages, unReadNotifications } = await this.authService.findNotifications(userFound._id);
       const cart: CartDocument = await this.cartService.findOneRecord({ creator: userFound._id });
       return {
         access_token,
@@ -154,10 +157,7 @@ export class AuthController {
     if (!otpFound) throw new HttpException('Invalid Otp.', HttpStatus.BAD_REQUEST);
     const diff = otpFound.expireIn - new Date().getTime();
     if (diff < 0) throw new HttpException('Otp expired.', HttpStatus.BAD_REQUEST);
-    await this.userService.findOneRecordAndUpdate(
-      { email: otpFound.email },
-      { password: await hash(password, 10) }
-    );
+    await this.userService.findOneRecordAndUpdate({ email: otpFound.email }, { password: await hash(password, 10) });
     return { message: 'Password changed successfully.' };
   }
 }

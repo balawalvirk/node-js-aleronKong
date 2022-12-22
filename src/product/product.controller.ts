@@ -118,12 +118,6 @@ export class ProductController {
         },
         name: `${user.firstName} ${user.lastName}`,
       },
-      /**
-       * TODO:need to change the application fee amount dynamically
-       * TODO:currently hardcoded $5 is placed
-       */
-      // transfer_group,
-      application_fee_amount: 500,
     });
 
     for (const item of cart.items) {
@@ -132,7 +126,7 @@ export class ProductController {
         product: item.item._id,
         customer: user._id,
         price: item.price,
-        buyer: item.item.creator,
+        seller: item.item.creator,
       });
     }
 

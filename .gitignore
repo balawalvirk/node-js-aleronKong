@@ -42,3 +42,5 @@ yarn.lock
 .env.stag
 .env.prod
 firebase.ts
+# Local Netlify folder
+.netlify
