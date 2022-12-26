@@ -1,15 +1,4 @@
-import {
-  Body,
-  Controller,
-  Get,
-  HttpException,
-  HttpStatus,
-  Param,
-  Post,
-  Put,
-  Query,
-  UseGuards,
-} from '@nestjs/common';
+import { Body, Controller, Get, HttpException, HttpStatus, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/role.guard';
 import { makeQuery, ParseObjectId, Roles } from 'src/helpers';
@@ -42,6 +31,11 @@ export class PostsController {
     return paginated;
   }
 
+  @Get(':id/find-one')
+  async findOne(@Param('id', ParseObjectId) id: string) {
+    return await this.postsService.findOne({ _id: id });
+  }
+
   //find posts of user that is logged in
   @Get('find-all/mine')
   async findMine(@GetUser() user: UserDocument) {
@@ -57,11 +51,7 @@ export class PostsController {
   }
 
   @Get('home')
-  async findFeedPosts(
-    @Query('page') page: string,
-    @Query('limit') limit: string,
-    @GetUser() user: UserDocument
-  ) {
+  async findFeedPosts(@Query('page') page: string, @Query('limit') limit: string, @GetUser() user: UserDocument) {
     const $q = makeQuery({ page, limit });
     const condition = {
       privacy: PostPrivacy.PUBLIC,
@@ -97,11 +87,7 @@ export class PostsController {
   }
 
   @Post('comment/:postId')
-  async createComment(
-    @Param('postId') postId: string,
-    @GetUser() user: UserDocument,
-    @Body() body: CreateCommentDto
-  ) {
+  async createComment(@Param('postId') postId: string, @GetUser() user: UserDocument, @Body() body: CreateCommentDto) {
     return await this.postsService.updatePost(postId, {
       $push: { comments: { content: body.content, creator: user._id } },
     });

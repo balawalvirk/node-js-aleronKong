@@ -53,4 +53,21 @@ export class PostsService extends BaseService {
       { path: 'creator', select: 'firstName lastName avatar userName isGuildMember' },
     ]);
   }
+
+  async findOne(query: FilterQuery<PostDocument>) {
+    return await this.postModel.findOne(query).populate([
+      {
+        path: 'comments',
+        select: 'content',
+        populate: { path: 'creator', select: 'firstName lastName avatar' },
+      },
+      {
+        path: 'likes',
+        select: 'firstName lastName avatar',
+      },
+      { path: 'creator', select: 'firstName lastName avatar userName isGuildMember' },
+      { path: 'group', select: 'name' },
+      { path: 'fundraising', populate: [{ path: 'category' }, { path: 'subCategory' }] },
+    ]);
+  }
 }

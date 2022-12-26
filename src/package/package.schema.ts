@@ -27,9 +27,6 @@ export class Package {
 
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true })
   creator: User;
-
-  @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }] })
-  buyers: User[];
 }
 
 export const PackageSchema = SchemaFactory.createForClass(Package);

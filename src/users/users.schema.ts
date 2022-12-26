@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose, { Document } from 'mongoose';
+import { Address } from 'src/address/address.schema';
 import { Package } from 'src/package/package.schema';
 import { AuthTypes, UserRole, UserStatus } from 'src/types';
 import { Report, ReportSchema } from './report.schema';
@@ -47,7 +48,10 @@ export class User {
   sellerId: string;
 
   @Prop()
-  paymentMethod: string;
+  defaultPaymentMethod: string;
+
+  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'address' })
+  defaultAddress: Address;
 
   @Prop()
   fcmToken: string;
