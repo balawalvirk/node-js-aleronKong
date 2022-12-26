@@ -1,4 +1,6 @@
+import { Type } from 'class-transformer';
 import {
+  IsArray,
   IsBoolean,
   IsDateString,
   IsEnum,
@@ -7,8 +9,27 @@ import {
   IsNumber,
   IsOptional,
   IsString,
+  ValidateNested,
 } from 'class-validator';
 import { ProductStatus, ProductType } from 'src/types';
+
+class Detail {
+  @IsString()
+  value: string;
+
+  @IsNumber()
+  quantity: string;
+}
+
+class Attribute {
+  @IsString()
+  name: string;
+
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => Detail)
+  details: Detail[];
+}
 
 export class CreateProductDto {
   @IsString()
@@ -93,12 +114,10 @@ export class CreateProductDto {
   printLength?: number;
 
   @IsOptional()
-  @IsString({ each: true })
-  availableColors?: string;
-
-  @IsOptional()
-  @IsString({ each: true })
-  availableSizes?: string;
+  @IsArray()
+  @ValidateNested({ each: true })
+  @Type(() => Attribute)
+  attributes?: Attribute[];
 
   @IsOptional()
   @IsString()

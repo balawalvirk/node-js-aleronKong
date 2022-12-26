@@ -4,6 +4,28 @@ import { ProductStatus, ProductType } from 'src/types';
 import { User } from 'src/users/users.schema';
 import { ProductCategory } from './category.schema';
 
+@Schema({ versionKey: false, _id: false })
+class Detail {
+  @Prop()
+  value: string;
+
+  @Prop()
+  quantity: number;
+}
+
+const DetailSchema = SchemaFactory.createForClass(Detail);
+
+@Schema({ versionKey: false, _id: false })
+class Attribute {
+  @Prop()
+  name: string;
+
+  @Prop({ type: [DetailSchema] })
+  details: Detail[];
+}
+
+const AttributeSchema = SchemaFactory.createForClass(Attribute);
+
 export type ProductDocument = Product & mongoose.Document;
 @Schema({ timestamps: true })
 export class Product {
@@ -76,17 +98,14 @@ export class Product {
   @Prop()
   lending: boolean;
 
-  @Prop({ type: [String] })
-  availableColors: string[];
-
-  @Prop({ type: [String] })
-  availableSizes: string[];
-
   @Prop()
   simultaneousDeviceUsage: string;
 
   @Prop()
   reviews: number;
+
+  @Prop({ type: [AttributeSchema] })
+  attributes: Attribute[];
 }
 
 export const ProductSchema = SchemaFactory.createForClass(Product);

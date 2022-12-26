@@ -1,14 +1,4 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  Patch,
-  Param,
-  Delete,
-  UseGuards,
-  BadRequestException,
-} from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, BadRequestException } from '@nestjs/common';
 import { PackageService } from './package.service';
 import { CreatePackageDto } from './dto/create-package.dto';
 import { UpdatePackageDto } from './dto/update-package.dto';
@@ -17,6 +7,7 @@ import { UserDocument } from 'src/users/users.schema';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { PackageDocument } from './package.schema';
 import { UsersService } from 'src/users/users.service';
+import { SaleService } from 'src/sale/sale.service';
 
 @Controller('package')
 @UseGuards(JwtAuthGuard)
@@ -24,7 +15,8 @@ export class PackageController {
   constructor(
     private readonly packageService: PackageService,
     private readonly stripeService: StripeService,
-    private readonly userService: UsersService
+    private readonly userService: UsersService,
+    private readonly saleService: SaleService
   ) {}
 
   @Post('create')
@@ -65,10 +57,7 @@ export class PackageController {
         description: updatePackageDto.description,
         images: [updatePackageDto.media],
       });
-      return await this.packageService.findOneRecordAndUpdate(
-        { _id: packageFound._id },
-        updatePackageDto
-      );
+      return await this.packageService.findOneRecordAndUpdate({ _id: packageFound._id }, updatePackageDto);
     } else {
       //make previous stripe price in active
       await this.stripeService.updatePrice(packageFound.priceId, {
@@ -99,10 +88,7 @@ export class PackageController {
   @Patch('subscribe/:id')
   async subscribe(@GetUser() user: UserDocument, @Param('id', ParseObjectId) id: string) {
     //@ts-ignore
-    const pkg: PackageDocument = await this.packageService
-      .findOneRecord({ _id: id })
-      .populate({ path: 'creator', select: 'accountId' });
-
+    const pkg = await this.packageService.findOneRecord({ _id: id }).populate({ path: 'creator', select: 'sellerId' });
     // create subscription in stripe platform
     await this.stripeService.createSubscription({
       customer: user.customerId,
@@ -113,15 +99,14 @@ export class PackageController {
       },
     });
 
-    await this.userService.findOneRecordAndUpdate(
-      { _id: user._id },
-      { $push: { supportingPackages: pkg._id } }
-    );
-
-    return await this.packageService.findOneRecordAndUpdate(
-      { _id: id },
-      { $push: { buyers: user._id } }
-    );
+    await this.saleService.createRecord({
+      package: pkg._id,
+      customer: user._id,
+      seller: pkg.creator._id,
+      price: pkg.price,
+    });
+    await this.userService.findOneRecordAndUpdate({ _id: user._id }, { $push: { supportingPackages: pkg._id } });
+    return pkg;
   }
 
   @Delete('delete/:id')
@@ -149,19 +134,14 @@ export class PackageController {
   @Patch('unsubscribe/:id')
   async unSubscribePackage(@Param('id', ParseObjectId) id: string, @GetUser() user: UserDocument) {
     const pkg: PackageDocument = await this.packageService.findOneRecord({ _id: id });
-    if (pkg) {
-      const subscription = await this.stripeService.findAllSubscriptions({
-        customer: user._id,
-        price: pkg.priceId,
-      });
-      await this.stripeService.cancelSubscription(subscription.data[0].id);
-      await this.packageService.findOneRecordAndUpdate(
-        { _id: id },
-        { $pull: { buyers: user._id } }
-      );
-      return 'Subscription canceled successfully.';
-    }
-    throw new BadRequestException('Package not found');
+    if (!pkg) throw new BadRequestException('Package not found');
+    const subscription = await this.stripeService.findAllSubscriptions({
+      customer: user._id,
+      price: pkg.priceId,
+    });
+    await this.stripeService.cancelSubscription(subscription.data[0].id);
+    await this.userService.findOneRecordAndUpdate({ _id: user._id }, { $pull: { supportingPackages: pkg._id } });
+    return 'Subscription canceled successfully.';
   }
 
   @Get('find-one/:id')

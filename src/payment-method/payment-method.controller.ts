@@ -9,10 +9,7 @@ import { UpdatePaymentMethordDto } from './dto/update-payment-methord.dto';
 @Controller('payment-method')
 @UseGuards(JwtAuthGuard)
 export class PaymentMethodController {
-  constructor(
-    private readonly stripeService: StripeService,
-    private readonly userService: UsersService
-  ) {}
+  constructor(private readonly stripeService: StripeService, private readonly userService: UsersService) {}
 
   @Post('create')
   async createPaymentMethord(
@@ -58,7 +55,7 @@ export class PaymentMethodController {
     await this.stripeService.updateCustomer(user.customerId, {
       invoice_settings: { default_payment_method: id },
     });
-    await this.userService.findOneRecordAndUpdate({ _id: user._id }, { paymentMethod: id });
+    await this.userService.findOneRecordAndUpdate({ _id: user._id }, { defaultPaymentMethod: id });
     return 'Default payment method added to customer account.';
   }
 
