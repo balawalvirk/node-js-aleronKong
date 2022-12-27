@@ -64,12 +64,13 @@ export class AuthController {
       customerId: customerAccount.id,
       sellerId: sellerAccount.id,
     });
+
     const { access_token } = await this.authService.login(user.userName, user._id);
     return {
       message: 'User registered successfully.',
       data: {
         user: {
-          ...user,
+          ...user.toJSON(),
           unReadNotifications: 0,
           unReadMessages: 0,
           cartItems: 0,
@@ -110,7 +111,7 @@ export class AuthController {
       const { access_token } = await this.authService.login(user.userName, user._id);
       return {
         access_token,
-        user: { ...user, unReadNotifications: 0, unReadMessages: 0, cartItems: 0 },
+        user: { ...user.toJSON(), unReadNotifications: 0, unReadMessages: 0, cartItems: 0 },
         newUser: true,
       };
     } else {

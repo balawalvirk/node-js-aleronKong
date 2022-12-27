@@ -10,7 +10,6 @@ async function bootstrap() {
   app.enableCors();
   app.enableVersioning({ type: VersioningType.URI, defaultVersion: '1' });
   app.use(helmet());
-
   const configService = app.get(ConfigService);
   const port = configService.get('PORT') || 3000;
   await app.listen(port, () => console.log(`listening on port ${port}`));

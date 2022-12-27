@@ -13,8 +13,8 @@ import { Otp, OtpSchema } from './otp.schema';
 import { EmailService } from 'src/helpers/services/email.service';
 import { StripeService } from 'src/helpers';
 import { NotificationModule } from 'src/notification/notification.module';
-import { CartService } from 'src/product/cart.service';
 import { ProductModule } from 'src/product/product.module';
+import { FileModule } from 'src/file/file.module';
 
 @Module({
   imports: [
@@ -22,6 +22,7 @@ import { ProductModule } from 'src/product/product.module';
     ProductModule,
     PassportModule,
     NotificationModule,
+    FileModule,
     JwtModule.register({
       secret: new ConfigService<IEnvironmentVariables>().get('JWT_TOKEN_SECRET'),
       signOptions: { expiresIn: '15d' },
