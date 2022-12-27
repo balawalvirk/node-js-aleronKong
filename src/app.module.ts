@@ -21,16 +21,10 @@ import { ReportModule } from './report/report.module';
 import { GuildPackageModule } from './guild-package/guild-package.module';
 import { SearchModule } from './search/search.module';
 import { SaleModule } from './sale/sale.module';
-import { ServeStaticModule } from '@nestjs/serve-static';
-import { join } from 'path';
 import { AppController } from './app.controller';
 
 @Module({
   imports: [
-    ServeStaticModule.forRoot({
-      rootPath: join(__dirname, '..', '../build'),
-      exclude: ['/api*'],
-    }),
     ConfigModule.forRoot({ isGlobal: true }),
     MongooseModule.forRoot(new ConfigService<IEnvironmentVariables>().get('MONGO_URI')),
     UsersModule,
