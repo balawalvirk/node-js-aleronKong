@@ -30,10 +30,7 @@ import { PostDocument } from 'src/posts/posts.schema';
 @Controller('group')
 @UseGuards(JwtAuthGuard)
 export class GroupController {
-  constructor(
-    private readonly groupService: GroupService,
-    private readonly postService: PostsService
-  ) {}
+  constructor(private readonly groupService: GroupService, private readonly postService: PostsService) {}
 
   @Post('create')
   async create(@Body() createGroupDto: CreateGroupDto, @GetUser() user: UserDocument) {
@@ -47,10 +44,7 @@ export class GroupController {
       creator: user._id,
     });
     if (post.group) {
-      await this.groupService.findOneRecordAndUpdate(
-        { _id: post.group },
-        { $push: { posts: post._id } }
-      );
+      await this.groupService.findOneRecordAndUpdate({ _id: post.group }, { $push: { posts: post._id } });
     }
     return post;
   }
@@ -82,32 +76,21 @@ export class GroupController {
     if (group) {
       //check if user is already a member of this group
       const memberFound = group.members.filter((member) => member.member === user._id);
-      if (memberFound.length > 0)
-        throw new BadRequestException('You are already a member of this group.');
+      if (memberFound.length > 0) throw new BadRequestException('You are already a member of this group.');
       //check if group is private
       if (group.privacy === GroupPrivacy.PRIVATE) {
         //check if user request is already in request array  of this group
         const requestFound = group.requests.filter((request) => request === user._id);
-        if (requestFound.length > 0)
-          throw new BadRequestException('Your request to join group is pending.');
-        return await this.groupService.findOneRecordAndUpdate(
-          { _id: id },
-          { $push: { requests: user._id } }
-        );
+        if (requestFound.length > 0) throw new BadRequestException('Your request to join group is pending.');
+        return await this.groupService.findOneRecordAndUpdate({ _id: id }, { $push: { requests: user._id } });
       }
-      return await this.groupService.findOneRecordAndUpdate(
-        { _id: id },
-        { $push: { members: { member: user._id } } }
-      );
+      return await this.groupService.findOneRecordAndUpdate({ _id: id }, { $push: { members: { member: user._id } } });
     } else throw new BadRequestException('Group does not exists.');
   }
 
   @Put('leave/:id')
   async leaveGroup(@GetUser() user: UserDocument, @Param('id', ParseObjectId) id: string) {
-    await this.groupService.findOneRecordAndUpdate(
-      { _id: id },
-      { $pull: { members: { member: user._id } } }
-    );
+    await this.groupService.findOneRecordAndUpdate({ _id: id }, { $pull: { members: { member: user._id } } });
     return 'Group left successfully.';
   }
 
@@ -179,15 +162,8 @@ export class GroupController {
   }
 
   @Put('report/:id')
-  async report(
-    @Param('id', ParseObjectId) id: string,
-    @GetUser() user: UserDocument,
-    @Body('reason') reason: string
-  ) {
-    await this.groupService.findOneRecordAndUpdate(
-      { _id: id },
-      { $push: { reports: { reporter: user._id, reason } } }
-    );
+  async report(@Param('id', ParseObjectId) id: string, @GetUser() user: UserDocument, @Body('reason') reason: string) {
+    await this.groupService.findOneRecordAndUpdate({ _id: id }, { $push: { reports: { reporter: user._id, reason } } });
     return 'Report submitted successfully.';
   }
 }

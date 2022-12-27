@@ -39,7 +39,7 @@ export class BaseService {
    * Creates a countDocuments query: counts the number of documents that match filter.
    * @param filter
    */
-  countRecords = (filter: FilterQuery<any>) => this.model.countDocuments(filter);
+  countRecords = (filter: FilterQuery<any>) => this.model.countDocuments(filter).lean();
 
   /**
    * Finds a single document by its _id field.
