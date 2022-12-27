@@ -28,7 +28,7 @@ import { AppController } from './app.controller';
 @Module({
   imports: [
     ServeStaticModule.forRoot({
-      rootPath: join(__dirname, '..', '../client'),
+      rootPath: join(__dirname, '..', '../build'),
       exclude: ['/api*'],
     }),
     ConfigModule.forRoot({ isGlobal: true }),
