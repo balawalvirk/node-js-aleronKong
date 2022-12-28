@@ -50,7 +50,7 @@ export class User {
   @Prop()
   defaultPaymentMethod: string;
 
-  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'address' })
+  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Address' })
   defaultAddress: Address;
 
   @Prop()
@@ -70,6 +70,9 @@ export class User {
 
   @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Package' }] })
   supportingPackages: Package[];
+
+  @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Package' }] })
+  supportingGuildPackages: Package[];
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

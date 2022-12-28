@@ -10,6 +10,7 @@ import {
   BadRequestException,
   HttpException,
   HttpStatus,
+  Query,
 } from '@nestjs/common';
 import { PackageService } from './package.service';
 import { CreatePackageDto } from './dto/create-package.dto';
@@ -22,6 +23,7 @@ import { UsersService } from 'src/users/users.service';
 import { SaleService } from 'src/sale/sale.service';
 import { SaleDocument } from 'src/sale/sale.schema';
 import { UserRole } from 'src/types';
+import { FindAllPackagesQueryDto } from './dto/find-all-query.dto';
 
 @Controller('package')
 @UseGuards(JwtAuthGuard)
@@ -36,9 +38,9 @@ export class PackageController {
   @Post('create')
   async create(@Body() createPackageDto: CreatePackageDto, @GetUser() user: UserDocument) {
     //check if package is guild package then only admin can create this package.
-    if (createPackageDto.isGuildPackage) {
-      if (!user.role.includes(UserRole.ADMIN)) throw new HttpException('Forbidden resource', HttpStatus.FORBIDDEN);
-    }
+    // if (createPackageDto.isGuildPackage) {
+    //   if (!user.role.includes(UserRole.ADMIN)) throw new HttpException('Forbidden resource', HttpStatus.FORBIDDEN);
+    // }
 
     const product = await this.stripeService.createProduct({
       name: createPackageDto.title,
@@ -61,18 +63,18 @@ export class PackageController {
     });
   }
 
-  @Get('/user/:id/find-all')
-  async findAll(@Param('id', ParseObjectId) id: string) {
-    return await this.packageService.findAllRecords({ creator: id });
+  @Get('/find-all')
+  async findAllPackages(@Query() findAllPackagesQueryDto: FindAllPackagesQueryDto) {
+    return await this.packageService.findAllRecords(findAllPackagesQueryDto);
   }
 
   @Patch('update/:id')
   async update(@Param('id') id: string, @Body() updatePackageDto: UpdatePackageDto, @GetUser() user: UserDocument) {
     const packageFound: PackageDocument = await this.packageService.findOneRecord({ _id: id });
     //check if package is guild package then only admin can create this package.
-    if (packageFound.isGuildPackage) {
-      if (!user.role.includes(UserRole.ADMIN)) throw new HttpException('Forbidden resource', HttpStatus.FORBIDDEN);
-    }
+    // if (packageFound.isGuildPackage) {
+    //   if (!user.role.includes(UserRole.ADMIN)) throw new HttpException('Forbidden resource', HttpStatus.FORBIDDEN);
+    // }
 
     // check if package price is changed
     if (packageFound.price === updatePackageDto.price) {
@@ -134,7 +136,10 @@ export class PackageController {
       seller: pkg.creator._id,
       price: pkg.price,
     });
-    await this.userService.findOneRecordAndUpdate({ _id: user._id }, { $push: { supportingPackages: pkg._id } });
+    await this.userService.findOneRecordAndUpdate(
+      { _id: user._id },
+      { $push: pkg.isGuildPackage ? { supportingGuildPackages: pkg._id } : { supportingPackages: pkg._id } }
+    );
     return await this.packageService.findOneRecordAndUpdate({ _id: id }, { $push: { sales: sale._id } });
   }
 
@@ -155,8 +160,8 @@ export class PackageController {
       await this.stripeService.cancelSubscription(subscription.id);
     }
     await this.userService.updateManyRecords(
-      { supportingPackages: { $in: [pkg._id] } },
-      { $pull: { supportingPackages: pkg._id } }
+      { $or: [{ supportingPackages: { $in: [pkg._id] } }, { supportingGuildPackages: { $in: [pkg._id] } }] },
+      { $pull: pkg.isGuildPackage ? { supportingGuildPackages: pkg._id } : { supportingPackages: pkg._id } }
     );
 
     return await this.packageService.findOneRecordAndUpdate({ _id: id }, { isDeleted: true });
@@ -180,7 +185,10 @@ export class PackageController {
       price: pkg.priceId,
     });
     await this.stripeService.cancelSubscription(subscriptions.data[0].id);
-    await this.userService.findOneRecordAndUpdate({ _id: user._id }, { $pull: { supportingPackages: pkg._id } });
+    await this.userService.findOneRecordAndUpdate(
+      { _id: user._id },
+      { $pull: pkg.isGuildPackage ? { supportingGuildPackages: pkg._id } : { supportingPackages: pkg._id } }
+    );
     return 'Subscription canceled successfully.';
   }
 
