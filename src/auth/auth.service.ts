@@ -25,8 +25,8 @@ export class AuthService {
     @InjectModel(Otp.name) private otpModal: Model<OtpDocument>
   ) {}
 
-  async validateUser(email: string, pass: string): Promise<any> {
-    const user = await this.usersService.findOneRecord({ email });
+  async validateUser(email: string, pass: string) {
+    const user = await this.usersService.findOne({ email });
     if (!user) return null;
     const match = await compare(pass, user.password);
     if (!match) return null;
@@ -113,13 +113,9 @@ export class AuthService {
     });
 
     //get un read messages and notifications
-    const unReadMessages = Notifications.filter(
-      (notification) => notification.type === NotificationType.MESSAGE
-    );
+    const unReadMessages = Notifications.filter((notification) => notification.type === NotificationType.MESSAGE);
 
-    const unReadNotifications = Notifications.filter(
-      (notification) => notification.type !== NotificationType.MESSAGE
-    );
+    const unReadNotifications = Notifications.filter((notification) => notification.type !== NotificationType.MESSAGE);
 
     return { unReadMessages, unReadNotifications };
   }
