@@ -3,6 +3,7 @@ import mongoose, { Document } from 'mongoose';
 import { Fundraising } from 'src/fundraising/fundraising.schema';
 import { Package } from 'src/package/package.schema';
 import { Product } from 'src/product/product.schema';
+import { SaleType } from 'src/types';
 import { User } from 'src/users/users.schema';
 
 export type SaleDocument = Sale & Document;
@@ -17,6 +18,9 @@ export class Sale {
 
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Fundraising' })
   fundraising: Fundraising;
+
+  @Prop({ enum: SaleType, required: true })
+  type: string;
 
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true })
   customer: User;

@@ -22,7 +22,7 @@ import { PackageDocument } from './package.schema';
 import { UsersService } from 'src/users/users.service';
 import { SaleService } from 'src/sale/sale.service';
 import { SaleDocument } from 'src/sale/sale.schema';
-import { UserRole } from 'src/types';
+import { SaleType, UserRole } from 'src/types';
 import { FindAllPackagesQueryDto } from './dto/find-all-query.dto';
 
 @Controller('package')
@@ -135,6 +135,7 @@ export class PackageController {
       customer: user._id,
       seller: pkg.creator._id,
       price: pkg.price,
+      type: SaleType.PACKAGE,
     });
     await this.userService.findOneRecordAndUpdate(
       { _id: user._id },
@@ -170,7 +171,9 @@ export class PackageController {
   //find all authors you support
   @Get('author/find-all')
   async findAllAuthors(@GetUser() user: UserDocument) {
-    return await this.packageService.findAllAuthors(user._id);
+    console.log({ customer: user._id, type: SaleType.PACKAGE });
+    const sales = await this.saleService.findPackagesSellers({ customer: user._id, type: SaleType.PACKAGE });
+    return sales;
   }
 
   //stop supporting author
@@ -178,8 +181,8 @@ export class PackageController {
   async unSubscribePackage(@Param('id', ParseObjectId) id: string, @GetUser() user) {
     const pkg = await this.packageService.findOneRecord({ _id: id });
     if (!pkg) throw new BadRequestException('Package not found');
-    if (!user.supportingPackages.includes(id))
-      throw new HttpException('You are not subscriber of this package.', HttpStatus.BAD_REQUEST);
+    const pkgExists = user.supportingPackages.find((pkg) => pkg == id);
+    if (!pkgExists) throw new HttpException('You are not subscriber of this package.', HttpStatus.BAD_REQUEST);
     const subscriptions = await this.stripeService.findAllSubscriptions({
       customer: user._id,
       price: pkg.priceId,
@@ -189,7 +192,7 @@ export class PackageController {
       { _id: user._id },
       { $pull: pkg.isGuildPackage ? { supportingGuildPackages: pkg._id } : { supportingPackages: pkg._id } }
     );
-    return 'Subscription canceled successfully.';
+    return 'Subscription cancelled successfully.';
   }
 
   @Get('find-one/:id')
