@@ -14,7 +14,7 @@
     "start:debug": "nest start --debug --watch",
     "start:prod": "node dist/main.js",
     "start:stag": "cp .env.stag .env && nest start --watch",
-    "build:stag": "cp .env.stag .env nest build",
+    "build:stag": "cp .env.stag .env && nest build",
     "lint": "eslint \"{src,apps,libs,test}/**/*.ts\" --fix",
     "test": "jest",
     "test:watch": "jest --watch",
