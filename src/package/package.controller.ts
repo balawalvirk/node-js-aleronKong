@@ -112,6 +112,12 @@ export class PackageController {
   @Patch('subscribe/:id')
   async subscribe(@GetUser() user: UserDocument, @Param('id', ParseObjectId) id: string) {
     const pkg = await this.packageService.findOneRecord({ _id: id }).populate({ path: 'creator', select: 'sellerId' });
+    const userFound = await this.userService
+      .findOneRecord({ _id: user._id })
+      .populate({ path: 'supportingPackages', select: 'creator' });
+    const pkgFound = userFound.supportingPackages.find((pkg) => pkg.creator === pkg.creator._id);
+    if (pkgFound)
+      throw new HttpException('You already subscribed to one of the packages of this owner.', HttpStatus.BAD_REQUEST);
 
     // create subscription in stripe platform
     await this.stripeService.createSubscription({
