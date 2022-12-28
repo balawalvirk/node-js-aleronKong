@@ -18,7 +18,6 @@ import { FileModule } from './file/file.module';
 import { FudraisingModule } from './fundraising/fudraising.module';
 import { NotificationModule } from './notification/notification.module';
 import { ReportModule } from './report/report.module';
-import { GuildPackageModule } from './guild-package/guild-package.module';
 import { SearchModule } from './search/search.module';
 import { SaleModule } from './sale/sale.module';
 import { AppController } from './app.controller';
@@ -41,7 +40,6 @@ import { AppController } from './app.controller';
     FudraisingModule,
     NotificationModule,
     ReportModule,
-    GuildPackageModule,
     SearchModule,
     SaleModule,
   ],

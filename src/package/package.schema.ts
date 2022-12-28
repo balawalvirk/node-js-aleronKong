@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
+import { Sale } from 'src/sale/sale.schema';
 import { User } from 'src/users/users.schema';
 
 export type PackageDocument = Package & mongoose.Document;
@@ -27,6 +28,15 @@ export class Package {
 
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true })
   creator: User;
+
+  @Prop({ default: false })
+  isGuildPackage: boolean;
+
+  @Prop({ default: false })
+  isDeleted: boolean;
+
+  @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Sale' }] })
+  sales: Sale[];
 }
 
 export const PackageSchema = SchemaFactory.createForClass(Package);
