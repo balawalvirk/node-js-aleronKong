@@ -81,7 +81,6 @@ export class ProductController {
   async findStoreProducts(@Query() query) {
     let condition = {
       ...query,
-      type: ProductType.PHYSICAL,
     };
     // loop through object and convert in into object id
     const ObjectId = mongoose.Types.ObjectId;

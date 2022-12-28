@@ -81,3 +81,9 @@ export enum OrderStatus {
   DELIVERED = 'delivered',
   CANCELLED = 'cancelled',
 }
+
+export enum SaleType {
+  PRODUCT = 'product',
+  FUNDRAISING = 'fundraising',
+  PACKAGE = 'package',
+}

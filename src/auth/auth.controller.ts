@@ -1,4 +1,14 @@
-import { Body, Controller, HttpException, HttpStatus, Ip, Post, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  HttpException,
+  HttpStatus,
+  Ip,
+  Post,
+  UploadedFile,
+  UseGuards,
+  UseInterceptors,
+} from '@nestjs/common';
 import { hash } from 'bcrypt';
 import { UsersService } from '../users/users.service';
 import { AuthService } from './auth.service';
@@ -13,6 +23,9 @@ import { EmailService } from 'src/helpers/services/email.service';
 import { CartService } from 'src/product/cart.service';
 import { CartDocument } from 'src/product/cart.schema';
 import { UserRole } from 'src/types';
+import { FileInterceptor } from '@nestjs/platform-express';
+import { FileService } from 'src/file/file.service';
+import { ConfigService } from '@nestjs/config';
 
 @Controller('auth')
 export class AuthController {
@@ -20,7 +33,9 @@ export class AuthController {
     private readonly authService: AuthService,
     private readonly userService: UsersService,
     private readonly emailService: EmailService,
-    private readonly cartService: CartService
+    private readonly cartService: CartService,
+    private readonly fileService: FileService,
+    private readonly configService: ConfigService
   ) {}
 
   @UseGuards(LocalAuthGuard)
@@ -51,9 +66,15 @@ export class AuthController {
   }
 
   @Post('register')
-  async register(@Body() body: RegisterDto, @Ip() ip: string) {
+  @UseInterceptors(FileInterceptor('avatar'))
+  async register(@Body() body: RegisterDto, @Ip() ip: string, @UploadedFile() avatar: Express.Multer.File) {
     const emailExists = await this.userService.findOneRecord({ email: body.email });
     if (emailExists) throw new HttpException('User already exists with this email.', HttpStatus.BAD_REQUEST);
+    // check if avatar is coming from client side
+    if (avatar) {
+      const key = await this.fileService.upload(avatar);
+      body.avatar = `${this.configService.get('S3_URL')}${key}`;
+    }
     // first create stripe connect (custom) account and customer account of newly register user.
     const sellerAccount = await this.authService.createSellerAccount(body, ip);
     const customerAccount = await this.authService.createCustomerAccount(
@@ -66,7 +87,6 @@ export class AuthController {
       customerId: customerAccount.id,
       sellerId: sellerAccount.id,
     });
-
     const { access_token } = await this.authService.login(user.userName, user._id);
     return {
       message: 'User registered successfully.',
