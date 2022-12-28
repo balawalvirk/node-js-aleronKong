@@ -11,6 +11,13 @@ export class UsersService extends BaseService {
   }
 
   async findOne(query: FilterQuery<UserDocument>) {
-    return await this.userModal.findOne(query).populate({ path: 'supportingPackages', select: 'creator' }).lean();
+    return await this.userModal
+      .findOne(query)
+      .populate([
+        { path: 'defaultAddress' },
+        { path: 'supportingPackages', select: 'creator' },
+        { path: 'supportingGuildPackages' },
+      ])
+      .lean();
   }
 }

@@ -106,6 +106,10 @@ export class AuthService {
     return await this.stripeService.createCustomer({ email, name });
   }
 
+  async findOnePaymentMethod(id: string) {
+    return await this.stripeService.findOnePaymentMethod(id);
+  }
+
   async findNotifications(userId: string) {
     const Notifications: Notification[] = await this.NotificationService.findAllRecords({
       receiver: userId,
