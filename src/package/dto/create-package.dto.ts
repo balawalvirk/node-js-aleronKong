@@ -1,4 +1,4 @@
-import { IsNumber, IsString } from 'class-validator';
+import { IsBoolean, IsNumber, IsOptional, IsString } from 'class-validator';
 
 export class CreatePackageDto {
   @IsString()
@@ -12,4 +12,8 @@ export class CreatePackageDto {
 
   @IsNumber()
   price: number;
+
+  @IsOptional()
+  @IsBoolean()
+  isGuildPackage?: boolean;
 }

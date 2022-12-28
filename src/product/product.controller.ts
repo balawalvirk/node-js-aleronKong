@@ -20,7 +20,7 @@ import { RolesGuard } from 'src/auth/role.guard';
 import { CartService } from 'src/product/cart.service';
 import { ParseObjectId, Roles, StripeService } from 'src/helpers';
 import { GetUser } from 'src/helpers/decorators/user.decorator';
-import { CollectionConditions, CollectionTypes, UserRole } from 'src/types';
+import { CollectionConditions, CollectionTypes, ProductType, UserRole } from 'src/types';
 import { UserDocument } from 'src/users/users.schema';
 import { ProductCategoryService } from './category.service';
 import { CollectionDocument } from './collection.schema';
@@ -81,6 +81,7 @@ export class ProductController {
   async findStoreProducts(@Query() query) {
     let condition = {
       ...query,
+      type: ProductType.PHYSICAL,
     };
     // loop through object and convert in into object id
     const ObjectId = mongoose.Types.ObjectId;
