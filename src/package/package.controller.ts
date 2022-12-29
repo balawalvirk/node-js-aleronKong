@@ -20,9 +20,7 @@ import { UserDocument } from 'src/users/users.schema';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { PackageDocument } from './package.schema';
 import { UsersService } from 'src/users/users.service';
-import { SaleService } from 'src/sale/sale.service';
-import { SaleDocument } from 'src/sale/sale.schema';
-import { SaleType, UserRole } from 'src/types';
+import { UserRole } from 'src/types';
 import { FindAllPackagesQueryDto } from './dto/find-all-query.dto';
 
 @Controller('package')
@@ -31,16 +29,15 @@ export class PackageController {
   constructor(
     private readonly packageService: PackageService,
     private readonly stripeService: StripeService,
-    private readonly userService: UsersService,
-    private readonly saleService: SaleService
+    private readonly userService: UsersService
   ) {}
 
   @Post('create')
   async create(@Body() createPackageDto: CreatePackageDto, @GetUser() user: UserDocument) {
     //check if package is guild package then only admin can create this package.
-    // if (createPackageDto.isGuildPackage) {
-    //   if (!user.role.includes(UserRole.ADMIN)) throw new HttpException('Forbidden resource', HttpStatus.FORBIDDEN);
-    // }
+    if (createPackageDto.isGuildPackage) {
+      if (!user.role.includes(UserRole.ADMIN)) throw new HttpException('Forbidden resource', HttpStatus.FORBIDDEN);
+    }
 
     const product = await this.stripeService.createProduct({
       name: createPackageDto.title,
@@ -72,9 +69,9 @@ export class PackageController {
   async update(@Param('id') id: string, @Body() updatePackageDto: UpdatePackageDto, @GetUser() user: UserDocument) {
     const packageFound: PackageDocument = await this.packageService.findOneRecord({ _id: id });
     //check if package is guild package then only admin can create this package.
-    // if (packageFound.isGuildPackage) {
-    //   if (!user.role.includes(UserRole.ADMIN)) throw new HttpException('Forbidden resource', HttpStatus.FORBIDDEN);
-    // }
+    if (packageFound.isGuildPackage) {
+      if (!user.role.includes(UserRole.ADMIN)) throw new HttpException('Forbidden resource', HttpStatus.FORBIDDEN);
+    }
 
     // check if package price is changed
     if (packageFound.price === updatePackageDto.price) {
@@ -114,11 +111,17 @@ export class PackageController {
   @Patch('subscribe/:id')
   async subscribe(@GetUser() user: UserDocument, @Param('id', ParseObjectId) id: string) {
     const pkg = await this.packageService.findOneRecord({ _id: id }).populate({ path: 'creator', select: 'sellerId' });
+
+    //check if user already subscribed to this package.
+    const pkgFound = pkg.buyers.find((buyer) => buyer.toString() == user._id);
+    if (pkgFound) throw new HttpException('You are already subscriber of this pacakge.', HttpStatus.BAD_REQUEST);
     const userFound = await this.userService
       .findOneRecord({ _id: user._id })
       .populate({ path: 'supportingPackages', select: 'creator' });
-    const pkgFound = userFound.supportingPackages.find((pkg) => pkg.creator === pkg.creator._id);
-    if (pkgFound)
+
+    //check if userhas more than one packages of same authors
+    const authorFound = userFound.supportingPackages.find((pkg) => pkg.creator === pkg.creator._id);
+    if (authorFound)
       throw new HttpException('You already subscribed to one of the packages of this owner.', HttpStatus.BAD_REQUEST);
 
     // create subscription in stripe platform
@@ -130,23 +133,14 @@ export class PackageController {
         destination: pkg.creator.sellerId,
       },
     });
-    const sale: SaleDocument = await this.saleService.createRecord({
-      package: pkg._id,
-      customer: user._id,
-      seller: pkg.creator._id,
-      price: pkg.price,
-      type: SaleType.PACKAGE,
-    });
-    await this.userService.findOneRecordAndUpdate(
-      { _id: user._id },
-      { $push: pkg.isGuildPackage ? { supportingGuildPackages: pkg._id } : { supportingPackages: pkg._id } }
-    );
-    return await this.packageService.findOneRecordAndUpdate({ _id: id }, { $push: { sales: sale._id } });
+    await this.userService.findOneRecordAndUpdate({ _id: user._id }, { $push: { supportingPackages: pkg._id } });
+    return await this.packageService.findOneRecordAndUpdate({ _id: id }, { $push: { buyers: user._id } });
   }
 
   @Delete('delete/:id')
   async remove(@Param('id', ParseObjectId) id: string, @GetUser() user: UserDocument) {
     const pkg: PackageDocument = await this.packageService.findOneRecord({ _id: id });
+
     //check if package is guild package then only admin can create this package.
     if (pkg.isGuildPackage) {
       if (!user.role.includes(UserRole.ADMIN)) throw new HttpException('Forbidden resource', HttpStatus.FORBIDDEN);
@@ -161,8 +155,8 @@ export class PackageController {
       await this.stripeService.cancelSubscription(subscription.id);
     }
     await this.userService.updateManyRecords(
-      { $or: [{ supportingPackages: { $in: [pkg._id] } }, { supportingGuildPackages: { $in: [pkg._id] } }] },
-      { $pull: pkg.isGuildPackage ? { supportingGuildPackages: pkg._id } : { supportingPackages: pkg._id } }
+      { supportingPackages: { $in: [pkg._id] } },
+      { $pull: { supportingPackages: pkg._id } }
     );
 
     return await this.packageService.findOneRecordAndUpdate({ _id: id }, { isDeleted: true });
@@ -171,9 +165,7 @@ export class PackageController {
   //find all authors you support
   @Get('author/find-all')
   async findAllAuthors(@GetUser() user: UserDocument) {
-    console.log({ customer: user._id, type: SaleType.PACKAGE });
-    const sales = await this.saleService.findPackagesSellers({ customer: user._id, type: SaleType.PACKAGE });
-    return sales;
+    return await this.packageService.findAllAuthors(user._id);
   }
 
   //stop supporting author
@@ -181,6 +173,8 @@ export class PackageController {
   async unSubscribePackage(@Param('id', ParseObjectId) id: string, @GetUser() user) {
     const pkg = await this.packageService.findOneRecord({ _id: id });
     if (!pkg) throw new BadRequestException('Package not found');
+
+    //check if user is subscriber of this package.
     const pkgExists = user.supportingPackages.find((pkg) => pkg == id);
     if (!pkgExists) throw new HttpException('You are not subscriber of this package.', HttpStatus.BAD_REQUEST);
     const subscriptions = await this.stripeService.findAllSubscriptions({
@@ -188,10 +182,8 @@ export class PackageController {
       price: pkg.priceId,
     });
     await this.stripeService.cancelSubscription(subscriptions.data[0].id);
-    await this.userService.findOneRecordAndUpdate(
-      { _id: user._id },
-      { $pull: pkg.isGuildPackage ? { supportingGuildPackages: pkg._id } : { supportingPackages: pkg._id } }
-    );
+    await this.userService.findOneRecordAndUpdate({ _id: user._id }, { $pull: { supportingPackages: pkg._id } });
+    await this.packageService.findOneRecordAndUpdate({ _id: id }, { $pull: { buyers: user._id } });
     return 'Subscription cancelled successfully.';
   }
 
