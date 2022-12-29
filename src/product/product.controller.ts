@@ -226,7 +226,7 @@ export class ProductController {
   @Get('cart')
   async findOne(@GetUser() user: UserDocument) {
     const cart = await this.cartService.findOne({ creator: user._id });
-    if (!cart) throw new HttpException('Your cart is empty.', HttpStatus.BAD_REQUEST);
+    if (!cart) return { message: 'Your cart is empty.' };
     return cart;
   }
 
