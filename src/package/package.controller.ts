@@ -7,7 +7,6 @@ import {
   Param,
   Delete,
   UseGuards,
-  BadRequestException,
   HttpException,
   HttpStatus,
   Query,
@@ -113,14 +112,17 @@ export class PackageController {
     const pkg = await this.packageService.findOneRecord({ _id: id }).populate({ path: 'creator', select: 'sellerId' });
 
     //check if user already subscribed to this package.
-    const pkgFound = pkg.buyers.find((buyer) => buyer.toString() == user._id);
-    if (pkgFound) throw new HttpException('You are already subscriber of this pacakge.', HttpStatus.BAD_REQUEST);
+    const pkgExists = pkg.buyers.find((buyer) => buyer.equals(user._id));
+    if (pkgExists) throw new HttpException('You are already subscriber of this package.', HttpStatus.BAD_REQUEST);
+
     const userFound = await this.userService
       .findOneRecord({ _id: user._id })
       .populate({ path: 'supportingPackages', select: 'creator' });
 
-    //check if userhas more than one packages of same authors
-    const authorFound = userFound.supportingPackages.find((pkg) => pkg.creator === pkg.creator._id);
+    //check if user has more than one packages of same authors
+    const authorFound = userFound.supportingPackages.find((supportingPackage) =>
+      supportingPackage.creator.equals(pkg.creator._id)
+    );
     if (authorFound)
       throw new HttpException('You already subscribed to one of the packages of this owner.', HttpStatus.BAD_REQUEST);
 
@@ -172,11 +174,12 @@ export class PackageController {
   @Patch('unsubscribe/:id')
   async unSubscribePackage(@Param('id', ParseObjectId) id: string, @GetUser() user) {
     const pkg = await this.packageService.findOneRecord({ _id: id });
-    if (!pkg) throw new BadRequestException('Package not found');
+    if (!pkg) throw new HttpException('Package not found', HttpStatus.BAD_REQUEST);
 
     //check if user is subscriber of this package.
-    const pkgExists = user.supportingPackages.find((pkg) => pkg == id);
+    const pkgExists = user.supportingPackages.find((pkg) => pkg.equals(id));
     if (!pkgExists) throw new HttpException('You are not subscriber of this package.', HttpStatus.BAD_REQUEST);
+
     const subscriptions = await this.stripeService.findAllSubscriptions({
       customer: user._id,
       price: pkg.priceId,
