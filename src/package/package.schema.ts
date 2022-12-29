@@ -1,6 +1,5 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
-import { Sale } from 'src/sale/sale.schema';
 import { User } from 'src/users/users.schema';
 
 export type PackageDocument = Package & mongoose.Document;
@@ -35,8 +34,8 @@ export class Package {
   @Prop({ default: false })
   isDeleted: boolean;
 
-  @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Sale' }] })
-  sales: Sale[];
+  @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }] })
+  buyers: User[];
 }
 
 export const PackageSchema = SchemaFactory.createForClass(Package);

@@ -11,7 +11,7 @@ export class PackageService extends BaseService {
   }
 
   async findAllAuthors(userId: string) {
-    const pkgs = await this.PackageModel.find({ buyers: { $in: [userId] } })
+    return await this.PackageModel.find({ buyers: { $in: [userId] }, isDeleted: false })
       .populate([
         {
           path: 'creator',
@@ -19,7 +19,5 @@ export class PackageService extends BaseService {
         },
       ])
       .select('creator price');
-    // filter repeating users and remove them
-    return [...new Map(pkgs.map((pkg) => [pkg.creator['_id'], pkg])).values()];
   }
 }
