@@ -140,15 +140,20 @@ export class AuthController {
         newUser: true,
       };
     } else {
+      let paymentMethod = null;
       const { access_token } = await this.authService.login(userFound.userName, userFound._id);
       const { unReadMessages, unReadNotifications } = await this.authService.findNotifications(userFound._id);
       const cart: CartDocument = await this.cartService.findOneRecord({ creator: userFound._id });
+      if (userFound.defaultPaymentMethod) {
+        paymentMethod = await this.authService.findOnePaymentMethod(userFound.defaultPaymentMethod);
+      }
       return {
         access_token,
         user: {
           ...userFound,
           unReadNotifications,
           unReadMessages,
+          defaultPaymentMethod: paymentMethod,
           cartItems: cart?.items?.length || 0,
         },
         newUser: false,
