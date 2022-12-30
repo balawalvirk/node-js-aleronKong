@@ -1,26 +1,21 @@
 import { Injectable } from '@nestjs/common';
-import { CreateSearchDto } from './dto/create-search.dto';
-import { UpdateSearchDto } from './dto/update-search.dto';
+import mongoose from 'mongoose';
 
 @Injectable()
 export class SearchService {
-  create(createSearchDto: CreateSearchDto) {
-    return 'This action adds a new search';
-  }
-
-  findAll() {
-    return `This action returns all search`;
-  }
-
-  findOne(id: number) {
-    return `This action returns a #${id} search`;
-  }
-
-  update(id: number, updateSearchDto: UpdateSearchDto) {
-    return `This action updates a #${id} search`;
-  }
-
-  remove(id: number) {
-    return `This action removes a #${id} search`;
+  getSorting(sort: string, model: string): { [key: string]: mongoose.SortOrder | { $meta: 'textScore' } } {
+    if (model === 'user') {
+      if (sort === 'name') {
+        return { firstName: -1, lastName: -1 };
+      } else return { createdAt: -1 };
+    } else if (model === 'product') {
+      if (sort === 'name') {
+        return { title: -1 };
+      } else return { createdAt: -1 };
+    } else if (model === 'group') {
+      if (sort === 'name') {
+        return { name: -1 };
+      } else return { createdAt: -1 };
+    }
   }
 }

@@ -22,7 +22,7 @@ export class ProductService extends BaseService {
     return await this.productModel.findOneAndUpdate(query, updateQuery).populate('category');
   }
 
-  async findStoreProducts(query: FilterQuery<ProductDocument>) {
+  async findStoreProducts(query: FilterQuery<ProductDocument>, sort?: any) {
     return await this.productModel.aggregate([
       { $match: query },
       {
@@ -43,7 +43,7 @@ export class ProductService extends BaseService {
         },
       },
       {
-        $sort: { createdAt: -1 },
+        $sort: !sort ? { createdAt: -1 } : sort,
       },
     ]);
   }
