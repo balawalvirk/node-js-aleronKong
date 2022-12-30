@@ -23,7 +23,8 @@ export class SearchController {
   async search(
     @Query('query', new DefaultValuePipe('')) query: string,
     @Query('filter', new DefaultValuePipe('all')) filter: string,
-    @Query('category') category: string
+    @Query('category') category: string,
+    @Query('sort', new DefaultValuePipe('createdAt')) sort: string
   ) {
     let users: UserDocument[] = [];
     let groups: GroupDocument[] = [];
@@ -31,29 +32,50 @@ export class SearchController {
     const ObjectId = mongoose.Types.ObjectId;
     const rjx = { $regex: query, $options: 'i' };
     if (filter === 'all') {
-      users = await this.userService.findAllRecords({
-        $or: [{ firstName: rjx }, { lastName: rjx }],
-      });
-      groups = await this.groupService.findAllRecords({
-        name: rjx,
-      });
-      products = await this.productService.findAllRecords({
-        title: rjx,
-      });
+      users = await this.userService.findAllRecords(
+        {
+          $or: [{ firstName: rjx }, { lastName: rjx }],
+        },
+        this.searchService.getSorting(sort, 'user')
+      );
+
+      groups = await this.groupService.findAllRecords(
+        {
+          name: rjx,
+        },
+        this.searchService.getSorting(sort, 'group')
+      );
+
+      products = await this.productService.findStoreProducts(
+        {
+          title: rjx,
+        },
+        this.searchService.getSorting(sort, 'product')
+      );
+
       return { users, groups, products };
     } else if (filter === 'people') {
-      return await this.userService.findAllRecords({
-        $or: [{ firstName: rjx }, { lastName: rjx }],
-      });
+      return await this.userService.findAllRecords(
+        {
+          $or: [{ firstName: rjx }, { lastName: rjx }],
+        },
+        this.searchService.getSorting(sort, 'user')
+      );
     } else if (filter === 'groups') {
-      return await this.groupService.findAllRecords({
-        name: rjx,
-      });
+      return await this.groupService.findAllRecords(
+        {
+          name: rjx,
+        },
+        this.searchService.getSorting(sort, 'group')
+      );
     } else {
-      return await this.productService.findStoreProducts({
-        title: rjx,
-        category: new ObjectId(category),
-      });
+      return await this.productService.findAllRecords(
+        {
+          title: rjx,
+          category: new ObjectId(category),
+        },
+        this.searchService.getSorting(sort, 'product')
+      );
     }
   }
 }
