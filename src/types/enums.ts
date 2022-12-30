@@ -87,3 +87,17 @@ export enum SaleType {
   FUNDRAISING = 'fundraising',
   PACKAGE = 'package',
 }
+
+export enum SearchFilter {
+  ALL = 'all',
+  PRODUCTS = 'products',
+  GROUPS = 'groups',
+  PEOPLE = 'prople',
+}
+
+export enum SearchSort {
+  CREATED_AT = 'createdAt',
+  NAME = 'name',
+  RATING = 'rating',
+  DEFAULT = 'default',
+}

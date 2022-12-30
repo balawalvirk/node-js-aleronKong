@@ -70,10 +70,12 @@ export class SearchController {
       );
     } else {
       return await this.productService.findAllRecords(
-        {
-          title: rjx,
-          category: new ObjectId(category),
-        },
+        category
+          ? {
+              title: rjx,
+              category: new ObjectId(category),
+            }
+          : { title: rjx },
         this.searchService.getSorting(sort, 'product')
       );
     }
