@@ -48,7 +48,7 @@ export class GroupController {
     return post;
   }
 
-  // this api is not of feed page
+  //api to find all post of groups that user joined
   @Get('feed')
   async feed(@GetUser() user: UserDocument) {
     const groups = await this.groupService.feed({
