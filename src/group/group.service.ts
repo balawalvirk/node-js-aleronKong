@@ -10,7 +10,7 @@ export class GroupService extends BaseService {
     super(groupModel);
   }
 
-  async findOne(query: FilterQuery<any>) {
+  async findOne(query: FilterQuery<GroupDocument>) {
     return await this.groupModel.findOne(query).populate({
       path: 'posts',
       populate: [
@@ -24,12 +24,11 @@ export class GroupService extends BaseService {
           select: 'firstName lastName avatar',
         },
         { path: 'creator', select: 'firstName lastName avatar' },
-        { path: 'group', select: 'name' },
       ],
     });
   }
 
-  async findAllMembers(query: FilterQuery<any>) {
+  async findAllMembers(query: FilterQuery<GroupDocument>) {
     return await this.groupModel
       .findOne(query)
       .populate({
@@ -39,14 +38,14 @@ export class GroupService extends BaseService {
       .select('members -_id');
   }
 
-  async findAllRequests(query: FilterQuery<any>) {
+  async findAllRequests(query: FilterQuery<GroupDocument>) {
     return await this.groupModel
       .findOne(query)
       .populate({ path: 'requests', select: 'firstName lastName avatar' })
       .select('-_id requests');
   }
 
-  async feed(query: FilterQuery<any>) {
+  async feed(query: FilterQuery<GroupDocument>) {
     return await this.groupModel
       .find(query)
       .select('posts  -_id')

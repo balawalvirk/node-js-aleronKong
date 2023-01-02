@@ -6,7 +6,6 @@ import {
   Param,
   Delete,
   UseGuards,
-  BadRequestException,
   Query,
   DefaultValuePipe,
   ParseBoolPipe,
@@ -76,16 +75,18 @@ export class GroupController {
     if (group) {
       //check if user is already a member of this group
       const memberFound = group.members.filter((member) => member.member === user._id);
-      if (memberFound.length > 0) throw new BadRequestException('You are already a member of this group.');
+      if (memberFound.length > 0)
+        throw new HttpException('You are already a member of this group.', HttpStatus.BAD_REQUEST);
       //check if group is private
       if (group.privacy === GroupPrivacy.PRIVATE) {
         //check if user request is already in request array  of this group
         const requestFound = group.requests.filter((request) => request === user._id);
-        if (requestFound.length > 0) throw new BadRequestException('Your request to join group is pending.');
+        if (requestFound.length > 0)
+          throw new HttpException('Your request to join group is pending.', HttpStatus.BAD_REQUEST);
         return await this.groupService.findOneRecordAndUpdate({ _id: id }, { $push: { requests: user._id } });
       }
       return await this.groupService.findOneRecordAndUpdate({ _id: id }, { $push: { members: { member: user._id } } });
-    } else throw new BadRequestException('Group does not exists.');
+    } else throw new HttpException('Group does not exists.', HttpStatus.BAD_REQUEST);
   }
 
   @Put('leave/:id')
