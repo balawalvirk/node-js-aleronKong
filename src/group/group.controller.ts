@@ -51,10 +51,11 @@ export class GroupController {
   // this api is not of feed page
   @Get('feed')
   async feed(@GetUser() user: UserDocument) {
-    return await this.groupService.feed({
+    const groups = await this.groupService.feed({
       'members.member': user._id,
       blockers: { $nin: [user._id] },
     });
+    return [...groups[0].posts];
   }
 
   @Get('find-one/:id')
