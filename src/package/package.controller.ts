@@ -115,16 +115,19 @@ export class PackageController {
     const pkgExists = pkg.buyers.find((buyer) => buyer.equals(user._id));
     if (pkgExists) throw new HttpException('You are already subscriber of this package.', HttpStatus.BAD_REQUEST);
 
-    const userFound = await this.userService
-      .findOneRecord({ _id: user._id })
-      .populate({ path: 'supportingPackages', select: 'creator' });
+    //check if package is not guild pakage
+    if (!pkg.isGuildPackage) {
+      const userFound = await this.userService
+        .findOneRecord({ _id: user._id })
+        .populate({ path: 'supportingPackages', select: 'creator' });
 
-    //check if user has more than one packages of same authors
-    const authorFound = userFound.supportingPackages.find((supportingPackage) =>
-      supportingPackage.creator.equals(pkg.creator._id)
-    );
-    if (authorFound)
-      throw new HttpException('You already subscribed to one of the packages of this owner.', HttpStatus.BAD_REQUEST);
+      //check if user has more than one packages of same authors
+      const authorFound = userFound.supportingPackages.find((supportingPackage) =>
+        supportingPackage.creator.equals(pkg.creator._id)
+      );
+      if (authorFound)
+        throw new HttpException('You already subscribed to one of the packages of this owner.', HttpStatus.BAD_REQUEST);
+    }
 
     // create subscription in stripe platform
     await this.stripeService.createSubscription({

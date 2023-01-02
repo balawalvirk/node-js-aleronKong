@@ -8,6 +8,7 @@ import { UserDocument } from 'src/users/users.schema';
 import { GroupDocument } from 'src/group/group.schema';
 import { ProductDocument } from 'src/product/product.schema';
 import mongoose from 'mongoose';
+import { GetUser } from 'src/helpers';
 
 @Controller('search')
 @UseGuards(JwtAuthGuard)
@@ -24,7 +25,8 @@ export class SearchController {
     @Query('query', new DefaultValuePipe('')) query: string,
     @Query('filter', new DefaultValuePipe('all')) filter: string,
     @Query('category') category: string,
-    @Query('sort', new DefaultValuePipe('createdAt')) sort: string
+    @Query('sort', new DefaultValuePipe('createdAt')) sort: string,
+    @GetUser() user: UserDocument
   ) {
     let users: UserDocument[] = [];
     let groups: GroupDocument[] = [];
@@ -35,6 +37,7 @@ export class SearchController {
       users = await this.userService.findAllRecords(
         {
           $or: [{ firstName: rjx }, { lastName: rjx }],
+          _id: { $ne: user._id },
         },
         this.searchService.getSorting(sort, 'user')
       );
@@ -58,6 +61,7 @@ export class SearchController {
       return await this.userService.findAllRecords(
         {
           $or: [{ firstName: rjx }, { lastName: rjx }],
+          _id: { $ne: user._id },
         },
         this.searchService.getSorting(sort, 'user')
       );
