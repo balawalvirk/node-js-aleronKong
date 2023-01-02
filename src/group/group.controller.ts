@@ -146,11 +146,11 @@ export class GroupController {
       });
     } else if (type === 'yourGroups') {
       groups = await this.groupService.findAllRecords({
-        $or: [{ name: { $regex: query, $options: 'i' } }, { creator: user._id }],
+        $and: [{ name: { $regex: query, $options: 'i' } }, { creator: user._id }],
       });
     } else if (type === 'discover') {
       groups = await this.groupService.findAllRecords({
-        $or: [
+        $and: [
           { name: { $regex: query, $options: 'i' } },
           { 'members.member': { $ne: user._id }, creator: { $ne: user._id } },
         ],

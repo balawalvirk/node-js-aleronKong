@@ -20,7 +20,7 @@ import { RolesGuard } from 'src/auth/role.guard';
 import { CartService } from 'src/product/cart.service';
 import { ParseObjectId, Roles, StripeService } from 'src/helpers';
 import { GetUser } from 'src/helpers/decorators/user.decorator';
-import { CollectionConditions, CollectionTypes, ProductType, UserRole } from 'src/types';
+import { CollectionConditions, CollectionTypes, UserRole } from 'src/types';
 import { UserDocument } from 'src/users/users.schema';
 import { ProductCategoryService } from './category.service';
 import { CollectionDocument } from './collection.schema';
@@ -35,7 +35,6 @@ import { ProductDocument } from './product.schema';
 import { ProductService } from './product.service';
 import { OrderService } from 'src/order/order.service';
 import { CartDocument } from './cart.schema';
-import { SaleService } from 'src/sale/sale.service';
 
 @Controller('product')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -47,8 +46,7 @@ export class ProductController {
     private readonly addressService: AddressService,
     private readonly categoryService: ProductCategoryService,
     private readonly cartService: CartService,
-    private readonly orderService: OrderService,
-    private readonly saleService: SaleService
+    private readonly orderService: OrderService
   ) {}
 
   @Post('create')
@@ -119,16 +117,6 @@ export class ProductController {
         name: `${user.firstName} ${user.lastName}`,
       },
     });
-
-    for (const item of cart.items) {
-      await this.saleService.createRecord({
-        // @ts-ignore
-        product: item.item._id,
-        customer: user._id,
-        price: item.price,
-        seller: item.item.creator,
-      });
-    }
 
     await this.orderService.createRecord({
       customer: user._id,
@@ -232,9 +220,7 @@ export class ProductController {
 
   @Post(':id/add-to-cart')
   async addItem(@GetUser() user: UserDocument, @Param('id', ParseObjectId) id: string) {
-    const product: ProductDocument = await this.productService.findOneRecord({
-      _id: id,
-    });
+    const product: ProductDocument = await this.productService.findOneRecord({ _id: id });
     if (!product) throw new HttpException('Product does not exists', HttpStatus.BAD_REQUEST);
     const cart = await this.cartService.findOneRecord({ creator: user._id });
     // check if item is added first time then create a cart object.

@@ -22,7 +22,6 @@ import { SaleModule } from 'src/sale/sale.module';
     MongooseModule.forFeature([{ name: Cart.name, schema: CartSchema }]),
     AddressModule,
     OrderModule,
-    SaleModule,
   ],
   controllers: [ProductController],
   providers: [ProductService, CollectionService, StripeService, ProductCategoryService, CartService],

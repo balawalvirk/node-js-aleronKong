@@ -3,10 +3,9 @@ import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/role.guard';
 import { makeQuery, ParseObjectId, Roles } from 'src/helpers';
 import { GetUser } from 'src/helpers/decorators/user.decorator';
-import { PostPrivacy, PostStatus, PostType, UserRole } from 'src/types';
+import { PostPrivacy, PostStatus, UserRole } from 'src/types';
 import { UserDocument } from 'src/users/users.schema';
 import { CreateCommentDto } from './dtos/create-comment';
-import { Posts } from './posts.schema';
 import { PostsService } from './posts.service';
 
 @Controller('post')
@@ -34,14 +33,6 @@ export class PostsController {
   @Get(':id/find-one')
   async findOne(@Param('id', ParseObjectId) id: string) {
     return await this.postsService.findOne({ _id: id });
-  }
-
-  //find posts of user that is logged in
-  @Get('find-all/mine')
-  async findMine(@GetUser() user: UserDocument) {
-    return await this.postsService.findAllPosts({
-      creator: user._id,
-    });
   }
 
   //find post of a specific user

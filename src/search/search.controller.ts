@@ -73,15 +73,16 @@ export class SearchController {
         this.searchService.getSorting(sort, 'group')
       );
     } else {
-      return await this.productService.findAllRecords(
-        category
-          ? {
-              title: rjx,
-              category: new ObjectId(category),
-            }
-          : { title: rjx },
-        this.searchService.getSorting(sort, 'product')
-      );
+      if (category) {
+        return await this.productService.findAllRecords(
+          {
+            title: rjx,
+            category: new ObjectId(category),
+          },
+          this.searchService.getSorting(sort, 'product')
+        );
+      }
+      return await this.productService.findAllRecords({ title: rjx }, this.searchService.getSorting(sort, 'product'));
     }
   }
 }
