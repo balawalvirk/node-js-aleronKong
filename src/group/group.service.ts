@@ -63,6 +63,8 @@ export class GroupService extends BaseService {
             path: 'likes',
             select: 'firstName lastName avatar',
           },
+          { path: 'creator', select: 'firstName lastName avatar' },
+          { path: 'group', select: 'name' },
         ],
       });
   }

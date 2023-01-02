@@ -138,7 +138,16 @@ export class PackageController {
         destination: pkg.creator.sellerId,
       },
     });
-    await this.userService.findOneRecordAndUpdate({ _id: user._id }, { $push: { supportingPackages: pkg._id } });
+
+    //check if package is guild package then make user guild member
+    if (pkg.isGuildPackage) {
+      await this.userService.findOneRecordAndUpdate(
+        { _id: user._id },
+        { $push: { supportingPackages: pkg._id }, isGuildMember: true }
+      );
+    } else {
+      await this.userService.findOneRecordAndUpdate({ _id: user._id }, { $push: { supportingPackages: pkg._id } });
+    }
     return await this.packageService.findOneRecordAndUpdate({ _id: id }, { $push: { buyers: user._id } });
   }
 
@@ -188,7 +197,16 @@ export class PackageController {
       price: pkg.priceId,
     });
     await this.stripeService.cancelSubscription(subscriptions.data[0].id);
-    await this.userService.findOneRecordAndUpdate({ _id: user._id }, { $pull: { supportingPackages: pkg._id } });
+
+    //check if package is guild package then make isGuildMember false
+    if (pkg.isGuildPackage) {
+      await this.userService.findOneRecordAndUpdate(
+        { _id: user._id },
+        { $pull: { supportingPackages: pkg._id }, isGuildMember: false }
+      );
+    } else {
+      await this.userService.findOneRecordAndUpdate({ _id: user._id }, { $pull: { supportingPackages: pkg._id } });
+    }
     await this.packageService.findOneRecordAndUpdate({ _id: id }, { $pull: { buyers: user._id } });
     return 'Subscription cancelled successfully.';
   }
