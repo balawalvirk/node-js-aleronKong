@@ -5,8 +5,6 @@ import { GroupService } from 'src/group/group.service';
 import { UsersService } from 'src/users/users.service';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { UserDocument } from 'src/users/users.schema';
-import { GroupDocument } from 'src/group/group.schema';
-import { ProductDocument } from 'src/product/product.schema';
 import mongoose from 'mongoose';
 import { GetUser } from 'src/helpers';
 
@@ -28,9 +26,9 @@ export class SearchController {
     @Query('sort', new DefaultValuePipe('createdAt')) sort: string,
     @GetUser() user: UserDocument
   ) {
-    let users: UserDocument[] = [];
-    let groups: GroupDocument[] = [];
-    let products: ProductDocument[] = [];
+    let users = [];
+    let groups = [];
+    let products = [];
     const ObjectId = mongoose.Types.ObjectId;
     const rjx = { $regex: query, $options: 'i' };
     if (filter === 'all') {
@@ -55,34 +53,41 @@ export class SearchController {
         },
         this.searchService.getSorting(sort, 'product')
       );
-
-      return { users, groups, products };
+      const totalProducts = products.reduce((n, { data }) => n + data.length, 0);
+      return { users, groups, products, total: users.length + groups.length + totalProducts };
     } else if (filter === 'people') {
-      return await this.userService.findAllRecords(
+      users = await this.userService.findAllRecords(
         {
           $or: [{ firstName: rjx }, { lastName: rjx }],
           _id: { $ne: user._id },
         },
         this.searchService.getSorting(sort, 'user')
       );
+      return { users, groups, products, total: users.length };
     } else if (filter === 'groups') {
-      return await this.groupService.findAllRecords(
+      groups = await this.groupService.findAllRecords(
         {
           name: rjx,
         },
         this.searchService.getSorting(sort, 'group')
       );
+      return { users, groups, products, total: groups.length };
     } else {
       if (category) {
-        return await this.productService.findAllRecords(
+        products = await this.productService.findAllRecords(
           {
             title: rjx,
             category: new ObjectId(category),
           },
           this.searchService.getSorting(sort, 'product')
         );
+      } else {
+        products = await this.productService.findAllRecords(
+          { title: rjx },
+          this.searchService.getSorting(sort, 'product')
+        );
       }
-      return await this.productService.findAllRecords({ title: rjx }, this.searchService.getSorting(sort, 'product'));
+      return { users, groups, products, total: products.length };
     }
   }
 }
