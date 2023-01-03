@@ -10,17 +10,17 @@ export class CartService extends BaseService {
     super(CartModel);
   }
 
-  async findOne(query: FilterQuery<CartDocument>): Promise<CartDocument> {
+  async findOne(query: FilterQuery<CartDocument>) {
     return await this.CartModel.findOne(query).populate({
       path: 'items.item',
-      select: 'color size avatar title price creator',
+      select: 'color size avatar title creator',
     });
   }
 
   async update(query: FilterQuery<CartDocument>, updateQuery: UpdateQuery<CartDocument>) {
     return await this.CartModel.findOneAndUpdate(query, updateQuery, { new: true }).populate({
       path: 'items.item',
-      select: 'color size avatar title',
+      select: 'color size avatar title creator',
     });
   }
 }

@@ -212,10 +212,13 @@ export class ProductController {
   // ----------------------------------------------------------------cart apis -----------------------------------------------
 
   @Get('cart')
-  async findOne(@GetUser() user: UserDocument) {
+  async findCart(@GetUser() user: UserDocument) {
     const cart = await this.cartService.findOne({ creator: user._id });
     if (!cart) return { message: 'Your cart is empty.' };
-    return cart;
+    const subTotal = cart.items.reduce((n, { price }) => n + price, 0);
+    const tax = Math.round((2 / 100) * subTotal);
+    const total = subTotal + tax;
+    return { ...cart.toJSON(), subTotal, total, tax };
   }
 
   @Post(':id/add-to-cart')
@@ -250,12 +253,7 @@ export class ProductController {
 
   @Put(':id/remove-from-cart')
   async removeProduct(@Param('id', ParseObjectId) id: string, @GetUser() user: UserDocument) {
-    return await this.cartService.findOneRecordAndUpdate(
-      { creator: user._id },
-      {
-        $pull: { items: { item: id } },
-      }
-    );
+    return await this.cartService.findOneRecordAndUpdate({ creator: user._id }, { $pull: { items: { item: id } } });
   }
 
   @Put(':id/cart/inc-dec')
