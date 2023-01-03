@@ -11,7 +11,7 @@ export class PackageService extends BaseService {
   }
 
   async findAllAuthors(userId: string) {
-    return await this.PackageModel.find({ buyers: { $in: [userId] }, isDeleted: false })
+    return await this.PackageModel.find({ buyers: { $in: [userId] }, isDeleted: false, isGuildPackage: false })
       .populate([
         {
           path: 'creator',
