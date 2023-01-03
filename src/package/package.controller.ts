@@ -216,36 +216,23 @@ export class PackageController {
     return await this.packageService.findOneRecord({ _id: id });
   }
 
-  @Get('membership')
-  async findMembership(@GetUser() user: UserDocument) {
-    /**
-     * TODO:query product form local database and get product Id from params
-     */
-
-    const priceId: string = 'price_1M1PKmLyEqAWCXHoxHWq7yYw';
-    /**
-     * TODO: need to add application percent fee.
-     */
+  @Get(':id/payment-history')
+  async findMembership(@GetUser() user: UserDocument, @Param('id', ParseObjectId) id: string) {
+    const pkg: PackageDocument = await this.packageService.findOneRecord({ _id: id }).lean();
+    if (!pkg) throw new HttpException('Package does not exists.', HttpStatus.BAD_REQUEST);
     const subscriptions = await this.stripeService.findAllSubscriptions({
       customer: user.customerId,
-      price: priceId,
+      price: pkg.priceId,
     });
-    const invoices = await this.stripeService.findAllInvoices({
+    const allInvoices = await this.stripeService.findAllInvoices({
       subscription: subscriptions.data[0].id,
+      customer: user.customerId,
     });
-
-    const desiredInvoices = invoices.data.map((invoice) => ({
-      id: invoice.id,
-      created: invoice.created,
-      amount_paid: invoice.amount_paid,
-    }));
-
+    const invoices = allInvoices.data.map((invoice) => ({ created: invoice.created, amountPaid: invoice.amount_paid }));
     return {
-      subscription: {
-        id: subscriptions.data[0].id,
-        current_period_end: subscriptions.data[0].current_period_end,
-      },
-      invoices: desiredInvoices,
+      ...pkg,
+      invoices,
+      nextPaymentDuo: subscriptions.data[0].current_period_end,
     };
   }
 }

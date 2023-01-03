@@ -21,6 +21,7 @@ import { GetUser } from 'src/helpers/decorators/user.decorator';
 import { UserRole, UserStatus } from 'src/types';
 import { UserDocument } from 'src/users/users.schema';
 import { CreateBankAccountDto } from './dtos/create-bank-account.dto';
+import { UpdateBankAccountDto } from './dtos/update-bank-account.dto';
 import { UpdateUserDto } from './dtos/update-user';
 import { UsersService } from './users.service';
 
@@ -34,8 +35,6 @@ export class UserController {
     return await this.usersService.findOneRecordAndUpdate({ _id: user._id }, body);
   }
 
-  // find a specific user details by its id
-  // @Roles(UserRole.ADMIN)
   @Get('find-one/:id')
   async findOne(@Param('id', ParseObjectId) id: string) {
     return await this.usersService.findOneRecord({ _id: id });
@@ -108,7 +107,7 @@ export class UserController {
     @GetUser() user: UserDocument,
     @Body() { accountHolderName, accountNumber, routingNumber }: CreateBankAccountDto
   ) {
-    return await this.stripeService.createBankAccount(user.sellerId, {
+    const bankAccount = await this.stripeService.createBankAccount(user.sellerId, {
       // @ts-ignore
       external_account: {
         object: 'bank_account',
@@ -120,39 +119,33 @@ export class UserController {
         account_number: accountNumber,
       },
     });
+    if (!user.defaultWithDrawAccountId) {
+      await this.usersService.findOneRecordAndUpdate({ _id: user._id }, { defaultWithDrawAccountId: bankAccount.id });
+    }
+    return bankAccount;
   }
 
   @Get('bank-account/find-all')
   async findAllBankAccounts(@GetUser() user: UserDocument) {
-    return await this.stripeService.findAllBankAccounts(user.sellerId, { object: 'bank_account' });
+    const bankAccounts = await this.stripeService.findAllBankAccounts(user.sellerId, { object: 'bank_account' });
+    return bankAccounts.data;
   }
 
   @Delete('bank-account/:bankAccount/delete')
   async deleteBankAccount(@GetUser() user: UserDocument, @Param('bankAccount') bankAccount: string) {
-    return await this.stripeService.deleteBankAccount(user.sellerId, bankAccount);
+    await this.stripeService.deleteBankAccount(user.sellerId, bankAccount);
+    return { message: 'Account deleted successfully.' };
   }
 
   @Put('bank-account/:bankAccount/update')
-  async updateBankAccount(@Param('bankAccount') bankAccount: string, @GetUser() user: UserDocument) {
-    return await this.stripeService.updateBankAccount(user.sellerId, bankAccount);
-  }
-
-  //become a guild member
-  @Put('guild-member/create')
-  async createGuildMember(@GetUser() user: UserDocument) {
-    /**
-     * TODO need to change this dynamically.
-     */
-    const productId: string = 'prod_MkvBc9VwxnmWAd';
-    const priceId: string = 'price_1M1PKmLyEqAWCXHoxHWq7yYw';
-
-    await this.stripeService.createSubscription({
-      customer: user.customerId,
-      items: [{ price: priceId }],
-      currency: 'usd',
+  async updateBankAccount(
+    @Param('bankAccount') bankAccount: string,
+    @GetUser() user: UserDocument,
+    @Body() { accountHolderName }: UpdateBankAccountDto
+  ) {
+    return await this.stripeService.updateBankAccount(user.sellerId, bankAccount, {
+      account_holder_name: accountHolderName,
     });
-
-    return await this.usersService.findOneRecordAndUpdate({ _id: user._id }, { isGuildMember: true });
   }
 
   @Put('friend/:id/create')

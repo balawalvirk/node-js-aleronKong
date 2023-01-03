@@ -48,6 +48,9 @@ export class User {
   sellerId: string;
 
   @Prop()
+  defaultWithDrawAccountId: string;
+
+  @Prop()
   defaultPaymentMethod: string;
 
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Address' })
