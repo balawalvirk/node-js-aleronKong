@@ -1,7 +1,7 @@
 import { Controller, Get, Post, Body, Param, Delete, UseGuards, HttpException, HttpStatus } from '@nestjs/common';
 import { CreateFudraisingDto } from './dtos/create-fudraising.dto';
 import { PostsService } from 'src/posts/posts.service';
-import { IEnvironmentVariables, PostPrivacy, PostStatus, PostType, SaleType, UserRole } from 'src/types';
+import { PostPrivacy, PostStatus, PostType, SaleType, UserRole } from 'src/types';
 import { GetUser, ParseObjectId, Roles, StripeService } from 'src/helpers';
 import { UserDocument } from 'src/users/users.schema';
 import { CreateFudraisingCategoryDto } from './dtos/create-category';
@@ -13,9 +13,7 @@ import { FudraisingSubCategoryService } from './subcategory.service';
 import { FudraisingService } from './fundraising.service';
 import { FundraisingDocument } from './fundraising.schema';
 import { FundProjectDto } from './dtos/fund-project.dto';
-import { PostDocument } from 'src/posts/posts.schema';
 import { SaleService } from 'src/sale/sale.service';
-import { ConfigService } from '@nestjs/config';
 
 @Controller('fundraising')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -26,8 +24,7 @@ export class FudraisingController {
     private readonly subCategoryService: FudraisingSubCategoryService,
     private readonly fundraisingService: FudraisingService,
     private readonly stripeService: StripeService,
-    private readonly saleService: SaleService,
-    private readonly configService: ConfigService<IEnvironmentVariables>
+    private readonly saleService: SaleService
   ) {}
 
   @Post('create')
@@ -72,7 +69,11 @@ export class FudraisingController {
       customer: user._id,
       seller: post.creator,
     });
-    await this.fundraisingService.findOneRecordAndUpdate({ _id: projectId }, { $inc: { currentFunding: amount } });
+    await this.fundraisingService.findOneRecordAndUpdate(
+      { _id: projectId },
+      { $inc: { currentFunding: amount }, $push: { supporters: user._id } }
+    );
+    return { message: 'Thank you for funding this project' };
   }
 
   // @Roles(UserRole.ADMIN)

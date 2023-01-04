@@ -35,6 +35,7 @@ import { ProductService } from './product.service';
 import { OrderService } from 'src/order/order.service';
 import { CartDocument } from './cart.schema';
 import { ConfigService } from '@nestjs/config';
+import { BuyProductDto } from './dtos/buy-product.dto';
 
 @Controller('product')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -46,8 +47,7 @@ export class ProductController {
     private readonly addressService: AddressService,
     private readonly categoryService: ProductCategoryService,
     private readonly cartService: CartService,
-    private readonly orderService: OrderService,
-    private readonly configService: ConfigService<IEnvironmentVariables>
+    private readonly orderService: OrderService
   ) {}
 
   @Post('create')
@@ -108,8 +108,6 @@ export class ProductController {
       amount: Math.round(total * 100),
       customer: user.customerId,
       confirm: true,
-      application_fee_amount: Math.round((2 / 100) * total),
-      transfer_data: { destination: 'acct_1MCO6MPxqdpoMHMg' },
       shipping: {
         address: {
           city: city,
@@ -134,6 +132,28 @@ export class ProductController {
     }
     await this.cartService.deleteSingleRecord({ creator: user._id });
     return { message: 'Order placed successfully.' };
+  }
+
+  @Post('buy')
+  async buyProduct(@GetUser() user: UserDocument, @Body() buyProductDto: BuyProductDto) {
+    const product = await this.productService
+      .findOneRecord({ _id: buyProductDto.product })
+      .populate({ path: 'creator', select: 'sellerId' });
+    if (!product) throw new HttpException('Product does not exists.', HttpStatus.BAD_REQUEST);
+    const subTotal = product.price;
+    const tax = Math.round((2 / 100) * subTotal);
+    const total = subTotal + tax;
+    await this.stripeService.createPaymentIntent({
+      currency: 'usd',
+      payment_method: buyProductDto.paymentMethod,
+      amount: Math.round(total * 100),
+      customer: user.customerId,
+      confirm: true,
+      transfer_data: { destination: product.creator.sellerId },
+      application_fee_amount: Math.round((2 / 100) * total),
+      description: `payment intent of product ${product.title}`,
+    });
+    return { message: 'Thanks for purchasing the product.' };
   }
 
   //-----------------------------------------------collection apis---------------------------------------
