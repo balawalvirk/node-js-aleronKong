@@ -45,11 +45,8 @@ export class FudraisingController {
 
   @Post('fund')
   async fundProject(@Body() { amount, projectId, paymentMethod }: FundProjectDto, @GetUser() user: UserDocument) {
-    const post = await this.postService
-      .findOneRecord({ fundraising: projectId })
-      .populate({ path: 'creator', select: 'sellerId' });
+    const post = await this.postService.findOne({ fundraising: projectId });
     if (!post) throw new HttpException('Fundraising project does not exists.', HttpStatus.BAD_REQUEST);
-
     await this.stripeService.createPaymentIntent({
       currency: 'usd',
       payment_method: paymentMethod,
