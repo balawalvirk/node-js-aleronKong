@@ -1,15 +1,4 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  HttpException,
-  HttpStatus,
-  Param,
-  Post,
-  Put,
-  UseGuards,
-} from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpException, HttpStatus, Param, Post, Put, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { ParseObjectId } from 'src/helpers';
 import { GetUser } from 'src/helpers/decorators/user.decorator';
@@ -17,7 +6,7 @@ import { SocketGateway } from 'src/helpers/gateway/socket.gateway';
 import { FirebaseService } from 'src/helpers/services/firebase.service';
 import { NotificationService } from 'src/notification/notification.service';
 import { MuteInterval, NotificationType } from 'src/types';
-import { User, UserDocument } from 'src/users/users.schema';
+import { UserDocument } from 'src/users/users.schema';
 import { ChatDocument } from './chat.schema';
 import { ChatService } from './chat.service';
 import { CreateMessageDto } from './dto/create-message.dto';
@@ -39,8 +28,7 @@ export class ChatController {
   @Post('/create')
   async createChat(@Body('receiverId') receiverId: string, @GetUser() user: UserDocument) {
     const chat = await this.chatService.findAllRecords({ members: { $in: [receiverId] } });
-    if (chat.length > 0)
-      throw new HttpException('You already have chat with this member.', HttpStatus.BAD_REQUEST);
+    if (chat.length > 0) throw new HttpException('You already have chat with this member.', HttpStatus.BAD_REQUEST);
     return await this.chatService.create([user._id, receiverId], user._id);
   }
 
@@ -56,7 +44,7 @@ export class ChatController {
 
   @Post('/message/create')
   async createMessage(@Body() createMessageDto: CreateMessageDto, @GetUser() user: UserDocument) {
-    const message: MessageDocument = await this.messageService.createRecord({
+    const message = await this.messageService.createRecord({
       ...createMessageDto,
       sender: user._id,
     });
@@ -65,16 +53,17 @@ export class ChatController {
       { lastMessage: message._id }
     );
 
+    //send socket message to members of chat
     this.socketService.triggerMessage(createMessageDto.chat, message);
 
     //find receiver from chat object
-    const receiver = chat.members.find((member) => member._id !== user._id);
+    const receiver = chat.members.find((member) => member !== user._id);
 
     //create notification obj in database
     await this.notificationService.createRecord({
-      content: message.content,
+      message: message.content,
       sender: user._id,
-      receiver: receiver._id,
+      receiver: receiver,
       type: NotificationType.MESSAGE,
     });
 
@@ -100,10 +89,7 @@ export class ChatController {
       // check if date is custom date
       else {
         //check if date is within duration
-        if (
-          today.getTime() <= mute.startTime.getTime() &&
-          today.getTime() >= mute.endTime.getTime()
-        ) {
+        if (today.getTime() <= mute.startTime.getTime() && today.getTime() >= mute.endTime.getTime()) {
           return;
         } else {
           await this.firebaseService.sendNotification(

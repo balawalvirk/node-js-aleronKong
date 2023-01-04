@@ -111,7 +111,7 @@ export class AuthService {
   }
 
   async findNotifications(userId: string) {
-    const Notifications: Notification[] = await this.NotificationService.findAllRecords({
+    const Notifications = await this.NotificationService.findAllRecords({
       receiver: userId,
       isRead: false,
     });

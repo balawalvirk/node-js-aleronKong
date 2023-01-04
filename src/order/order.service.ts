@@ -6,7 +6,7 @@ import { OrderModule } from './order.module';
 import { Order, OrderDocument } from './order.schema';
 
 @Injectable()
-export class OrderService extends BaseService {
+export class OrderService extends BaseService<OrderDocument> {
   constructor(@InjectModel(Order.name) private OrderModel: Model<OrderDocument>) {
     super(OrderModel);
   }

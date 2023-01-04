@@ -10,7 +10,7 @@ class Item {
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true })
   item: Product;
 
-  @Prop({ required: true })
+  @Prop({ default: 1 })
   quantity: number;
 
   @Prop({ required: true })

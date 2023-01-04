@@ -16,19 +16,19 @@ export class OrderController {
     return await this.orderService.findAllRecords({ customer: user._id });
   }
 
-  @Put(':id/fullfilled')
-  async update(@Param('id', ParseObjectId) id: string) {
-    const order = await this.orderService.findOne({ _id: id });
-    await this.stripeService.updatePaymentIntent(order.paymentIntent, { transfer_group: order._id });
-    for (const item of order.items) {
-      await this.stripeService.createTransfer({
-        amount: item.price,
-        currency: 'usd',
-        destination: item.item.creator.sellerId,
-        transfer_group: order._id,
-        description: `${item.item.title} transfers`,
-      });
-    }
-    return { message: 'Order fullfilled successfully.' };
-  }
+  // @Put(':id/fullfilled')
+  // async update(@Param('id', ParseObjectId) id: string) {
+  //   const order = await this.orderService.findOne({ _id: id });
+  //   await this.stripeService.updatePaymentIntent(order.paymentIntent, { transfer_group: order._id });
+  //   for (const item of order.items) {
+  //     await this.stripeService.createTransfer({
+  //       amount: item.price,
+  //       currency: 'usd',
+  //       destination: item.item.creator.sellerId,
+  //       transfer_group: order._id,
+  //       description: `${item.item.title} transfers`,
+  //     });
+  //   }
+  //   return { message: 'Order fullfilled successfully.' };
+  // }
 }

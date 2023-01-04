@@ -31,9 +31,6 @@ export class Package {
   @Prop({ default: false })
   isGuildPackage: boolean;
 
-  @Prop({ default: false })
-  isDeleted: boolean;
-
   @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }] })
   buyers: User[];
 }

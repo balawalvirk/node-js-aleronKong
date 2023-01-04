@@ -66,7 +66,7 @@ export class PackageController {
 
   @Patch('update/:id')
   async update(@Param('id') id: string, @Body() updatePackageDto: UpdatePackageDto, @GetUser() user: UserDocument) {
-    const packageFound: PackageDocument = await this.packageService.findOneRecord({ _id: id });
+    const packageFound = await this.packageService.findOneRecord({ _id: id });
     //check if package is guild package then only admin can create this package.
     if (packageFound.isGuildPackage) {
       if (!user.role.includes(UserRole.ADMIN)) throw new HttpException('Forbidden resource', HttpStatus.FORBIDDEN);
@@ -112,7 +112,7 @@ export class PackageController {
     const pkg = await this.packageService.findOneRecord({ _id: id }).populate({ path: 'creator', select: 'sellerId' });
 
     //check if user already subscribed to this package.
-    const pkgExists = pkg.buyers.find((buyer) => buyer.equals(user._id));
+    const pkgExists = pkg.buyers.find((buyer) => buyer == user._id);
     if (pkgExists) throw new HttpException('You are already subscriber of this package.', HttpStatus.BAD_REQUEST);
 
     //check if package is not guild pakage
@@ -122,8 +122,9 @@ export class PackageController {
         .populate({ path: 'supportingPackages', select: 'creator' });
 
       //check if user has more than one packages of same authors
-      const authorFound = userFound.supportingPackages.find((supportingPackage) =>
-        supportingPackage.creator.equals(pkg.creator._id)
+      const authorFound = userFound.supportingPackages.find(
+        //@ts-ignore
+        (supportingPackage) => supportingPackage.creator == pkg.creator._id
       );
       if (authorFound)
         throw new HttpException('You already subscribed to one of the packages of this owner.', HttpStatus.BAD_REQUEST);
@@ -153,7 +154,7 @@ export class PackageController {
 
   @Delete('delete/:id')
   async remove(@Param('id', ParseObjectId) id: string, @GetUser() user: UserDocument) {
-    const pkg: PackageDocument = await this.packageService.findOneRecord({ _id: id });
+    const pkg = await this.packageService.findOneRecord({ _id: id });
 
     //check if package is guild package then only admin can create this package.
     if (pkg.isGuildPackage) {
@@ -173,7 +174,7 @@ export class PackageController {
       { $pull: { supportingPackages: pkg._id } }
     );
 
-    return await this.packageService.findOneRecordAndUpdate({ _id: id }, { isDeleted: true });
+    return await this.packageService.deleteSingleRecord({ _id: id });
   }
 
   //find all authors you support
@@ -218,7 +219,7 @@ export class PackageController {
 
   @Get(':id/payment-history')
   async findMembership(@GetUser() user: UserDocument, @Param('id', ParseObjectId) id: string) {
-    const pkg: PackageDocument = await this.packageService.findOneRecord({ _id: id }).lean();
+    const pkg = await this.packageService.findOneRecord({ _id: id }).lean();
     if (!pkg) throw new HttpException('Package does not exists.', HttpStatus.BAD_REQUEST);
     const subscriptions = await this.stripeService.findAllSubscriptions({
       customer: user.customerId,

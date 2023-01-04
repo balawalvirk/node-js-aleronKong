@@ -3,9 +3,10 @@ import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/role.guard';
 import { makeQuery, ParseObjectId, Roles } from 'src/helpers';
 import { GetUser } from 'src/helpers/decorators/user.decorator';
-import { PostPrivacy, PostStatus, UserRole } from 'src/types';
+import { MuteInterval, PostPrivacy, PostStatus, UserRole } from 'src/types';
 import { UserDocument } from 'src/users/users.schema';
 import { CreateCommentDto } from './dtos/create-comment';
+import { MutePostDto } from './dtos/mute-post.dto';
 import { PostsService } from './posts.service';
 
 @Controller('post')
@@ -82,5 +83,40 @@ export class PostsController {
     return await this.postsService.updatePost(postId, {
       $push: { comments: { content: body.content, creator: user._id } },
     });
+  }
+
+  @Put('mute')
+  async muteChat(@Body() mutePostDto: MutePostDto, @GetUser() user: UserDocument) {
+    const now = new Date();
+    let date = new Date(now);
+    let updatedObj: any = { user: user._id, interval: mutePostDto.interval };
+    if (mutePostDto.interval === MuteInterval.DAY) {
+      //check if mute interval is one day then add 1 day in date
+      date.setDate(now.getDate() + 1);
+    } else if (mutePostDto.interval === MuteInterval.WEEK) {
+      //check if mute interval is one day then add 7 day in date
+      date.setDate(now.getDate() + 7);
+    }
+    date.toLocaleDateString();
+
+    if (mutePostDto.interval === MuteInterval.DAY || MuteInterval.WEEK) {
+      updatedObj = { ...updatedObj, date };
+    } else {
+      updatedObj = {
+        ...updatedObj,
+        startTime: mutePostDto.startTime,
+        endTime: mutePostDto.endTime,
+      };
+    }
+
+    await this.postsService.findOneRecordAndUpdate(
+      { _id: mutePostDto.post },
+      {
+        $push: {
+          mutes: { ...updatedObj },
+        },
+      }
+    );
+    return { message: 'Post muted successfully.' };
   }
 }

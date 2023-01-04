@@ -5,7 +5,7 @@ import { BaseService } from 'src/helpers';
 import { Report, ReportDocument } from './report.schema';
 
 @Injectable()
-export class ReportService extends BaseService {
+export class ReportService extends BaseService<ReportDocument> {
   constructor(@InjectModel(Report.name) private reportModel: Model<ReportDocument>) {
     super(reportModel);
   }

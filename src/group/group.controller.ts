@@ -53,9 +53,14 @@ export class GroupController {
   async feed(@GetUser() user: UserDocument) {
     const groups = await this.groupService.feed({
       'members.member': user._id,
-      blockers: { $nin: [user._id] },
     });
-    return [...groups[0].posts];
+    let posts = [];
+    groups.forEach((group) => {
+      if (group.posts.length !== 0) {
+        posts = [...posts, ...group.posts];
+      }
+    });
+    return posts;
   }
 
   @Get('find-one/:id')
@@ -72,7 +77,7 @@ export class GroupController {
 
   @Put('join/:id')
   async joinGroup(@GetUser() user: UserDocument, @Param('id') id: string) {
-    const group: GroupDocument = await this.groupService.findOneRecord({ _id: id });
+    const group = await this.groupService.findOneRecord({ _id: id });
     if (group) {
       //check if user is already a member of this group
       const memberFound = group.members.filter((member) => member.member === user._id);
@@ -139,7 +144,7 @@ export class GroupController {
     @Query('query', new DefaultValuePipe('')) query: string,
     @GetUser() user: UserDocument
   ) {
-    let groups: GroupDocument[];
+    let groups;
     if (type === 'forYou') {
       groups = await this.groupService.findAllRecords({
         name: { $regex: query, $options: 'i' },

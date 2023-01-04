@@ -5,7 +5,7 @@ import { BaseService } from 'src/helpers/services/base.service';
 import { Chat, ChatDocument } from './chat.schema';
 
 @Injectable()
-export class ChatService extends BaseService {
+export class ChatService extends BaseService<ChatDocument> {
   constructor(@InjectModel(Chat.name) private ChatModel: Model<ChatDocument>) {
     super(ChatModel);
   }

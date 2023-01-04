@@ -8,19 +8,18 @@ import { FudraisingCategoryService } from './category.service';
 import { FudraisingSubCategoryService } from './subcategory.service';
 import { Fundraising, FundraisingSchema } from './fundraising.schema';
 import { FudraisingService } from './fundraising.service';
+import { StripeService } from 'src/helpers';
+import { SaleModule } from 'src/sale/sale.module';
 
 @Module({
   imports: [
     PostsModule,
-    MongooseModule.forFeature([
-      { name: FundraisingCategory.name, schema: FundraisingCategorySchema },
-    ]),
-    MongooseModule.forFeature([
-      { name: FundraisingSubcategory.name, schema: FundraisingSubcategorySchema },
-    ]),
+    SaleModule,
+    MongooseModule.forFeature([{ name: FundraisingCategory.name, schema: FundraisingCategorySchema }]),
+    MongooseModule.forFeature([{ name: FundraisingSubcategory.name, schema: FundraisingSubcategorySchema }]),
     MongooseModule.forFeature([{ name: Fundraising.name, schema: FundraisingSchema }]),
   ],
   controllers: [FudraisingController],
-  providers: [FudraisingCategoryService, FudraisingSubCategoryService, FudraisingService],
+  providers: [FudraisingCategoryService, FudraisingSubCategoryService, FudraisingService, StripeService],
 })
 export class FudraisingModule {}
