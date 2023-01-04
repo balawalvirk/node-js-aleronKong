@@ -110,6 +110,9 @@ export class Product {
   @Prop({ type: [String] })
   availableSizes: string[];
 
+  @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }] })
+  buyers: User[];
+
   // @Prop({ type: [AttributeSchema] })
   // attributes: Attribute[];
 }
