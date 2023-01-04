@@ -5,7 +5,7 @@ import { BaseService } from 'src/helpers/services/base.service';
 import { PostDocument, Posts } from './posts.schema';
 
 @Injectable()
-export class PostsService extends BaseService {
+export class PostsService extends BaseService<PostDocument> {
   constructor(@InjectModel(Posts.name) private postModel: Model<PostDocument>) {
     super(postModel);
   }

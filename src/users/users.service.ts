@@ -5,7 +5,7 @@ import { BaseService } from 'src/helpers/services/base.service';
 import { User, UserDocument } from 'src/users/users.schema';
 
 @Injectable()
-export class UsersService extends BaseService {
+export class UsersService extends BaseService<UserDocument> {
   constructor(@InjectModel(User.name) private userModal: Model<UserDocument>) {
     super(userModal);
   }

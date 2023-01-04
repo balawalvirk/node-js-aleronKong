@@ -13,14 +13,13 @@ import {
   UseGuards,
 } from '@nestjs/common';
 import mongoose from 'mongoose';
-import { AddressDocument } from 'src/address/address.schema';
 import { AddressService } from 'src/address/address.service';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/role.guard';
 import { CartService } from 'src/product/cart.service';
 import { ParseObjectId, Roles, StripeService } from 'src/helpers';
 import { GetUser } from 'src/helpers/decorators/user.decorator';
-import { CollectionConditions, CollectionTypes, UserRole } from 'src/types';
+import { CollectionConditions, CollectionTypes, IEnvironmentVariables, UserRole } from 'src/types';
 import { UserDocument } from 'src/users/users.schema';
 import { ProductCategoryService } from './category.service';
 import { CollectionDocument } from './collection.schema';
@@ -35,6 +34,7 @@ import { ProductDocument } from './product.schema';
 import { ProductService } from './product.service';
 import { OrderService } from 'src/order/order.service';
 import { CartDocument } from './cart.schema';
+import { ConfigService } from '@nestjs/config';
 
 @Controller('product')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -46,7 +46,8 @@ export class ProductController {
     private readonly addressService: AddressService,
     private readonly categoryService: ProductCategoryService,
     private readonly cartService: CartService,
-    private readonly orderService: OrderService
+    private readonly orderService: OrderService,
+    private readonly configService: ConfigService<IEnvironmentVariables>
   ) {}
 
   @Post('create')
@@ -94,17 +95,21 @@ export class ProductController {
 
   @Post('checkout')
   async checkout(@Body() { paymentMethod, address }: CreateCheckoutDto, @GetUser() user: UserDocument) {
-    const { city, line1, line2, country, state, postalCode }: AddressDocument = await this.addressService.findOneRecord(
-      { _id: address }
-    );
+    const { city, line1, line2, country, state, postalCode } = await this.addressService.findOneRecord({
+      _id: address,
+    });
     const cart: CartDocument = await this.cartService.findOne({ creator: user._id });
     const subTotal = cart.items.reduce((n, { price }) => n + price, 0);
-
-    const paymentIntent = await this.stripeService.createPaymentIntent({
+    const tax = Math.round((2 / 100) * subTotal);
+    const total = subTotal + tax;
+    await this.stripeService.createPaymentIntent({
       currency: 'usd',
       payment_method: paymentMethod,
-      amount: subTotal * 100,
+      amount: Math.round(total * 100),
       customer: user.customerId,
+      confirm: true,
+      application_fee_amount: Math.round((2 / 100) * total),
+      transfer_data: { destination: 'acct_1MCO6MPxqdpoMHMg' },
       shipping: {
         address: {
           city: city,
@@ -118,28 +123,28 @@ export class ProductController {
       },
     });
 
-    await this.orderService.createRecord({
-      customer: user._id,
-      address: address,
-      subTotal,
-      paymentIntent: paymentIntent.client_secret,
-      items: cart.items,
-    });
-
-    await this.cartService.findOneRecordAndUpdate({ creator: user._id }, { $set: { items: [] } });
-
+    for (const item of cart.items) {
+      await this.orderService.createRecord({
+        customer: user._id,
+        address: address,
+        total,
+        item: item.item,
+        quantity: item.quantity,
+      });
+    }
+    await this.cartService.deleteSingleRecord({ creator: user._id });
     return { message: 'Order placed successfully.' };
   }
 
   //-----------------------------------------------collection apis---------------------------------------
   @Post('collection/create')
   async createCollection(@Body() createCollectionDto: CreateCollectionDto, @GetUser() user: UserDocument) {
-    const collection: CollectionDocument = await this.collectionService.createRecord({
+    const collection = await this.collectionService.createRecord({
       ...createCollectionDto,
       creator: user._id,
     });
 
-    let products: ProductDocument[];
+    let products;
     // check if collection type is automated
     if (collection.type === CollectionTypes.AUTOMATED) {
       //check if collection condition is any
@@ -223,7 +228,7 @@ export class ProductController {
 
   @Post(':id/add-to-cart')
   async addItem(@GetUser() user: UserDocument, @Param('id', ParseObjectId) id: string) {
-    const product: ProductDocument = await this.productService.findOneRecord({ _id: id });
+    const product = await this.productService.findOneRecord({ _id: id });
     if (!product) throw new HttpException('Product does not exists', HttpStatus.BAD_REQUEST);
     const cart = await this.cartService.findOneRecord({ creator: user._id });
     // check if item is added first time then create a cart object.
@@ -240,6 +245,7 @@ export class ProductController {
       });
       // otherwise add item in items array
     } else {
+      //@ts-ignore
       const item = cart.items.find((item) => item.item == id);
       if (item) throw new HttpException('You already added this item in cart.', HttpStatus.BAD_REQUEST);
       return await this.cartService.findOneRecordAndUpdate(

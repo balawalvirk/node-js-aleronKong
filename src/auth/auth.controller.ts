@@ -44,7 +44,7 @@ export class AuthController {
     let paymentMethod = null;
     const { access_token } = await this.authService.login(user.userName, user._id);
     const { unReadMessages, unReadNotifications } = await this.authService.findNotifications(user._id);
-    const cart: CartDocument = await this.cartService.findOneRecord({ creator: user._id });
+    const cart = await this.cartService.findOneRecord({ creator: user._id });
     if (user.defaultPaymentMethod) {
       paymentMethod = await this.authService.findOnePaymentMethod(user.defaultPaymentMethod);
     }
@@ -114,7 +114,7 @@ export class AuthController {
 
   @Post('social-login')
   async socialLogin(@Body() socialLoginDto: SocialLoginDto, @Ip() ip: string) {
-    const userFound: UserDocument = await this.userService.findOneRecord({
+    const userFound = await this.userService.findOneRecord({
       email: socialLoginDto.email,
       authType: socialLoginDto.authType,
     });
@@ -143,7 +143,7 @@ export class AuthController {
       let paymentMethod = null;
       const { access_token } = await this.authService.login(userFound.userName, userFound._id);
       const { unReadMessages, unReadNotifications } = await this.authService.findNotifications(userFound._id);
-      const cart: CartDocument = await this.cartService.findOneRecord({ creator: userFound._id });
+      const cart = await this.cartService.findOneRecord({ creator: userFound._id });
       if (userFound.defaultPaymentMethod) {
         paymentMethod = await this.authService.findOnePaymentMethod(userFound.defaultPaymentMethod);
       }

@@ -48,6 +48,9 @@ export class Fundraising {
 
   @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }] })
   supporters: User[];
+
+  @Prop({ default: 0 })
+  currentFunding: number;
 }
 
 export const FundraisingSchema = SchemaFactory.createForClass(Fundraising);

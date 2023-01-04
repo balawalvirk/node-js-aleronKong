@@ -9,4 +9,5 @@ export interface IEnvironmentVariables {
   S3_BUCKET_NAME: string;
   AWS_REGION: string;
   S3_URL: string;
+  STRIPE_ACCOUNT_ID: string;
 }

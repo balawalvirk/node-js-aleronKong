@@ -5,7 +5,7 @@ import { BaseService } from 'src/helpers/services/base.service';
 import { Collection, CollectionDocument } from './collection.schema';
 
 @Injectable()
-export class CollectionService extends BaseService {
+export class CollectionService extends BaseService<CollectionDocument> {
   constructor(@InjectModel(Collection.name) private CollectionModel: Model<CollectionDocument>) {
     super(CollectionModel);
   }

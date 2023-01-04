@@ -5,7 +5,7 @@ import { BaseService } from 'src/helpers/services/base.service';
 import { Address, AddressDocument } from './address.schema';
 
 @Injectable()
-export class AddressService extends BaseService {
+export class AddressService extends BaseService<AddressDocument> {
   constructor(@InjectModel(Address.name) private addressModel: Model<AddressDocument>) {
     super(addressModel);
   }

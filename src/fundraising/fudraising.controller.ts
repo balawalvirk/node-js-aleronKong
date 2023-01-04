@@ -1,8 +1,8 @@
-import { Controller, Get, Post, Body, Param, Delete, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Delete, UseGuards, HttpException, HttpStatus } from '@nestjs/common';
 import { CreateFudraisingDto } from './dtos/create-fudraising.dto';
 import { PostsService } from 'src/posts/posts.service';
-import { PostPrivacy, PostStatus, PostType, UserRole } from 'src/types';
-import { GetUser, ParseObjectId, Roles } from 'src/helpers';
+import { IEnvironmentVariables, PostPrivacy, PostStatus, PostType, SaleType, UserRole } from 'src/types';
+import { GetUser, ParseObjectId, Roles, StripeService } from 'src/helpers';
 import { UserDocument } from 'src/users/users.schema';
 import { CreateFudraisingCategoryDto } from './dtos/create-category';
 import { CreateFudraisingSubCategoryDto } from './dtos/create-subCategory';
@@ -12,6 +12,10 @@ import { FudraisingCategoryService } from './category.service';
 import { FudraisingSubCategoryService } from './subcategory.service';
 import { FudraisingService } from './fundraising.service';
 import { FundraisingDocument } from './fundraising.schema';
+import { FundProjectDto } from './dtos/fund-project.dto';
+import { PostDocument } from 'src/posts/posts.schema';
+import { SaleService } from 'src/sale/sale.service';
+import { ConfigService } from '@nestjs/config';
 
 @Controller('fundraising')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -20,17 +24,15 @@ export class FudraisingController {
     private readonly postService: PostsService,
     private readonly categoryService: FudraisingCategoryService,
     private readonly subCategoryService: FudraisingSubCategoryService,
-    private readonly fundraisingService: FudraisingService
+    private readonly fundraisingService: FudraisingService,
+    private readonly stripeService: StripeService,
+    private readonly saleService: SaleService,
+    private readonly configService: ConfigService<IEnvironmentVariables>
   ) {}
 
   @Post('create')
-  async createFundraiser(
-    @Body() createFudraisingDto: CreateFudraisingDto,
-    @GetUser() user: UserDocument
-  ) {
-    const fundraising: FundraisingDocument = await this.fundraisingService.createRecord(
-      createFudraisingDto
-    );
+  async createFundraiser(@Body() createFudraisingDto: CreateFudraisingDto, @GetUser() user: UserDocument) {
+    const fundraising: FundraisingDocument = await this.fundraisingService.createRecord(createFudraisingDto);
     const post = await this.postService.createPost({
       fundraising: fundraising._id,
       creator: user._id,
@@ -42,6 +44,35 @@ export class FudraisingController {
       privacy: PostPrivacy.PUBLIC,
     });
     return post;
+  }
+
+  @Post('fund')
+  async fundProject(@Body() { amount, projectId, paymentMethod }: FundProjectDto, @GetUser() user: UserDocument) {
+    const post = await this.postService
+      .findOneRecord({ fundraising: projectId })
+      .populate({ path: 'creator', select: 'sellerId' });
+    if (!post) throw new HttpException('Fundraising project does not exists.', HttpStatus.BAD_REQUEST);
+
+    await this.stripeService.createPaymentIntent({
+      currency: 'usd',
+      payment_method: paymentMethod,
+      amount: Math.round(amount * 100),
+      customer: user.customerId,
+      confirm: true,
+      application_fee_amount: Math.round((2 / 100) * amount),
+      transfer_data: {
+        destination: post.creator.sellerId,
+      },
+      description: `funding of funraiser project by ${user.firstName} ${user.lastName}`,
+    });
+    await this.saleService.createRecord({
+      fundraising: projectId,
+      type: SaleType.FUNDRAISING,
+      price: amount,
+      customer: user._id,
+      seller: post.creator,
+    });
+    await this.fundraisingService.findOneRecordAndUpdate({ _id: projectId }, { $inc: { currentFunding: amount } });
   }
 
   // @Roles(UserRole.ADMIN)

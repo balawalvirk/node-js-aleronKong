@@ -147,7 +147,7 @@ export class UserController {
       account_holder_name: accountHolderName,
     });
   }
-
+  //----------------------------------------------friends api-----------------------------------
   @Put('friend/:id/create')
   async addFriend(@Param('id', ParseObjectId) id: string, @GetUser() user: UserDocument) {
     const friend = await this.usersService.findOneRecord({ _id: user._id, friends: { $in: [id] } });

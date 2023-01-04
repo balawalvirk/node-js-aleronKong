@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
+import { Mute, MuteSchema } from 'src/chat/chat.schema';
 import { Fundraising } from 'src/fundraising/fundraising.schema';
 import { Group } from 'src/group/group.schema';
 import { PostPrivacy, PostStatus, PostType } from 'src/types';
@@ -44,6 +45,9 @@ export class Posts {
 
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Fundraising' })
   fundraising: Fundraising;
+
+  @Prop({ type: MuteSchema })
+  mutes: Mute[];
 }
 
 export const PostSchema = SchemaFactory.createForClass(Posts);

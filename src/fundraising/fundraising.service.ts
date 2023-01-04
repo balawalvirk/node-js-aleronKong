@@ -5,7 +5,7 @@ import { BaseService } from 'src/helpers';
 import { Fundraising, FundraisingDocument } from './fundraising.schema';
 
 @Injectable()
-export class FudraisingService extends BaseService {
+export class FudraisingService extends BaseService<FundraisingDocument> {
   constructor(
     @InjectModel(Fundraising.name)
     private readonly FundraisingModel: Model<FundraisingDocument>
