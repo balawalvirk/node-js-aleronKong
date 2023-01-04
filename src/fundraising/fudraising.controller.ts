@@ -73,7 +73,7 @@ export class FudraisingController {
       { _id: projectId },
       { $inc: { currentFunding: amount }, $push: { supporters: user._id } }
     );
-    return { message: 'Thank you for funding this project' };
+    return post;
   }
 
   // @Roles(UserRole.ADMIN)
