@@ -23,7 +23,7 @@ export class PostsService extends BaseService<PostDocument> {
           path: 'likes',
           select: 'firstName lastName avatar',
         },
-        { path: 'creator', select: 'firstName lastName avatar userName isGuildMember' },
+        { path: 'creator', select: 'firstName lastName avatar userName isGuildMember sellerId' },
         { path: 'group', select: 'name' },
         { path: 'fundraising', populate: [{ path: 'category' }, { path: 'subCategory' }] },
       ])
@@ -41,7 +41,7 @@ export class PostsService extends BaseService<PostDocument> {
         path: 'likes',
         select: 'firstName lastName avatar',
       },
-      { path: 'creator', select: 'firstName lastName avatar userName isGuildMember' },
+      { path: 'creator', select: 'firstName lastName avatar userName isGuildMember sellerId' },
       { path: 'group', select: 'name' },
       { path: 'fundraising', populate: [{ path: 'category' }, { path: 'subCategory' }] },
     ]);
@@ -50,7 +50,7 @@ export class PostsService extends BaseService<PostDocument> {
   async createPost(query: FilterQuery<any>) {
     return (await this.postModel.create(query)).populate([
       { path: 'fundraising', populate: [{ path: 'category' }, { path: 'subCategory' }] },
-      { path: 'creator', select: 'firstName lastName avatar userName isGuildMember' },
+      { path: 'creator', select: 'firstName lastName avatar userName isGuildMember sellerId' },
     ]);
   }
 
@@ -65,7 +65,7 @@ export class PostsService extends BaseService<PostDocument> {
         path: 'likes',
         select: 'firstName lastName avatar',
       },
-      { path: 'creator', select: 'firstName lastName avatar userName isGuildMember' },
+      { path: 'creator', select: 'firstName lastName avatar userName isGuildMember sellerId' },
       { path: 'group', select: 'name' },
       { path: 'fundraising', populate: [{ path: 'category' }, { path: 'subCategory' }] },
     ]);
