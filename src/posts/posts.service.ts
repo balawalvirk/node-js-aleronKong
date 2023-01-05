@@ -10,27 +10,24 @@ export class PostsService extends BaseService<PostDocument> {
     super(postModel);
   }
 
-  async findAllPosts(query: FilterQuery<any>, options?: QueryOptions<any>) {
-    return await this.postModel
-      .find(query, {}, options)
-      .populate([
-        {
-          path: 'comments',
-          select: 'content',
-          populate: { path: 'creator', select: 'firstName lastName avatar' },
-        },
-        {
-          path: 'likes',
-          select: 'firstName lastName avatar',
-        },
-        { path: 'creator', select: 'firstName lastName avatar userName isGuildMember sellerId' },
-        { path: 'group', select: 'name' },
-        { path: 'fundraising', populate: [{ path: 'category' }, { path: 'subCategory' }] },
-      ])
-      .sort({ createdAt: -1 });
+  async findAllPosts(query: FilterQuery<PostDocument>, options?: QueryOptions<PostDocument>) {
+    return await this.postModel.find(query, {}, options).populate([
+      {
+        path: 'comments',
+        select: 'content',
+        populate: { path: 'creator', select: 'firstName lastName avatar' },
+      },
+      {
+        path: 'likes',
+        select: 'firstName lastName avatar',
+      },
+      { path: 'creator', select: 'firstName lastName avatar userName isGuildMember sellerId' },
+      { path: 'group', select: 'name' },
+      { path: 'fundraising', populate: [{ path: 'category' }, { path: 'subCategory' }] },
+    ]);
   }
 
-  async updatePost(postId: string, query: any) {
+  async updatePost(postId: string, query: PostDocument) {
     return await this.postModel.findOneAndUpdate({ _id: postId }, query, { new: true }).populate([
       {
         path: 'comments',
@@ -47,7 +44,7 @@ export class PostsService extends BaseService<PostDocument> {
     ]);
   }
 
-  async createPost(query: FilterQuery<any>) {
+  async createPost(query: FilterQuery<PostDocument>) {
     return (await this.postModel.create(query)).populate([
       { path: 'fundraising', populate: [{ path: 'category' }, { path: 'subCategory' }] },
       { path: 'creator', select: 'firstName lastName avatar userName isGuildMember sellerId' },

@@ -51,9 +51,9 @@ export class PostsController {
       isBlocked: false,
       status: PostStatus.ACTIVE,
     };
-    const options = { limit: $q.limit, skip: $q.skip };
+    const options = { sort: $q.sort, limit: $q.limit, skip: $q.skip };
     const total = await this.postsService.countRecords({});
-    const posts = await this.postsService.findAllPosts(condition, { options });
+    const posts = await this.postsService.findAllPosts(condition, options);
     const paginated = {
       total,
       pages: Math.floor(total / $q.limit),
