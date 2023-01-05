@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { FilterQuery, Model, QueryOptions } from 'mongoose';
+import { FilterQuery, Model, QueryOptions, UpdateQuery } from 'mongoose';
 import { BaseService } from 'src/helpers/services/base.service';
 import { PostDocument, Posts } from './posts.schema';
 
@@ -27,8 +27,8 @@ export class PostsService extends BaseService<PostDocument> {
     ]);
   }
 
-  async updatePost(postId: string, query: PostDocument) {
-    return await this.postModel.findOneAndUpdate({ _id: postId }, query, { new: true }).populate([
+  async updatePost(postId: string, updateQuery: UpdateQuery<PostDocument>) {
+    return await this.postModel.findOneAndUpdate({ _id: postId }, updateQuery, { new: true }).populate([
       {
         path: 'comments',
         select: 'content',
