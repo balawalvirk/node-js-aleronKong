@@ -25,9 +25,6 @@ export class Sale {
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true })
   customer: User;
 
-  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true })
-  seller: User;
-
   @Prop({ required: true })
   price: number;
 }

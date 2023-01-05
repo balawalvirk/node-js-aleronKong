@@ -30,6 +30,14 @@ export class SearchController {
     let groups = [];
     let products = [];
     const ObjectId = mongoose.Types.ObjectId;
+    /**
+     * TODO: need to make this dynamic
+     */
+    // if nothing is passed then show recommended products
+    if (sort === 'createdAt' && filter === 'all' && !category && query.length === 0) {
+      return this.productService.getRandomProducts();
+    }
+
     const rjx = { $regex: query, $options: 'i' };
     if (filter === 'all') {
       users = await this.userService.findAllRecords(

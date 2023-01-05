@@ -64,12 +64,12 @@ export class FudraisingController {
       type: SaleType.FUNDRAISING,
       price: amount,
       customer: user._id,
-      seller: post.creator,
     });
     await this.fundraisingService.findOneRecordAndUpdate(
       { _id: projectId },
-      { $inc: { currentFunding: amount }, $push: { supporters: user._id } }
+      { $inc: { currentFunding: amount, backers: 1 } }
     );
+    post.fundraising.backers += 1;
     return post;
   }
 

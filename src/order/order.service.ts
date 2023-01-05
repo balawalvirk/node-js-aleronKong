@@ -1,8 +1,7 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { FilterQuery, Model } from 'mongoose';
+import { FilterQuery, Model, UpdateQuery } from 'mongoose';
 import { BaseService } from 'src/helpers';
-import { OrderModule } from './order.module';
 import { Order, OrderDocument } from './order.schema';
 
 @Injectable()
@@ -11,11 +10,29 @@ export class OrderService extends BaseService<OrderDocument> {
     super(OrderModel);
   }
 
-  async findOne(query: FilterQuery<OrderModule>) {
-    return await this.OrderModel.findOne(query).populate({
-      path: 'items.item',
-      select: 'creator title',
-      populate: { path: 'creator', select: 'sellerId' },
-    });
+  async findOne(query: FilterQuery<OrderDocument>) {
+    return await this.OrderModel.findOne(query)
+      .populate([
+        {
+          path: 'product',
+          select: 'avatar title creator price',
+          populate: { path: 'creator', select: 'sellerId' },
+        },
+        { path: 'address' },
+      ])
+      .lean();
+  }
+
+  async findOneAndUpdate(query: FilterQuery<OrderDocument>, updateQuery: UpdateQuery<OrderDocument>) {
+    return await this.OrderModel.findOneAndUpdate(query, updateQuery, { new: true })
+      .populate([
+        {
+          path: 'product',
+          select: 'avatar title creator price',
+          populate: { path: 'creator', select: 'sellerId' },
+        },
+        { path: 'address' },
+      ])
+      .lean();
   }
 }

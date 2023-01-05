@@ -6,18 +6,21 @@ import { User } from 'src/users/users.schema';
 export type CartDocument = Cart & mongoose.Document;
 
 @Schema({ versionKey: false, _id: false })
-class Item {
+export class Item {
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Product', required: true })
   item: Product;
 
   @Prop({ default: 1 })
   quantity: number;
 
-  @Prop({ required: true })
-  price: number;
+  @Prop()
+  selectedColor: string;
+
+  @Prop()
+  selectedSize: string;
 }
 
-const ItemSchema = SchemaFactory.createForClass(Item);
+export const ItemSchema = SchemaFactory.createForClass(Item);
 
 @Schema({ timestamps: true })
 export class Cart {

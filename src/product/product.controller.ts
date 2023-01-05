@@ -19,7 +19,7 @@ import { RolesGuard } from 'src/auth/role.guard';
 import { CartService } from 'src/product/cart.service';
 import { ParseObjectId, Roles, StripeService } from 'src/helpers';
 import { GetUser } from 'src/helpers/decorators/user.decorator';
-import { CollectionConditions, CollectionTypes, IEnvironmentVariables, UserRole } from 'src/types';
+import { CollectionConditions, CollectionTypes, UserRole } from 'src/types';
 import { UserDocument } from 'src/users/users.schema';
 import { ProductCategoryService } from './category.service';
 import { CollectionDocument } from './collection.schema';
@@ -34,8 +34,8 @@ import { ProductDocument } from './product.schema';
 import { ProductService } from './product.service';
 import { OrderService } from 'src/order/order.service';
 import { CartDocument } from './cart.schema';
-import { ConfigService } from '@nestjs/config';
 import { BuyProductDto } from './dtos/buy-product.dto';
+import { AddToCartDto } from './dtos/add-to-cart.dto';
 
 @Controller('product')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -98,8 +98,8 @@ export class ProductController {
     const { city, line1, line2, country, state, postalCode } = await this.addressService.findOneRecord({
       _id: address,
     });
-    const cart: CartDocument = await this.cartService.findOne({ creator: user._id });
-    const subTotal = cart.items.reduce((n, { price }) => n + price, 0);
+    const cart = await this.cartService.findOne({ creator: user._id });
+    const subTotal = cart.items.reduce((n, { item, quantity }) => n + item.price * quantity, 0);
     const tax = Math.round((2 / 100) * subTotal);
     const total = subTotal + tax;
     await this.stripeService.createPaymentIntent({
@@ -125,9 +125,11 @@ export class ProductController {
       await this.orderService.createRecord({
         customer: user._id,
         address: address,
-        total,
-        item: item.item,
+        product: item.item,
         quantity: item.quantity,
+        selectedColor: item.selectedColor,
+        selectedSize: item.selectedSize,
+        paymentMethod,
       });
     }
     await this.cartService.deleteSingleRecord({ creator: user._id });
@@ -240,14 +242,18 @@ export class ProductController {
   async findCart(@GetUser() user: UserDocument) {
     const cart = await this.cartService.findOne({ creator: user._id });
     if (!cart) return { message: 'Your cart is empty.' };
-    const subTotal = cart.items.reduce((n, { price }) => n + price, 0);
+    const subTotal = cart.items.reduce((n, { item, quantity }) => n + item.price * quantity, 0);
     const tax = Math.round((2 / 100) * subTotal);
     const total = subTotal + tax;
-    return { ...cart.toJSON(), subTotal, total, tax };
+    return { ...cart, subTotal, total, tax };
   }
 
   @Post(':id/add-to-cart')
-  async addItem(@GetUser() user: UserDocument, @Param('id', ParseObjectId) id: string) {
+  async addItem(
+    @GetUser() user: UserDocument,
+    @Param('id', ParseObjectId) id: string,
+    @Body() { selectedColor, selectedSize }: AddToCartDto
+  ) {
     const product = await this.productService.findOneRecord({ _id: id });
     if (!product) throw new HttpException('Product does not exists', HttpStatus.BAD_REQUEST);
     const cart = await this.cartService.findOneRecord({ creator: user._id });
@@ -255,13 +261,7 @@ export class ProductController {
     if (!cart) {
       return await this.cartService.createRecord({
         creator: user._id,
-        items: [
-          {
-            item: id,
-            quantity: 1,
-            price: product.price,
-          },
-        ],
+        items: [{ item: id, selectedColor, selectedSize }],
       });
       // otherwise add item in items array
     } else {
@@ -270,9 +270,7 @@ export class ProductController {
       if (item) throw new HttpException('You already added this item in cart.', HttpStatus.BAD_REQUEST);
       return await this.cartService.findOneRecordAndUpdate(
         { creator: user._id },
-        {
-          $push: { items: { item: id, quantity: 1, price: product.price } },
-        }
+        { $push: { items: { item: id, selectedColor, selectedSize } } }
       );
     }
   }
@@ -289,17 +287,11 @@ export class ProductController {
     @Query('inc') inc: string,
     @Query('dec') dec: string
   ) {
-    const product = await this.productService.findOneRecord({ _id: id });
+    await this.productService.findOneRecord({ _id: id });
     if (!inc && !dec) throw new HttpException('inc or dec query string is required', HttpStatus.BAD_REQUEST);
-    let updateQuery = {};
-    if (inc)
-      updateQuery = {
-        $inc: { 'items.$.quantity': 1, 'items.$.price': product.price },
-      };
-    else
-      updateQuery = {
-        $inc: { 'items.$.quantity': -1, 'items.$.price': -product.price },
-      };
-    return await this.cartService.update({ 'items.item': id, creator: user._id }, updateQuery);
+    return await this.cartService.update(
+      { 'items.item': id, creator: user._id },
+      { $inc: { 'items.$.quantity': inc ? 1 : -1 } }
+    );
   }
 }

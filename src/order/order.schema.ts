@@ -15,9 +15,6 @@ export class Order {
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Address', required: true })
   address: Address;
 
-  @Prop({ required: true })
-  total: number;
-
   @Prop({ default: OrderStatus.PENDING, enum: OrderStatus })
   status: string;
 
@@ -25,6 +22,15 @@ export class Order {
   product: Product;
 
   @Prop()
+  selectedColor: string;
+
+  @Prop()
+  selectedSize: string;
+
+  @Prop({ required: true })
+  paymentMethod: string;
+
+  @Prop({ default: 1 })
   quantity: number;
 }
 
