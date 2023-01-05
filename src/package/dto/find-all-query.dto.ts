@@ -10,4 +10,13 @@ export class FindAllPackagesQueryDto {
   @IsBoolean()
   @Type(() => Boolean)
   isGuildPackage?: boolean;
+
+  @IsOptional()
+  page: string;
+
+  @IsOptional()
+  query: string;
+
+  @IsOptional()
+  limit: string;
 }

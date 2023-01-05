@@ -1,8 +1,19 @@
-import { Controller, Get, Post, Body, Param, Delete, UseGuards, HttpException, HttpStatus } from '@nestjs/common';
+import {
+  Controller,
+  Get,
+  Post,
+  Body,
+  Param,
+  Delete,
+  UseGuards,
+  HttpException,
+  HttpStatus,
+  Query,
+} from '@nestjs/common';
 import { CreateFudraisingDto } from './dtos/create-fudraising.dto';
 import { PostsService } from 'src/posts/posts.service';
 import { PostPrivacy, PostStatus, PostType, SaleType, UserRole } from 'src/types';
-import { GetUser, ParseObjectId, Roles, StripeService } from 'src/helpers';
+import { GetUser, makeQuery, ParseObjectId, Roles, StripeService } from 'src/helpers';
 import { UserDocument } from 'src/users/users.schema';
 import { CreateFudraisingCategoryDto } from './dtos/create-category';
 import { CreateFudraisingSubCategoryDto } from './dtos/create-subCategory';
@@ -14,6 +25,7 @@ import { FudraisingService } from './fundraising.service';
 import { FundraisingDocument } from './fundraising.schema';
 import { FundProjectDto } from './dtos/fund-project.dto';
 import { SaleService } from 'src/sale/sale.service';
+import { FindAllFundraisingQueryDto } from './dtos/find-all-query.dto';
 
 @Controller('fundraising')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -34,10 +46,7 @@ export class FudraisingController {
       fundraising: fundraising._id,
       creator: user._id,
       type: PostType.FUNDRAISING,
-      /**
-       * TODO : change statua to inactive as it will be approved from admin
-       */
-      status: PostStatus.ACTIVE,
+      status: PostStatus.INACTIVE,
       privacy: PostPrivacy.PUBLIC,
     });
     return post;
@@ -73,12 +82,32 @@ export class FudraisingController {
     return post;
   }
 
+  @Roles(UserRole.ADMIN)
+  @Get('find-all')
+  async findAll(@Query() { query, page, limit }: FindAllFundraisingQueryDto) {
+    const $q = makeQuery({ page: page, limit: limit });
+    const rjx = { $regex: query ? query : '', $options: 'i' };
+    const options = { limit: $q.limit, skip: $q.skip, sort: $q.sort };
+    const condition = { title: rjx, type: PostType.FUNDRAISING };
+    const total = await this.postService.countRecords({ type: PostType.FUNDRAISING });
+    const projects = await this.postService.FindAllFundraisingPosts(condition, options);
+    const paginated = {
+      total: total,
+      pages: Math.round(total / $q.limit),
+      page: $q.page,
+      limit: $q.limit,
+      data: projects,
+    };
+    return paginated;
+  }
+
   // @Roles(UserRole.ADMIN)
   @Post('category/create')
   async createCategory(@Body() createFudraisingCategoryDto: CreateFudraisingCategoryDto) {
     return await this.categoryService.createRecord(createFudraisingCategoryDto);
   }
 
+  // @Roles(UserRole.ADMIN)
   @Get('category/find-all')
   async findAllCategories() {
     return await this.categoryService.findAllRecords();

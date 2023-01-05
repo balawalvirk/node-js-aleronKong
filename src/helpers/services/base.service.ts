@@ -37,13 +37,13 @@ export class BaseService<T> {
    * @returns Paginations
    */
   paginate = (condition?: FilterQuery<T>, paginate?: QueryOptions<T>) =>
-    this.model.find(condition, {}, paginate).sort({ createdAt: -1 });
+    this.model.find(condition, {}, paginate).lean();
 
   /**
    * Creates a countDocuments query: counts the number of documents that match filter.
    * @param filter
    */
-  countRecords = (filter: FilterQuery<any>) => this.model.countDocuments(filter).lean();
+  countRecords = (filter: FilterQuery<T>) => this.model.countDocuments(filter).lean();
 
   /**
    * Finds a single document by its _id field.
