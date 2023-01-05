@@ -10,6 +10,7 @@ import {
   Put,
   HttpException,
   HttpStatus,
+  Query,
 } from '@nestjs/common';
 import { OrderService } from './order.service';
 import { CreateOrderDto } from './dto/create-order.dto';
@@ -18,6 +19,7 @@ import { GetUser, ParseObjectId, StripeService } from 'src/helpers';
 import { UserDocument } from 'src/users/users.schema';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { OrderStatus } from 'src/types';
+import { FindAllQueryDto } from './dto/find-all-query.dto';
 
 @Controller('order')
 @UseGuards(JwtAuthGuard)
@@ -25,8 +27,8 @@ export class OrderController {
   constructor(private readonly orderService: OrderService, private readonly stripeService: StripeService) {}
 
   @Get('find-all')
-  async findAll(@GetUser() user: UserDocument) {
-    return await this.orderService.findAllRecords({ customer: user._id });
+  async findAll(@GetUser() user: UserDocument, @Query() findAllQueryDto: FindAllQueryDto) {
+    return await this.orderService.findAllRecords({ customer: user._id, ...findAllQueryDto });
   }
 
   @Get(':id/find-one')
@@ -53,9 +55,9 @@ export class OrderController {
         currency: 'usd',
         destination: order.product.creator.sellerId,
         transfer_group: order._id,
-        description: `${order.product.title} payment transfers`,
+        description: `${order.product.title} payment transfer.`,
       });
     }
-    return { message: 'Order completed successfully.' };
+    return order;
   }
 }
