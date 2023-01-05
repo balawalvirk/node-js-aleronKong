@@ -49,16 +49,13 @@ export class UserController {
   ) {
     const $q = makeQuery({ page, limit });
     const rjx = { $regex: query, $options: 'i' };
-    const options = { limit: $q.limit, skip: $q.skip };
+    const options = { limit: $q.limit, skip: $q.skip, sort: $q.sort };
+    const condition = {
+      role: { $nin: [UserRole.ADMIN] },
+      $or: [{ firstName: rjx }, { lastName: rjx }, { email: rjx }],
+    };
     const total = await this.usersService.countRecords({});
-    const users = await this.usersService.paginate(
-      {
-        role: { $nin: [UserRole.ADMIN] },
-        $or: [{ firstName: rjx }, { lastName: rjx }, { email: rjx }],
-      },
-      options
-    );
-
+    const users = await this.usersService.paginate(condition, options);
     const paginated = {
       total: total,
       pages: Math.round(total / $q.limit),
@@ -87,7 +84,12 @@ export class UserController {
 
   @Put(':id/unblock')
   async unBlock(@Param('id', ParseObjectId) id: string, @GetUser() user: UserDocument) {
-    await this.usersService.findOneRecordAndUpdate({ _id: user._id }, { $pull: { blockedUsers: id } });
+    // if admin is doing this request then un block this user.
+    if (user.role.includes(UserRole.ADMIN)) {
+      await this.usersService.findOneRecordAndUpdate({ _id: id }, { status: UserStatus.ACTIVE });
+    } else {
+      await this.usersService.findOneRecordAndUpdate({ _id: user._id }, { $pull: { blockedUsers: id } });
+    }
     return { message: 'User unblocked successfully.' };
   }
 

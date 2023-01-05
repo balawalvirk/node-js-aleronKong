@@ -67,4 +67,8 @@ export class PostsService extends BaseService<PostDocument> {
       { path: 'fundraising', populate: [{ path: 'category' }, { path: 'subCategory' }] },
     ]);
   }
+
+  async FindAllFundraisingPosts(query: FilterQuery<PostDocument>, options?: QueryOptions<PostDocument>) {
+    return await this.postModel.find(query, {}, options).select('fundraising status').populate('fundraising').lean();
+  }
 }

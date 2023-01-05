@@ -14,7 +14,7 @@ import {
 import { PackageService } from './package.service';
 import { CreatePackageDto } from './dto/create-package.dto';
 import { UpdatePackageDto } from './dto/update-package.dto';
-import { GetUser, ParseObjectId, StripeService } from 'src/helpers';
+import { GetUser, makeQuery, ParseObjectId, StripeService } from 'src/helpers';
 import { UserDocument } from 'src/users/users.schema';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { PackageDocument } from './package.schema';
@@ -60,10 +60,22 @@ export class PackageController {
   }
 
   @Get('/find-all')
-  async findAllPackages(@Query() findAllPackagesQueryDto: FindAllPackagesQueryDto) {
-    return await this.packageService.findAllRecords(findAllPackagesQueryDto);
+  async findAllPackages(@Query() { page, limit, query, ...rest }: FindAllPackagesQueryDto) {
+    const $q = makeQuery({ page: page, limit: limit });
+    const rjx = { $regex: query ? query : '', $options: 'i' };
+    const options = { limit: $q.limit, skip: $q.skip, sort: $q.sort };
+    const condition = { ...rest, title: rjx };
+    const total = await this.packageService.countRecords({});
+    const packages = await this.packageService.paginate(condition, options);
+    const paginated = {
+      total: total,
+      pages: Math.round(total / $q.limit),
+      page: $q.page,
+      limit: $q.limit,
+      data: packages,
+    };
+    return paginated;
   }
-
   @Patch('update/:id')
   async update(@Param('id') id: string, @Body() updatePackageDto: UpdatePackageDto, @GetUser() user: UserDocument) {
     const packageFound = await this.packageService.findOneRecord({ _id: id });
