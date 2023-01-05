@@ -46,8 +46,8 @@ export class Fundraising {
   @Prop()
   bankAccount: string;
 
-  @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }] })
-  supporters: User[];
+  @Prop({ default: 0 })
+  backers: number;
 
   @Prop({ default: 0 })
   currentFunding: number;

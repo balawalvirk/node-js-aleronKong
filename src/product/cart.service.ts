@@ -11,16 +11,18 @@ export class CartService extends BaseService<CartDocument> {
   }
 
   async findOne(query: FilterQuery<CartDocument>) {
-    return await this.CartModel.findOne(query).populate({
-      path: 'items.item',
-      select: 'color size avatar title creator',
-    });
+    return await this.CartModel.findOne(query)
+      .populate({
+        path: 'items.item',
+        select: 'avatar title creator price',
+      })
+      .lean();
   }
 
   async update(query: FilterQuery<CartDocument>, updateQuery: UpdateQuery<CartDocument>) {
     return await this.CartModel.findOneAndUpdate(query, updateQuery, { new: true }).populate({
       path: 'items.item',
-      select: 'color size avatar title creator',
+      select: 'avatar title creator price',
     });
   }
 }
