@@ -1,13 +1,11 @@
 import {
   Body,
   Controller,
-  DefaultValuePipe,
   Delete,
   Get,
   HttpException,
   HttpStatus,
   Param,
-  ParseBoolPipe,
   ParseEnumPipe,
   Post,
   Put,
@@ -88,20 +86,20 @@ export class ProductController {
 
   // find user store products and all store products
   @Get('store')
-  async findStoreProducts(@Query() query) {
-    let condition = {
-      ...query,
-    };
-    // loop through object and convert in into object id
+  async findStoreProducts(
+    @Query() { showBoughtProducts, ...rest }: FindStoreProductsQueryDto,
+    @GetUser() user: UserDocument
+  ) {
     const ObjectId = mongoose.Types.ObjectId;
-    for (const key of Object.keys(query)) {
-      if (key === 'creator') {
-        condition.creator = new ObjectId(query[key]);
-      } else if (key === 'category') {
-        condition.category = new ObjectId(query[key]);
-      }
+    if (!showBoughtProducts) {
+      //loop through rest object and convert id string to mongo id
+      Object.keys(rest).forEach((key) => (rest[key] = new ObjectId(rest[key])));
+      return await this.productService.findStoreProducts(rest);
+    } else {
+      //@ts-ignore
+      const products = user.boughtDigitalProducts.map((product) => new ObjectId(product));
+      return await this.productService.findStoreProducts({ _id: { $in: products } });
     }
-    return await this.productService.findStoreProducts(condition);
   }
 
   @Post('checkout')
@@ -140,7 +138,7 @@ export class ProductController {
         seller: item.creator,
         price: item.price,
         quantity,
-        type: ProductType.PHYSICAL,
+        productType: ProductType.PHYSICAL,
       });
     }
 
@@ -183,7 +181,7 @@ export class ProductController {
       description: `payment intent of product ${product.title}`,
     });
     await this.saleService.createRecord({
-      type: ProductType.DIGITAL,
+      productType: ProductType.DIGITAL,
       customer: user._id,
       //@ts-ignore
       seller: product.creator._id,

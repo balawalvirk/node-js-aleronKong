@@ -11,37 +11,45 @@ export class PostsService extends BaseService<PostDocument> {
   }
 
   async findAllPosts(query: FilterQuery<PostDocument>, options?: QueryOptions<PostDocument>) {
-    return await this.postModel.find(query, {}, options).populate([
-      {
-        path: 'comments',
-        select: 'content',
-        populate: { path: 'creator', select: 'firstName lastName avatar' },
-      },
-      {
-        path: 'likes',
-        select: 'firstName lastName avatar',
-      },
-      { path: 'creator', select: 'firstName lastName avatar userName isGuildMember sellerId' },
-      { path: 'group', select: 'name' },
-      { path: 'fundraising', populate: [{ path: 'category' }, { path: 'subCategory' }] },
-    ]);
+    return await this.postModel
+      .find(query, {}, options)
+      .populate([
+        {
+          path: 'comments',
+          select: 'content',
+          options: { sort: { created_at: -1 } },
+          populate: { path: 'creator', select: 'firstName lastName avatar' },
+        },
+        {
+          path: 'likes',
+          select: 'firstName lastName avatar',
+        },
+        { path: 'creator', select: 'firstName lastName avatar userName isGuildMember sellerId' },
+        { path: 'group', select: 'name' },
+        { path: 'fundraising', populate: [{ path: 'category' }, { path: 'subCategory' }] },
+      ])
+      .lean();
   }
 
   async updatePost(postId: string, updateQuery: UpdateQuery<PostDocument>) {
-    return await this.postModel.findOneAndUpdate({ _id: postId }, updateQuery, { new: true }).populate([
-      {
-        path: 'comments',
-        select: 'content',
-        populate: { path: 'creator', select: 'firstName lastName avatar' },
-      },
-      {
-        path: 'likes',
-        select: 'firstName lastName avatar',
-      },
-      { path: 'creator', select: 'firstName lastName avatar userName isGuildMember sellerId' },
-      { path: 'group', select: 'name' },
-      { path: 'fundraising', populate: [{ path: 'category' }, { path: 'subCategory' }] },
-    ]);
+    return await this.postModel
+      .findOneAndUpdate({ _id: postId }, updateQuery, { new: true })
+      .populate([
+        {
+          path: 'comments',
+          select: 'content',
+          options: { sort: { created_at: -1 } },
+          populate: { path: 'creator', select: 'firstName lastName avatar' },
+        },
+        {
+          path: 'likes',
+          select: 'firstName lastName avatar',
+        },
+        { path: 'creator', select: 'firstName lastName avatar userName isGuildMember sellerId' },
+        { path: 'group', select: 'name' },
+        { path: 'fundraising', populate: [{ path: 'category' }, { path: 'subCategory' }] },
+      ])
+      .lean();
   }
 
   async createPost(query: FilterQuery<PostDocument>) {
@@ -52,20 +60,24 @@ export class PostsService extends BaseService<PostDocument> {
   }
 
   async findOne(query: FilterQuery<PostDocument>) {
-    return await this.postModel.findOne(query).populate([
-      {
-        path: 'comments',
-        select: 'content',
-        populate: { path: 'creator', select: 'firstName lastName avatar' },
-      },
-      {
-        path: 'likes',
-        select: 'firstName lastName avatar',
-      },
-      { path: 'creator', select: 'firstName lastName avatar userName isGuildMember sellerId' },
-      { path: 'group', select: 'name' },
-      { path: 'fundraising', populate: [{ path: 'category' }, { path: 'subCategory' }] },
-    ]);
+    return await this.postModel
+      .findOne(query)
+      .populate([
+        {
+          path: 'comments',
+          select: 'content',
+          options: { sort: { created_at: -1 } },
+          populate: { path: 'creator', select: 'firstName lastName avatar' },
+        },
+        {
+          path: 'likes',
+          select: 'firstName lastName avatar',
+        },
+        { path: 'creator', select: 'firstName lastName avatar userName isGuildMember sellerId' },
+        { path: 'group', select: 'name' },
+        { path: 'fundraising', populate: [{ path: 'category' }, { path: 'subCategory' }] },
+      ])
+      .lean();
   }
 
   async FindAllFundraisingPosts(query: FilterQuery<PostDocument>, options?: QueryOptions<PostDocument>) {
