@@ -12,7 +12,7 @@ import {
 } from '@nestjs/common';
 import { CreateFudraisingDto } from './dtos/create-fudraising.dto';
 import { PostsService } from 'src/posts/posts.service';
-import { PostPrivacy, PostStatus, PostType, SaleType, UserRole } from 'src/types';
+import { PostPrivacy, PostStatus, PostType, UserRole } from 'src/types';
 import { GetUser, makeQuery, ParseObjectId, Roles, StripeService } from 'src/helpers';
 import { UserDocument } from 'src/users/users.schema';
 import { CreateFudraisingCategoryDto } from './dtos/create-category';
@@ -24,8 +24,8 @@ import { FudraisingSubCategoryService } from './subcategory.service';
 import { FudraisingService } from './fundraising.service';
 import { FundraisingDocument } from './fundraising.schema';
 import { FundProjectDto } from './dtos/fund-project.dto';
-import { SaleService } from 'src/sale/sale.service';
 import { FindAllFundraisingQueryDto } from './dtos/find-all-query.dto';
+import { FundService } from './fund.service';
 
 @Controller('fundraising')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -36,7 +36,7 @@ export class FudraisingController {
     private readonly subCategoryService: FudraisingSubCategoryService,
     private readonly fundraisingService: FudraisingService,
     private readonly stripeService: StripeService,
-    private readonly saleService: SaleService
+    private readonly fundService: FundService
   ) {}
 
   @Post('create')
@@ -68,11 +68,12 @@ export class FudraisingController {
       },
       description: `funding of funraiser project by ${user.firstName} ${user.lastName}`,
     });
-    await this.saleService.createRecord({
-      fundraising: projectId,
-      type: SaleType.FUNDRAISING,
+    await this.fundService.createRecord({
+      project: projectId,
       price: amount,
-      customer: user._id,
+      donator: user._id,
+      //@ts-ignore
+      beneficiary: post.creator._id,
     });
     await this.fundraisingService.findOneRecordAndUpdate(
       { _id: projectId },

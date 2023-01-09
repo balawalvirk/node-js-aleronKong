@@ -18,7 +18,7 @@ export class ChatService extends BaseService<ChatDocument> {
     });
   }
 
-  async findAll(query: FilterQuery<any>, userId: string) {
+  async findAll(query: FilterQuery<ChatDocument>, userId: string) {
     return await this.ChatModel.find(query).populate([
       {
         path: 'members',
@@ -31,8 +31,8 @@ export class ChatService extends BaseService<ChatDocument> {
     ]);
   }
 
-  async findOne(query: FilterQuery<any>, userId: string) {
-    return await this.ChatModel.find(query).populate({
+  async findOne(query: FilterQuery<ChatDocument>, userId: string) {
+    return await this.ChatModel.findOne(query).populate({
       path: 'members',
       match: { _id: { $ne: userId } },
       select: 'avatar firstName lastName',

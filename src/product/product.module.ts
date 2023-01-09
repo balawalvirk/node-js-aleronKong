@@ -12,7 +12,9 @@ import { ProductCategoryService } from './category.service';
 import { Cart, CartSchema } from './cart.schema';
 import { CartService } from './cart.service';
 import { OrderModule } from 'src/order/order.module';
-import { SaleModule } from 'src/sale/sale.module';
+import { Sale, SaleSchema } from './sale.schema';
+import { SaleService } from './sale.service';
+import { UsersModule } from 'src/users/users.module';
 
 @Module({
   imports: [
@@ -20,11 +22,13 @@ import { SaleModule } from 'src/sale/sale.module';
     MongooseModule.forFeature([{ name: Collection.name, schema: CollectionSchema }]),
     MongooseModule.forFeature([{ name: ProductCategory.name, schema: ProductCategorySchema }]),
     MongooseModule.forFeature([{ name: Cart.name, schema: CartSchema }]),
+    MongooseModule.forFeature([{ name: Sale.name, schema: SaleSchema }]),
     AddressModule,
     OrderModule,
+    UsersModule,
   ],
   controllers: [ProductController],
-  providers: [ProductService, CollectionService, StripeService, ProductCategoryService, CartService],
+  providers: [ProductService, CollectionService, StripeService, ProductCategoryService, CartService, SaleService],
   exports: [ProductService, CartService],
 })
 export class ProductModule {}

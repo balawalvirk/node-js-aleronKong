@@ -145,4 +145,8 @@ export class StripeService {
   async createBankToken(params?: Stripe.TokenCreateParams, options?: Stripe.RequestOptions) {
     return await this.stripe.tokens.create(params, options);
   }
+
+  async createRefund(params?: Stripe.RefundCreateParams, options?: Stripe.RequestOptions) {
+    return await this.stripe.refunds.create(params, options);
+  }
 }

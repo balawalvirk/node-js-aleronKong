@@ -79,14 +79,10 @@ export enum ReportType {
 export enum OrderStatus {
   PENDING = 'pending',
   DELIVERED = 'delivered',
-  CANCELLED = 'cancelled',
+  CANCELED = 'canceled',
+  CANCEL_REQUESTED = 'cancelRequested',
   ACTIVE = 'active',
-}
-
-export enum SaleType {
-  PRODUCT = 'product',
-  FUNDRAISING = 'fundraising',
-  PACKAGE = 'package',
+  COMPLETED = 'completed',
 }
 
 export enum SearchFilter {

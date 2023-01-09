@@ -2,6 +2,7 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose, { Document } from 'mongoose';
 import { Address } from 'src/address/address.schema';
 import { Package } from 'src/package/package.schema';
+import { Product } from 'src/product/product.schema';
 import { AuthTypes, UserRole, UserStatus } from 'src/types';
 import { Report, ReportSchema } from './report.schema';
 
@@ -76,6 +77,9 @@ export class User {
 
   @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Package' }] })
   supportingGuildPackages: Package[];
+
+  @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Product' }] })
+  boughtDigitalProducts: Product[];
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

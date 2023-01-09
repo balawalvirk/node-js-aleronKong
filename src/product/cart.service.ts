@@ -14,15 +14,17 @@ export class CartService extends BaseService<CartDocument> {
     return await this.CartModel.findOne(query)
       .populate({
         path: 'items.item',
-        select: 'avatar title creator price',
+        select: 'media title creator price',
       })
       .lean();
   }
 
   async update(query: FilterQuery<CartDocument>, updateQuery: UpdateQuery<CartDocument>) {
-    return await this.CartModel.findOneAndUpdate(query, updateQuery, { new: true }).populate({
-      path: 'items.item',
-      select: 'avatar title creator price',
-    });
+    return await this.CartModel.findOneAndUpdate(query, updateQuery, { new: true })
+      .populate({
+        path: 'items.item',
+        select: 'media title creator price',
+      })
+      .lean();
   }
 }
