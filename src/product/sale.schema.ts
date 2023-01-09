@@ -12,7 +12,7 @@ export class Sale {
   product: Product;
 
   @Prop({ enum: ProductType, required: true })
-  type: string;
+  productType: string;
 
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true })
   customer: User;

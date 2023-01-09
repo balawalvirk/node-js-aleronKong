@@ -237,6 +237,8 @@ export class PackageController {
       customer: user.customerId,
       price: pkg.priceId,
     });
+    if (subscriptions.data.length === 0)
+      throw new HttpException('There is no active subscription of this item.', HttpStatus.BAD_REQUEST);
     const allInvoices = await this.stripeService.findAllInvoices({
       subscription: subscriptions.data[0].id,
       customer: user.customerId,

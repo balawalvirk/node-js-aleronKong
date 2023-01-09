@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { FilterQuery, Model, UpdateQuery } from 'mongoose';
+import mongoose, { FilterQuery, Model, UpdateQuery } from 'mongoose';
 import { BaseService } from 'src/helpers/services/base.service';
 import { Product, ProductDocument } from './product.schema';
 
@@ -26,6 +26,9 @@ export class ProductService extends BaseService<ProductDocument> {
     return await this.productModel.aggregate([
       { $match: query },
       {
+        $sort: !sort ? { createdAt: -1 } : sort,
+      },
+      {
         $lookup: {
           from: 'productcategories',
           localField: 'category',
@@ -37,13 +40,16 @@ export class ProductService extends BaseService<ProductDocument> {
       {
         $group: {
           _id: '$category.title',
-          data: {
+          category: {
+            $first: '$category.title',
+          },
+          type: {
+            $first: '$$ROOT.type',
+          },
+          products: {
             $push: '$$ROOT',
           },
         },
-      },
-      {
-        $sort: !sort ? { createdAt: -1 } : sort,
       },
     ]);
   }
@@ -57,7 +63,13 @@ export class ProductService extends BaseService<ProductDocument> {
             _id: '63b3c35f5e3c3606719b3ef8',
             title: 'Legand of Tarzan',
             description: 'This is the dummy description of the audio book',
-            category: '639045265a7d4cf7fd9e3b63',
+            category: {
+              _id: '639045265a7d4cf7fd9e3b63',
+              title: 'AudioBook',
+              type: 'digital',
+              createdAt: '2022-12-07T07:47:50.079+00:00',
+              updatedAt: '2022-12-07T07:47:50.079+00:00',
+            },
             type: 'digital',
             media: ['https://aleron-kong.s3.amazonaws.com/20230103T055539322Z265501'],
             file: 'https://aleron-kong.s3.amazonaws.com/20230103T055541734Z996630',
@@ -87,7 +99,13 @@ export class ProductService extends BaseService<ProductDocument> {
             _id: '63b2b32a4db767712cecc984',
             title: 'Darkness of sea',
             description: 'This is the story of a sailer, who was living on a boat for the fishing in the sea',
-            category: '639045265a7d4cf7fd9e3b63',
+            category: {
+              _id: '639045265a7d4cf7fd9e3b63',
+              title: 'AudioBook',
+              type: 'digital',
+              createdAt: '2022-12-07T07:47:50.079+00:00',
+              updatedAt: '2022-12-07T07:47:50.079+00:00',
+            },
             type: 'digital',
             media: ['https://aleron-kong.s3.amazonaws.com/20230102T103415321Z829788'],
             file: 'https://aleron-kong.s3.amazonaws.com/20230102T103416740Z783042',
@@ -119,7 +137,13 @@ export class ProductService extends BaseService<ProductDocument> {
             _id: '63b2b14d4db767712cecc962',
             title: 'Lost Hero',
             description: 'This is the dummy description of this comic',
-            category: '639045325a7d4cf7fd9e3b66',
+            category: {
+              _id: '639045325a7d4cf7fd9e3b66',
+              title: 'Comic',
+              type: 'digital',
+              createdAt: '2022-12-07T07:48:02.199+00:00',
+              updatedAt: '2022-12-07T07:48:02.199+00:00',
+            },
             type: 'digital',
             media: ['https://aleron-kong.s3.amazonaws.com/20230102T102620811Z918308'],
             file: 'https://aleron-kong.s3.amazonaws.com/20230102T102621394Z444736',
@@ -149,7 +173,13 @@ export class ProductService extends BaseService<ProductDocument> {
             _id: '63a9bfd4c4dfd74522a214f1',
             title: 'New hoddie',
             description: 'red hoodies',
-            category: '6384cc1771070ffc67c60767',
+            category: {
+              _id: '639045325a7d4cf7fd9e3b66',
+              title: 'Comic',
+              type: 'digital',
+              createdAt: '2022-12-07T07:48:02.199+00:00',
+              updatedAt: '2022-12-07T07:48:02.199+00:00',
+            },
             type: 'physical',
             media: ['www.aws.com', 'www.aws.com'],
             file: 'www.aws.com',
@@ -176,7 +206,13 @@ export class ProductService extends BaseService<ProductDocument> {
             _id: '63a9bf891db11e6346646110',
             title: 'New hoddie',
             description: 'red hoodies',
-            category: '6384cc1771070ffc67c60767',
+            category: {
+              _id: '639045325a7d4cf7fd9e3b66',
+              title: 'Comic',
+              type: 'digital',
+              createdAt: '2022-12-07T07:48:02.199+00:00',
+              updatedAt: '2022-12-07T07:48:02.199+00:00',
+            },
             type: 'physical',
             media: ['www.aws.com', 'www.aws.com'],
             file: 'www.aws.com',
@@ -207,7 +243,13 @@ export class ProductService extends BaseService<ProductDocument> {
             _id: '6391e967dd9fd475b4aa5185',
             title: 'The Land Founding',
             description: 'A man who was feeling a fear in his heart and was not able to see any way to out...',
-            category: '639045005a7d4cf7fd9e3b60',
+            category: {
+              _id: '639045005a7d4cf7fd9e3b60',
+              title: 'Ebook',
+              type: 'digital',
+              createdAt: '2022-12-07T07:47:12.099+00:00',
+              updatedAt: '2022-12-07T07:47:12.099+00:00',
+            },
             type: 'digital',
             media: ['https://aleron-kong.s3.amazonaws.com/20221208T062553780Z234065'],
             file: 'https://aleron-kong.s3.amazonaws.com/20221208T062554382Z818127',
@@ -242,7 +284,13 @@ export class ProductService extends BaseService<ProductDocument> {
             _id: '63918f7f42fa8539c1bd56c1',
             title: 'AleronKong Kong - The Land Founding',
             description: 'This is a really nice introduction of the upcoming novels and books',
-            category: '639045005a7d4cf7fd9e3b60',
+            category: {
+              _id: '639045005a7d4cf7fd9e3b60',
+              title: 'Ebook',
+              type: 'digital',
+              createdAt: '2022-12-07T07:47:12.099+00:00',
+              updatedAt: '2022-12-07T07:47:12.099+00:00',
+            },
             type: 'digital',
             media: ['https://aleron-kong.s3.amazonaws.com/20221208T062553780Z234065'],
             file: 'https://aleron-kong.s3.amazonaws.com/20221208T062554382Z818127',
@@ -272,7 +320,13 @@ export class ProductService extends BaseService<ProductDocument> {
             _id: '639182e142fa8539c1bd5688',
             title: 'Chao’s Kids Hoddie',
             description: 'This product includes really stuff and clothing is very heigh quality',
-            category: '6387564671a5b2d97be1001e',
+            category: {
+              _id: '6387564671a5b2d97be1001e',
+              title: 'Hoddie',
+              type: 'physical',
+              createdAt: '2022-11-30T13:10:30.287+00:00',
+              updatedAt: '2022-11-30T13:10:30.287+00:00',
+            },
             type: 'physical',
             media: ['https://aleron-kong.s3.amazonaws.com/20221208T062116254Z164410'],
             price: 50,
@@ -297,7 +351,13 @@ export class ProductService extends BaseService<ProductDocument> {
             _id: '6386fc21f230f2056c697cd3',
             title: 'New hoddie',
             description: 'red hoodies',
-            category: '6387564671a5b2d97be1001e',
+            category: {
+              _id: '6387564671a5b2d97be1001e',
+              title: 'Hoddie',
+              type: 'physical',
+              createdAt: '2022-11-30T13:10:30.287+00:00',
+              updatedAt: '2022-11-30T13:10:30.287+00:00',
+            },
             type: 'physical',
             media: ['www.aws.com', 'www.aws.com'],
             file: 'www.aws.com',
@@ -315,7 +375,13 @@ export class ProductService extends BaseService<ProductDocument> {
             _id: '63865b7b7cb5575cf3d5b707',
             title: 'New hoddie',
             description: 'red hoodies',
-            category: '6387564671a5b2d97be1001e',
+            category: {
+              _id: '6387564671a5b2d97be1001e',
+              title: 'Hoddie',
+              type: 'physical',
+              createdAt: '2022-11-30T13:10:30.287+00:00',
+              updatedAt: '2022-11-30T13:10:30.287+00:00',
+            },
             state: 'physical',
             media: ['www.aws.com', 'www.aws.com'],
             file: 'www.aws.com',
@@ -339,7 +405,13 @@ export class ProductService extends BaseService<ProductDocument> {
             _id: '638657007cb5575cf3d5b6fc',
             title: 'New hoddie',
             description: 'red hoodies',
-            category: '6387564671a5b2d97be1001e',
+            category: {
+              _id: '6387564671a5b2d97be1001e',
+              title: 'Hoddie',
+              type: 'physical',
+              createdAt: '2022-11-30T13:10:30.287+00:00',
+              updatedAt: '2022-11-30T13:10:30.287+00:00',
+            },
             state: 'physical',
             media: ['www.aws.com', 'www.aws.com'],
             file: 'www.aws.com',
@@ -357,7 +429,13 @@ export class ProductService extends BaseService<ProductDocument> {
             _id: '6386567c7cb5575cf3d5b6f7',
             title: 'New hoddie',
             description: 'red hoodies',
-            category: '6387564671a5b2d97be1001e',
+            category: {
+              _id: '6387564671a5b2d97be1001e',
+              title: 'Hoddie',
+              type: 'physical',
+              createdAt: '2022-11-30T13:10:30.287+00:00',
+              updatedAt: '2022-11-30T13:10:30.287+00:00',
+            },
             state: 'physical',
             media: ['www.aws.com', 'www.aws.com'],
             file: 'www.aws.com',
@@ -376,7 +454,14 @@ export class ProductService extends BaseService<ProductDocument> {
             _id: '63859ff2e2934099a5e16007',
             title: ' blue hoddie',
             description: 'blue hoodies',
-            category: '6387564671a5b2d97be1001e',
+            category: {
+              _id: '6387564671a5b2d97be1001e',
+              title: 'Hoddie',
+              type: 'physical',
+              createdAt: '2022-11-30T13:10:30.287+00:00',
+              updatedAt: '2022-11-30T13:10:30.287+00:00',
+            },
+
             state: 'physical',
             media: ['www.aws.com', 'www.aws.com'],
             file: 'www.aws.com',
