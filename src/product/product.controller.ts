@@ -1,11 +1,13 @@
 import {
   Body,
   Controller,
+  DefaultValuePipe,
   Delete,
   Get,
   HttpException,
   HttpStatus,
   Param,
+  ParseBoolPipe,
   ParseEnumPipe,
   Post,
   Put,
@@ -19,7 +21,7 @@ import { RolesGuard } from 'src/auth/role.guard';
 import { CartService } from 'src/product/cart.service';
 import { ParseObjectId, Roles, StripeService } from 'src/helpers';
 import { GetUser } from 'src/helpers/decorators/user.decorator';
-import { CollectionConditions, CollectionTypes, UserRole } from 'src/types';
+import { CollectionConditions, CollectionTypes, ProductType, UserRole } from 'src/types';
 import { UserDocument } from 'src/users/users.schema';
 import { ProductCategoryService } from './category.service';
 import { CollectionDocument } from './collection.schema';
@@ -30,12 +32,13 @@ import { CreateCheckoutDto } from './dtos/create-checkout.dto';
 import { CreateCollectionDto } from './dtos/create-collection.dto';
 import { CreateProductDto } from './dtos/create-product.dto';
 import { UpdateProductDto } from './dtos/update-product.dto';
-import { ProductDocument } from './product.schema';
 import { ProductService } from './product.service';
 import { OrderService } from 'src/order/order.service';
-import { CartDocument } from './cart.schema';
 import { BuyProductDto } from './dtos/buy-product.dto';
 import { AddToCartDto } from './dtos/add-to-cart.dto';
+import { SaleService } from './sale.service';
+import { UsersService } from 'src/users/users.service';
+import { FindStoreProductsQueryDto } from './dtos/find-store-products-query.dto';
 
 @Controller('product')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -47,7 +50,9 @@ export class ProductController {
     private readonly addressService: AddressService,
     private readonly categoryService: ProductCategoryService,
     private readonly cartService: CartService,
-    private readonly orderService: OrderService
+    private readonly orderService: OrderService,
+    private readonly saleService: SaleService,
+    private readonly userService: UsersService
   ) {}
 
   @Post('create')
@@ -56,12 +61,18 @@ export class ProductController {
   }
 
   @Delete(':id/delete')
-  async remove(@Param('id', ParseObjectId) id: string) {
-    const product: ProductDocument = await this.productService.deleteSingleRecord({ _id: id });
+  async remove(@Param('id', ParseObjectId) id: string, @GetUser() user: UserDocument) {
+    const product = await this.productService.deleteSingleRecord({ _id: id });
     await this.collectionService.updateManyRecords(
       { products: { $in: [product._id] } },
       { $pull: { products: product._id } }
     );
+    await this.saleService.deleteManyRecord({ product: product._id });
+    if (product.type === ProductType.DIGITAL)
+      await this.userService.findOneRecordAndUpdate(
+        { _id: user._id },
+        { $pull: { boughtDigitalProducts: product._id } }
+      );
     return product;
   }
 
@@ -102,7 +113,7 @@ export class ProductController {
     const subTotal = cart.items.reduce((n, { item, quantity }) => n + item.price * quantity, 0);
     const tax = Math.round((2 / 100) * subTotal);
     const total = subTotal + tax;
-    await this.stripeService.createPaymentIntent({
+    const paymentIntent = await this.stripeService.createPaymentIntent({
       currency: 'usd',
       payment_method: paymentMethod,
       amount: Math.round(total * 100),
@@ -121,17 +132,33 @@ export class ProductController {
       },
     });
 
-    for (const item of cart.items) {
+    for (const { item, quantity } of cart.items) {
+      await this.saleService.createRecord({
+        //@ts-ignore
+        product: item._id,
+        customer: user._id,
+        seller: item.creator,
+        price: item.price,
+        quantity,
+        type: ProductType.PHYSICAL,
+      });
+    }
+
+    for (const { item, quantity, selectedColor, selectedSize } of cart.items) {
       await this.orderService.createRecord({
         customer: user._id,
         address: address,
-        product: item.item,
-        quantity: item.quantity,
-        selectedColor: item.selectedColor,
-        selectedSize: item.selectedSize,
+        //@ts-ignore
+        product: item._id,
+        quantity: quantity,
+        selectedColor: selectedColor,
+        selectedSize: selectedSize,
         paymentMethod,
+        seller: item.creator,
+        paymentIntent,
       });
     }
+
     await this.cartService.deleteSingleRecord({ creator: user._id });
     return { message: 'Order placed successfully.' };
   }
@@ -155,6 +182,15 @@ export class ProductController {
       application_fee_amount: Math.round((2 / 100) * total),
       description: `payment intent of product ${product.title}`,
     });
+    await this.saleService.createRecord({
+      type: ProductType.DIGITAL,
+      customer: user._id,
+      //@ts-ignore
+      seller: product.creator._id,
+      price: product.price,
+      product: product._id,
+    });
+    await this.userService.findOneRecordAndUpdate({ _id: user._id }, { $push: { boughtDigitalProducts: product._id } });
     return { message: 'Thanks for purchasing the product.' };
   }
 
@@ -289,9 +325,13 @@ export class ProductController {
   ) {
     await this.productService.findOneRecord({ _id: id });
     if (!inc && !dec) throw new HttpException('inc or dec query string is required', HttpStatus.BAD_REQUEST);
-    return await this.cartService.update(
+    const cart = await this.cartService.update(
       { 'items.item': id, creator: user._id },
       { $inc: { 'items.$.quantity': inc ? 1 : -1 } }
     );
+    const subTotal = cart.items.reduce((n, { item, quantity }) => n + item.price * quantity, 0);
+    const tax = Math.round((2 / 100) * subTotal);
+    const total = subTotal + tax;
+    return { ...cart, total, tax, subTotal };
   }
 }

@@ -12,6 +12,9 @@ export class Order {
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true })
   customer: User;
 
+  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true })
+  seller: User;
+
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Address', required: true })
   address: Address;
 
@@ -32,6 +35,9 @@ export class Order {
 
   @Prop({ default: 1 })
   quantity: number;
+
+  @Prop()
+  paymentIntent: string;
 }
 
 export const OrderSchema = SchemaFactory.createForClass(Order);

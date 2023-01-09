@@ -19,7 +19,6 @@ import { FudraisingModule } from './fundraising/fudraising.module';
 import { NotificationModule } from './notification/notification.module';
 import { ReportModule } from './report/report.module';
 import { SearchModule } from './search/search.module';
-import { SaleModule } from './sale/sale.module';
 import { AppController } from './app.controller';
 
 @Module({
@@ -41,7 +40,6 @@ import { AppController } from './app.controller';
     NotificationModule,
     ReportModule,
     SearchModule,
-    SaleModule,
   ],
   // global interceptor for transforming response.
   providers: [

@@ -28,7 +28,7 @@ export class OrderController {
 
   @Get('find-all')
   async findAll(@GetUser() user: UserDocument, @Query() findAllQueryDto: FindAllQueryDto) {
-    return await this.orderService.findAllRecords({ customer: user._id, ...findAllQueryDto });
+    return await this.orderService.findAll({ customer: user._id, ...findAllQueryDto });
   }
 
   @Get(':id/find-one')
@@ -45,7 +45,8 @@ export class OrderController {
   @Put(':id/update')
   async update(@Param('id', ParseObjectId) id: string, @Body() updateOrderDto: UpdateOrderDto) {
     const order = await this.orderService.findOneAndUpdate({ _id: id }, updateOrderDto);
-    if (order.status === OrderStatus.DELIVERED) {
+    // check if order status is completed then transfer the amount to seller account.
+    if (order.status === OrderStatus.COMPLETED) {
       const subTotal = order.product.price * order.quantity;
       const tax = Math.round((2 / 100) * subTotal);
       const total = subTotal + tax;
@@ -57,6 +58,9 @@ export class OrderController {
         transfer_group: order._id,
         description: `${order.product.title} payment transfer.`,
       });
+      //check if order status is cancel then refund payment back to customer
+    } else if (order.status === OrderStatus.CANCELED) {
+      await this.stripeService.createRefund({ payment_intent: order.paymentIntent });
     }
     return order;
   }
