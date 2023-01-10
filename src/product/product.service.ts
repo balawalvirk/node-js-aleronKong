@@ -58,6 +58,8 @@ export class ProductService extends BaseService<ProductDocument> {
     const products = [
       {
         _id: 'trending audiobooks',
+        category: 'AudioBook',
+        type: 'digital',
         data: [
           {
             _id: '63b3c35f5e3c3606719b3ef8',
@@ -132,6 +134,8 @@ export class ProductService extends BaseService<ProductDocument> {
 
       {
         _id: 'trending Comics',
+        category: 'Comic',
+        type: 'digital',
         data: [
           {
             _id: '63b2b14d4db767712cecc962',
@@ -201,6 +205,8 @@ export class ProductService extends BaseService<ProductDocument> {
 
       {
         _id: 'trending e books',
+        category: 'Comic',
+        type: 'digital',
         data: [
           {
             _id: '63a9bf891db11e6346646110',
@@ -279,6 +285,8 @@ export class ProductService extends BaseService<ProductDocument> {
 
       {
         _id: 'popular audio books',
+        category: 'Ebook',
+        type: 'digital',
         data: [
           {
             _id: '63918f7f42fa8539c1bd56c1',
@@ -346,6 +354,8 @@ export class ProductService extends BaseService<ProductDocument> {
 
       {
         _id: 'popular comics',
+        category: 'Hoddie',
+        type: 'physical',
         data: [
           {
             _id: '6386fc21f230f2056c697cd3',
