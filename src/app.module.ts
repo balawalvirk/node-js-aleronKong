@@ -15,7 +15,7 @@ import { APP_INTERCEPTOR } from '@nestjs/core';
 import { TransformInterceptor } from './helpers';
 import { OrderModule } from './order/order.module';
 import { FileModule } from './file/file.module';
-import { FudraisingModule } from './fundraising/fudraising.module';
+import { FundraisingModule } from './fundraising/fudraising.module';
 import { NotificationModule } from './notification/notification.module';
 import { ReportModule } from './report/report.module';
 import { SearchModule } from './search/search.module';
@@ -36,7 +36,7 @@ import { AppController } from './app.controller';
     AddressModule,
     OrderModule,
     FileModule,
-    FudraisingModule,
+    FundraisingModule,
     NotificationModule,
     ReportModule,
     SearchModule,

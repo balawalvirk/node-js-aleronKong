@@ -1,5 +1,5 @@
 import { Module } from '@nestjs/common';
-import { FudraisingController } from './fudraising.controller';
+import { FundraisingController } from './fudraising.controller';
 import { PostsModule } from 'src/posts/posts.module';
 import { MongooseModule } from '@nestjs/mongoose';
 import { FundraisingCategory, FundraisingCategorySchema } from './category.schema';
@@ -7,7 +7,7 @@ import { FundraisingSubcategory, FundraisingSubcategorySchema } from './subCateg
 import { FudraisingCategoryService } from './category.service';
 import { FudraisingSubCategoryService } from './subcategory.service';
 import { Fundraising, FundraisingSchema } from './fundraising.schema';
-import { FudraisingService } from './fundraising.service';
+import { FundraisingService } from './fundraising.service';
 import { StripeService } from 'src/helpers';
 import { Fund, FundSchema } from './fund.schema';
 import { FundService } from './fund.service';
@@ -20,7 +20,8 @@ import { FundService } from './fund.service';
     MongooseModule.forFeature([{ name: Fundraising.name, schema: FundraisingSchema }]),
     MongooseModule.forFeature([{ name: Fund.name, schema: FundSchema }]),
   ],
-  controllers: [FudraisingController],
-  providers: [FudraisingCategoryService, FudraisingSubCategoryService, FudraisingService, StripeService, FundService],
+  controllers: [FundraisingController],
+  providers: [FudraisingCategoryService, FudraisingSubCategoryService, FundraisingService, StripeService, FundService],
+  exports: [FundraisingService, FundService],
 })
-export class FudraisingModule {}
+export class FundraisingModule {}

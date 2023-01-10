@@ -18,7 +18,7 @@ export class PostsService extends BaseService<PostDocument> {
           path: 'comments',
           select: 'content',
           options: { sort: { created_at: -1 } },
-          populate: { path: 'creator', select: 'firstName lastName avatar' },
+          populate: { path: 'creator', select: 'firstName lastName avatar isGuildMember userName' },
         },
         {
           path: 'likes',
@@ -31,15 +31,15 @@ export class PostsService extends BaseService<PostDocument> {
       .lean();
   }
 
-  async updatePost(postId: string, updateQuery: UpdateQuery<PostDocument>) {
+  async updatePost(query: FilterQuery<PostDocument>, updateQuery: UpdateQuery<PostDocument>) {
     return await this.postModel
-      .findOneAndUpdate({ _id: postId }, updateQuery, { new: true })
+      .findOneAndUpdate(query, updateQuery, { new: true })
       .populate([
         {
           path: 'comments',
           select: 'content',
           options: { sort: { created_at: -1 } },
-          populate: { path: 'creator', select: 'firstName lastName avatar' },
+          populate: { path: 'creator', select: 'firstName lastName avatar isGuildMember userName' },
         },
         {
           path: 'likes',
@@ -67,7 +67,7 @@ export class PostsService extends BaseService<PostDocument> {
           path: 'comments',
           select: 'content',
           options: { sort: { created_at: -1 } },
-          populate: { path: 'creator', select: 'firstName lastName avatar' },
+          populate: { path: 'creator', select: 'firstName lastName avatar isGuildMember userName' },
         },
         {
           path: 'likes',

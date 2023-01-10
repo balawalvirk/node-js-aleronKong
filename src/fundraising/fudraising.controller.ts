@@ -21,7 +21,7 @@ import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/role.guard';
 import { FudraisingCategoryService } from './category.service';
 import { FudraisingSubCategoryService } from './subcategory.service';
-import { FudraisingService } from './fundraising.service';
+import { FundraisingService } from './fundraising.service';
 import { FundraisingDocument } from './fundraising.schema';
 import { FundProjectDto } from './dtos/fund-project.dto';
 import { FindAllFundraisingQueryDto } from './dtos/find-all-query.dto';
@@ -29,12 +29,12 @@ import { FundService } from './fund.service';
 
 @Controller('fundraising')
 @UseGuards(JwtAuthGuard, RolesGuard)
-export class FudraisingController {
+export class FundraisingController {
   constructor(
     private readonly postService: PostsService,
     private readonly categoryService: FudraisingCategoryService,
     private readonly subCategoryService: FudraisingSubCategoryService,
-    private readonly fundraisingService: FudraisingService,
+    private readonly fundraisingService: FundraisingService,
     private readonly stripeService: StripeService,
     private readonly fundService: FundService
   ) {}
