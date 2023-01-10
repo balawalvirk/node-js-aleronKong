@@ -22,14 +22,21 @@ import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { PostsService } from 'src/posts/posts.service';
 import { CreatePostsDto } from 'src/posts/dtos/create-posts';
 import { GroupDocument } from './group.schema';
-import { GroupPrivacy } from 'src/types';
-import { ParseObjectId } from 'src/helpers';
+import { GroupPrivacy, PostType } from 'src/types';
+import { ParseObjectId, StripeService } from 'src/helpers';
 import { PostDocument } from 'src/posts/posts.schema';
+import { FundService } from 'src/fundraising/fund.service';
+import { FundraisingService } from 'src/fundraising/fundraising.service';
 
 @Controller('group')
 @UseGuards(JwtAuthGuard)
 export class GroupController {
-  constructor(private readonly groupService: GroupService, private readonly postService: PostsService) {}
+  constructor(
+    private readonly groupService: GroupService,
+    private readonly postService: PostsService,
+    private readonly fundraisingService: FundraisingService,
+    private readonly fundService: FundService
+  ) {}
 
   @Post('create')
   async create(@Body() createGroupDto: CreateGroupDto, @GetUser() user: UserDocument) {
@@ -46,6 +53,19 @@ export class GroupController {
       await this.groupService.findOneRecordAndUpdate({ _id: post.group }, { $push: { posts: post._id } });
     }
     return post;
+  }
+
+  @Delete('post/:id/delete')
+  async deletePost(@Param('id', ParseObjectId) id: string) {
+    const post = await this.postService.deleteSingleRecord({ _id: id });
+    // check if post is in group then remove post from group also
+    if (post.group) await this.groupService.findOneRecordAndUpdate({ _id: post.group }, { $pull: { posts: post._id } });
+    // check if post is fundraising then also remove fundraising project
+    if (post.type === PostType.FUNDRAISING) {
+      await this.fundraisingService.deleteSingleRecord({ _id: post.fundraising });
+      await this.fundService.deleteManyRecord({ project: post.fundraising });
+    }
+    return { message: 'Post deleted successfully.' };
   }
 
   //api to find all post of groups that user joined

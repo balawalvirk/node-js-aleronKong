@@ -153,7 +153,7 @@ export class ProductController {
         selectedSize: selectedSize,
         paymentMethod,
         seller: item.creator,
-        paymentIntent,
+        paymentIntent: paymentIntent.id,
       });
     }
 

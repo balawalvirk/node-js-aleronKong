@@ -12,7 +12,6 @@ import { ChatService } from './chat.service';
 import { CreateMessageDto } from './dto/create-message.dto';
 import { MuteChatDto } from './dto/mute-chat.dto';
 import { MessageService } from './message.service';
-import { MessageDocument } from './messages.schema';
 
 @Controller('chat')
 @UseGuards(JwtAuthGuard)
