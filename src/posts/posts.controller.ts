@@ -60,14 +60,26 @@ export class PostsController {
   async findFeedPosts(@Query('page') page: string, @Query('limit') limit: string, @GetUser() user: UserDocument) {
     const $q = makeQuery({ page, limit });
     const condition = {
-      privacy: PostPrivacy.PUBLIC,
       creator: { $nin: user.blockedUsers },
       isBlocked: false,
       status: PostStatus.ACTIVE,
     };
     const options = { sort: $q.sort, limit: $q.limit, skip: $q.skip };
     const total = await this.postsService.countRecords({});
-    const posts = await this.postsService.findAllPosts(condition, options);
+    const allPosts = await this.postsService.findAllPosts(condition, options);
+    const followersPosts = allPosts.filter((post) => {
+      if (post.privacy === PostPrivacy.FOLLOWERS) {
+        const isFriend = post.creator.friends.find((friend) => friend.toString() == user._id);
+        if (isFriend) return post;
+      }
+    });
+    const guildMemberPosts = allPosts.filter((post) => {
+      if (post.privacy === PostPrivacy.GUILD_MEMBERS) {
+        if (user.isGuildMember) return post;
+      }
+    });
+    const publicPosts = allPosts.filter((post) => post.privacy === PostPrivacy.PUBLIC);
+    const posts = [...guildMemberPosts, ...followersPosts, ...publicPosts];
     const paginated = {
       total,
       pages: Math.floor(total / $q.limit),

@@ -23,7 +23,7 @@ import { PostsService } from 'src/posts/posts.service';
 import { CreatePostsDto } from 'src/posts/dtos/create-posts';
 import { GroupDocument } from './group.schema';
 import { GroupPrivacy, PostType } from 'src/types';
-import { ParseObjectId, StripeService } from 'src/helpers';
+import { ParseObjectId } from 'src/helpers';
 import { PostDocument } from 'src/posts/posts.schema';
 import { FundService } from 'src/fundraising/fund.service';
 import { FundraisingService } from 'src/fundraising/fundraising.service';

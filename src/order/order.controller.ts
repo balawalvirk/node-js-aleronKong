@@ -13,7 +13,6 @@ import {
   Query,
 } from '@nestjs/common';
 import { OrderService } from './order.service';
-import { CreateOrderDto } from './dto/create-order.dto';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { GetUser, ParseObjectId, StripeService } from 'src/helpers';
 import { UserDocument } from 'src/users/users.schema';

@@ -10,77 +10,44 @@ export class PostsService extends BaseService<PostDocument> {
     super(postModel);
   }
 
+  getPopulateFields() {
+    return [
+      {
+        path: 'comments',
+        select: 'content',
+        options: { sort: { created_at: -1 } },
+        populate: { path: 'creator', select: 'firstName lastName avatar isGuildMember userName' },
+      },
+      {
+        path: 'likes',
+        select: 'firstName lastName avatar',
+      },
+      { path: 'creator', select: 'firstName lastName avatar userName isGuildMember sellerId friends' },
+      { path: 'group', select: 'name' },
+      { path: 'fundraising', populate: [{ path: 'category' }, { path: 'subCategory' }] },
+    ];
+  }
+
   async findAllPosts(query: FilterQuery<PostDocument>, options?: QueryOptions<PostDocument>) {
-    return await this.postModel
-      .find(query, {}, options)
-      .populate([
-        {
-          path: 'comments',
-          select: 'content',
-          options: { sort: { created_at: -1 } },
-          populate: { path: 'creator', select: 'firstName lastName avatar isGuildMember userName' },
-        },
-        {
-          path: 'likes',
-          select: 'firstName lastName avatar',
-        },
-        { path: 'creator', select: 'firstName lastName avatar userName isGuildMember sellerId' },
-        { path: 'group', select: 'name' },
-        { path: 'fundraising', populate: [{ path: 'category' }, { path: 'subCategory' }] },
-      ])
-      .lean();
+    return await this.postModel.find(query, {}, options).populate(this.getPopulateFields()).lean();
   }
 
   async updatePost(query: FilterQuery<PostDocument>, updateQuery: UpdateQuery<PostDocument>) {
     return await this.postModel
       .findOneAndUpdate(query, updateQuery, { new: true })
-      .populate([
-        {
-          path: 'comments',
-          select: 'content',
-          options: { sort: { created_at: -1 } },
-          populate: { path: 'creator', select: 'firstName lastName avatar isGuildMember userName' },
-        },
-        {
-          path: 'likes',
-          select: 'firstName lastName avatar',
-        },
-        { path: 'creator', select: 'firstName lastName avatar userName isGuildMember sellerId' },
-        { path: 'group', select: 'name' },
-        { path: 'fundraising', populate: [{ path: 'category' }, { path: 'subCategory' }] },
-      ])
+      .populate(this.getPopulateFields())
       .lean();
   }
 
   async createPost(query: FilterQuery<PostDocument>) {
-    return (await this.postModel.create(query)).populate([
-      { path: 'fundraising', populate: [{ path: 'category' }, { path: 'subCategory' }] },
-      { path: 'creator', select: 'firstName lastName avatar userName isGuildMember sellerId' },
-    ]);
+    return (await this.postModel.create(query)).populate(this.getPopulateFields());
   }
 
   async findOne(query: FilterQuery<PostDocument>) {
-    return await this.postModel
-      .findOne(query)
-      .populate([
-        {
-          path: 'comments',
-          select: 'content',
-          options: { sort: { created_at: -1 } },
-          populate: { path: 'creator', select: 'firstName lastName avatar isGuildMember userName' },
-        },
-        {
-          path: 'likes',
-          select: 'firstName lastName avatar',
-        },
-        { path: 'creator', select: 'firstName lastName avatar userName isGuildMember sellerId' },
-        { path: 'group', select: 'name' },
-        { path: 'fundraising', populate: [{ path: 'category' }, { path: 'subCategory' }] },
-      ])
-      .lean();
+    return await this.postModel.findOne(query).populate(this.getPopulateFields()).lean();
   }
 
-  async FindAllFundraisingPosts(query: FilterQuery<PostDocument>, options?: QueryOptions<PostDocument>) {
+  async FindAllFundraisingProjects(query: FilterQuery<PostDocument>, options?: QueryOptions<PostDocument>) {
     return await this.postModel.find(query, {}, options).select('fundraising status').populate('fundraising').lean();
   }
 }
