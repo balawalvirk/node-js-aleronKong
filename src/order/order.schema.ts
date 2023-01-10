@@ -38,6 +38,9 @@ export class Order {
 
   @Prop()
   paymentIntent: string;
+
+  @Prop({ required: true })
+  orderNumber: number;
 }
 
 export const OrderSchema = SchemaFactory.createForClass(Order);

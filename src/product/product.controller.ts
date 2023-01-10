@@ -154,6 +154,7 @@ export class ProductController {
         paymentMethod,
         seller: item.creator,
         paymentIntent: paymentIntent.id,
+        orderNumber: this.orderService.getOrderNumber(),
       });
     }
 

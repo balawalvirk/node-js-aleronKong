@@ -91,7 +91,7 @@ export class FundraisingController {
     const options = { limit: $q.limit, skip: $q.skip, sort: $q.sort };
     const condition = { title: rjx, type: PostType.FUNDRAISING };
     const total = await this.postService.countRecords({ type: PostType.FUNDRAISING });
-    const projects = await this.postService.FindAllFundraisingPosts(condition, options);
+    const projects = await this.postService.FindAllFundraisingProjects(condition, options);
     const paginated = {
       total: total,
       pages: Math.round(total / $q.limit),

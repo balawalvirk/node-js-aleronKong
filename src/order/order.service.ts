@@ -10,6 +10,13 @@ export class OrderService extends BaseService<OrderDocument> {
     super(OrderModel);
   }
 
+  getOrderNumber() {
+    const timestamp = new Date().toISOString().replace(/[-:.]/g, '');
+    const random = ('' + Math.random()).substring(2, 8);
+    const random_number = timestamp + random;
+    return random_number;
+  }
+
   async findAll(query: FilterQuery<OrderDocument>) {
     return await this.OrderModel.find(query)
       .populate([{ path: 'product', select: 'price' }])
