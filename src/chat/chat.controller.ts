@@ -66,38 +66,40 @@ export class ChatController {
       type: NotificationType.MESSAGE,
     });
 
-    //find mute object from chat object
-    const mute = chat.mutes.find((chat) => chat.user === user._id);
-    // check if current user muted the message
-    if (mute) {
-      const today = new Date();
-      // check if mute interval is week or day.
-      if (mute.interval === MuteInterval.DAY || MuteInterval.WEEK) {
-        //check if current date is greater that the interval date i.e date is in past
-        if (mute.date.getTime() < today.getTime()) {
-          //send notification to user fcm token
-          await this.firebaseService.sendNotification(
-            {
-              title: `${user.firstName} ${user.lastName}`,
-              body: message.content,
-            },
-            receiver.fcmToken
-          );
+    if (chat.mutes) {
+      //find mute object from chat object
+      const mute = chat.mutes.find((chat) => chat.user === user._id);
+      // check if current user muted the message
+      if (mute) {
+        const today = new Date();
+        // check if mute interval is week or day.
+        if (mute.interval === MuteInterval.DAY || MuteInterval.WEEK) {
+          //check if current date is greater that the interval date i.e date is in past
+          if (mute.date.getTime() < today.getTime()) {
+            //send notification to user fcm token
+            await this.firebaseService.sendNotification(
+              {
+                title: `${user.firstName} ${user.lastName}`,
+                body: message.content,
+              },
+              receiver.fcmToken
+            );
+          }
         }
-      }
-      // check if date is custom date
-      else {
-        //check if date is within duration
-        if (today.getTime() <= mute.startTime.getTime() && today.getTime() >= mute.endTime.getTime()) {
-          return;
-        } else {
-          await this.firebaseService.sendNotification(
-            {
-              title: `${user.firstName} ${user.lastName}`,
-              body: message.content,
-            },
-            receiver.fcmToken
-          );
+        // check if date is custom date
+        else {
+          //check if date is within duration
+          if (today.getTime() <= mute.startTime.getTime() && today.getTime() >= mute.endTime.getTime()) {
+            return;
+          } else {
+            await this.firebaseService.sendNotification(
+              {
+                title: `${user.firstName} ${user.lastName}`,
+                body: message.content,
+              },
+              receiver.fcmToken
+            );
+          }
         }
       }
     }
