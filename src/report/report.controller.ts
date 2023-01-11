@@ -6,7 +6,7 @@ import { UserDocument } from 'src/users/users.schema';
 import { ReportDocument } from './report.schema';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/role.guard';
-import { UserRole } from 'src/types';
+import { UserRoles } from 'src/types';
 
 @Controller('report')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -25,7 +25,7 @@ export class ReportController {
   /**
    * TODO : need to change this later
    */
-  // @Roles(UserRole.ADMIN)
+  // @Roles(UserRoles.ADMIN)
   @Get('find-all')
   async findAll(@Query() query) {
     return await this.reportService.findAllRecords(query);

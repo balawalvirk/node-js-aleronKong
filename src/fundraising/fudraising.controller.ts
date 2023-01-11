@@ -12,7 +12,7 @@ import {
 } from '@nestjs/common';
 import { CreateFudraisingDto } from './dtos/create-fudraising.dto';
 import { PostsService } from 'src/posts/posts.service';
-import { PostPrivacy, PostStatus, PostType, UserRole } from 'src/types';
+import { PostPrivacy, PostStatus, PostType, UserRoles } from 'src/types';
 import { GetUser, makeQuery, ParseObjectId, Roles, StripeService } from 'src/helpers';
 import { UserDocument } from 'src/users/users.schema';
 import { CreateFudraisingCategoryDto } from './dtos/create-category';
@@ -83,7 +83,7 @@ export class FundraisingController {
     return post;
   }
 
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRoles.ADMIN)
   @Get('find-all')
   async findAll(@Query() { query, page, limit }: FindAllFundraisingQueryDto) {
     const $q = makeQuery({ page: page, limit: limit });
@@ -102,25 +102,25 @@ export class FundraisingController {
     return paginated;
   }
 
-  // @Roles(UserRole.ADMIN)
+  // @Roles(UserRoles.ADMIN)
   @Post('category/create')
   async createCategory(@Body() createFudraisingCategoryDto: CreateFudraisingCategoryDto) {
     return await this.categoryService.createRecord(createFudraisingCategoryDto);
   }
 
-  // @Roles(UserRole.ADMIN)
+  // @Roles(UserRoles.ADMIN)
   @Get('category/find-all')
   async findAllCategories() {
     return await this.categoryService.findAllRecords();
   }
 
-  // @Roles(UserRole.ADMIN)
+  // @Roles(UserRoles.ADMIN)
   @Delete('category/:id/delete')
   async deleteCategory(@Param('id', ParseObjectId) id: string) {
     return await this.categoryService.deleteSingleRecord({ _id: id });
   }
 
-  // @Roles(UserRole.ADMIN)
+  // @Roles(UserRoles.ADMIN)
   @Post('sub-category/create')
   async createSubCategory(@Body() createFudraisingSubCategoryDto: CreateFudraisingSubCategoryDto) {
     return await this.subCategoryService.createRecord(createFudraisingSubCategoryDto);
@@ -131,7 +131,7 @@ export class FundraisingController {
     return await this.subCategoryService.findAllRecords({ category: categoryId });
   }
 
-  // @Roles(UserRole.ADMIN)
+  // @Roles(UserRoles.ADMIN)
   @Delete('sub-category/:id/delete')
   async deleteSubCategory(@Param('id', ParseObjectId) id: string) {
     return await this.subCategoryService.deleteSingleRecord({ _id: id });

@@ -19,7 +19,7 @@ import { RolesGuard } from 'src/auth/role.guard';
 import { CartService } from 'src/product/cart.service';
 import { ParseObjectId, Roles, StripeService } from 'src/helpers';
 import { GetUser } from 'src/helpers/decorators/user.decorator';
-import { CollectionConditions, CollectionTypes, ProductType, UserRole } from 'src/types';
+import { CollectionConditions, CollectionTypes, ProductType, UserRoles } from 'src/types';
 import { UserDocument } from 'src/users/users.schema';
 import { ProductCategoryService } from './category.service';
 import { CollectionDocument } from './collection.schema';
@@ -250,7 +250,7 @@ export class ProductController {
   }
 
   // categories apis
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRoles.ADMIN)
   @Post('category/create')
   async createCategory(@Body() createProductCategoryDto: CreateProductCategoryDto) {
     const { value, ...rest } = createProductCategoryDto;
@@ -332,5 +332,30 @@ export class ProductController {
     const tax = Math.round((2 / 100) * subTotal);
     const total = subTotal + tax;
     return { ...cart, total, tax, subTotal };
+  }
+
+  // ------------------------------------------------------------showcase products apis---------------------------------------------------------------
+  @Roles(UserRoles.ADMIN)
+  @Post('showcase/create')
+  async createShowcaseProduct(@Body() createProductDto: CreateProductDto, @GetUser() user: UserDocument) {
+    return await this.productService.create({ ...createProductDto, creator: user._id, isShowCase: true });
+  }
+
+  @Roles(UserRoles.ADMIN)
+  @Delete('showcase/:id/delete')
+  async deleteShowcaseProduct(@Param('id', ParseObjectId) id: string) {
+    await this.productService.deleteSingleRecord({ _id: id });
+    return { message: 'Product deleted successfully.' };
+  }
+
+  @Roles(UserRoles.ADMIN)
+  @Put('showcase/:id/update')
+  async updateShowcaseProduct(@Param('id') id: string, @Body() updateProductDto: UpdateProductDto) {
+    return await this.productService.findOneRecordAndUpdate({ _id: id }, updateProductDto);
+  }
+
+  @Get('showcase/find-all')
+  async findAllShowcaseProducts() {
+    return await this.productService.findAllRecords({ isShowCase: true });
   }
 }

@@ -41,6 +41,9 @@ export class Product {
   @Prop({ enum: ProductType, required: true })
   type: string;
 
+  @Prop({ default: false })
+  isShowCase: boolean;
+
   @Prop({ required: true, type: [String] })
   media: string[];
 

@@ -15,7 +15,7 @@ import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/role.guard';
 import { makeQuery, ParseObjectId, Roles } from 'src/helpers';
 import { GetUser } from 'src/helpers/decorators/user.decorator';
-import { MuteInterval, PostPrivacy, PostStatus, UserRole } from 'src/types';
+import { MuteInterval, PostPrivacy, PostStatus, UserRoles } from 'src/types';
 import { UserDocument } from 'src/users/users.schema';
 import { CreateCommentDto } from './dtos/create-comment';
 import { MutePostDto } from './dtos/mute-post.dto';
@@ -28,7 +28,7 @@ import { PostsService } from './posts.service';
 export class PostsController {
   constructor(private postsService: PostsService) {}
 
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRoles.ADMIN)
   @Get('find-all')
   async findAll(@Query('page') page: string, @Query('limit') limit: string) {
     const $q = makeQuery({ page, limit });
@@ -74,9 +74,7 @@ export class PostsController {
       }
     });
     const guildMemberPosts = allPosts.filter((post) => {
-      if (post.privacy === PostPrivacy.GUILD_MEMBERS) {
-        if (user.isGuildMember) return post;
-      }
+      if (post.privacy === PostPrivacy.GUILD_MEMBERS) if (user.isGuildMember) return post;
     });
     const publicPosts = allPosts.filter((post) => post.privacy === PostPrivacy.PUBLIC);
     const posts = [...guildMemberPosts, ...followersPosts, ...publicPosts];
