@@ -22,7 +22,7 @@ import { SocialLoginDto } from './dtos/social-login.dto';
 import { EmailService } from 'src/helpers/services/email.service';
 import { CartService } from 'src/product/cart.service';
 import { CartDocument } from 'src/product/cart.schema';
-import { UserRole } from 'src/types';
+import { UserRoles } from 'src/types';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { FileService } from 'src/file/file.service';
 import { ConfigService } from '@nestjs/config';
@@ -63,7 +63,8 @@ export class AuthController {
   @UseGuards(LocalAuthGuard)
   @Post('admin/login')
   async adminLogin(@GetUser() user: UserDocument) {
-    if (!user.role.includes(UserRole.ADMIN)) throw new HttpException('Invalid email/password', HttpStatus.UNAUTHORIZED);
+    if (!user.role.includes(UserRoles.ADMIN))
+      throw new HttpException('Invalid email/password', HttpStatus.UNAUTHORIZED);
     const { access_token } = await this.authService.login(user.userName, user._id);
     return { access_token, user };
   }

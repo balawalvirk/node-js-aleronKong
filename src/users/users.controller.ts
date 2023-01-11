@@ -18,7 +18,7 @@ import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/role.guard';
 import { makeQuery, ParseObjectId, Roles, StripeService } from 'src/helpers';
 import { GetUser } from 'src/helpers/decorators/user.decorator';
-import { UserRole, UserStatus } from 'src/types';
+import { UserRoles, UserStatus } from 'src/types';
 import { UserDocument } from 'src/users/users.schema';
 import { CreateBankAccountDto } from './dtos/create-bank-account.dto';
 import { UpdateBankAccountDto } from './dtos/update-bank-account.dto';
@@ -40,7 +40,7 @@ export class UserController {
     return await this.usersService.findOneRecord({ _id: id });
   }
 
-  @Roles(UserRole.ADMIN)
+  @Roles(UserRoles.ADMIN)
   @Get('find-all')
   async findAll(
     @Query('page') page: string,
@@ -51,7 +51,7 @@ export class UserController {
     const rjx = { $regex: query, $options: 'i' };
     const options = { limit: $q.limit, skip: $q.skip, sort: $q.sort };
     const condition = {
-      role: { $nin: [UserRole.ADMIN] },
+      role: { $nin: [UserRoles.ADMIN] },
       $or: [{ firstName: rjx }, { lastName: rjx }, { email: rjx }],
     };
     const total = await this.usersService.countRecords({});
@@ -69,7 +69,7 @@ export class UserController {
   @Put(':id/block')
   async blockUser(@Param('id', ParseObjectId) id: string, @GetUser() user: UserDocument) {
     // if admin is doing this request then permanently block this user.
-    if (user.role.includes(UserRole.ADMIN)) {
+    if (user.role.includes(UserRoles.ADMIN)) {
       await this.usersService.findOneRecordAndUpdate({ _id: id }, { status: UserStatus.BLOCKED });
     } else {
       const userFound = await this.usersService.findOneRecord({
@@ -85,7 +85,7 @@ export class UserController {
   @Put(':id/unblock')
   async unBlock(@Param('id', ParseObjectId) id: string, @GetUser() user: UserDocument) {
     // if admin is doing this request then un block this user.
-    if (user.role.includes(UserRole.ADMIN)) {
+    if (user.role.includes(UserRoles.ADMIN)) {
       await this.usersService.findOneRecordAndUpdate({ _id: id }, { status: UserStatus.ACTIVE });
     } else {
       await this.usersService.findOneRecordAndUpdate({ _id: user._id }, { $pull: { blockedUsers: id } });
@@ -155,5 +155,13 @@ export class UserController {
     const friend = await this.usersService.findOneRecord({ _id: user._id, friends: { $in: [id] } });
     if (friend) throw new HttpException('User is already your friend.', HttpStatus.BAD_REQUEST);
     return await this.usersService.findOneRecordAndUpdate({ _id: user._id }, { $push: { friends: id } });
+  }
+
+  @Put('friend/:id/remove')
+  async removeFriend(@Param('id', ParseObjectId) id: string, @GetUser() user: UserDocument) {
+    //@ts-ignore
+    const isFriend = user.friends.find((friend) => friend == id);
+    if (!isFriend) throw new HttpException('User is not your friend.', HttpStatus.BAD_REQUEST);
+    return await this.usersService.findOneRecordAndUpdate({ _id: user._id }, { $pull: { friends: id } });
   }
 }

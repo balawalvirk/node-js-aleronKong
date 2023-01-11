@@ -19,7 +19,7 @@ import { UserDocument } from 'src/users/users.schema';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { PackageDocument } from './package.schema';
 import { UsersService } from 'src/users/users.service';
-import { UserRole } from 'src/types';
+import { UserRoles } from 'src/types';
 import { FindAllPackagesQueryDto } from './dto/find-all-query.dto';
 
 @Controller('package')
@@ -35,7 +35,7 @@ export class PackageController {
   async create(@Body() createPackageDto: CreatePackageDto, @GetUser() user: UserDocument) {
     //check if package is guild package then only admin can create this package.
     if (createPackageDto.isGuildPackage) {
-      if (!user.role.includes(UserRole.ADMIN)) throw new HttpException('Forbidden resource', HttpStatus.FORBIDDEN);
+      if (!user.role.includes(UserRoles.ADMIN)) throw new HttpException('Forbidden resource', HttpStatus.FORBIDDEN);
     }
 
     const product = await this.stripeService.createProduct({
@@ -81,7 +81,7 @@ export class PackageController {
     const packageFound = await this.packageService.findOneRecord({ _id: id });
     //check if package is guild package then only admin can create this package.
     if (packageFound.isGuildPackage) {
-      if (!user.role.includes(UserRole.ADMIN)) throw new HttpException('Forbidden resource', HttpStatus.FORBIDDEN);
+      if (!user.role.includes(UserRoles.ADMIN)) throw new HttpException('Forbidden resource', HttpStatus.FORBIDDEN);
     }
 
     // check if package price is changed
@@ -170,7 +170,7 @@ export class PackageController {
 
     //check if package is guild package then only admin can create this package.
     if (pkg.isGuildPackage) {
-      if (!user.role.includes(UserRole.ADMIN)) throw new HttpException('Forbidden resource', HttpStatus.FORBIDDEN);
+      if (!user.role.includes(UserRoles.ADMIN)) throw new HttpException('Forbidden resource', HttpStatus.FORBIDDEN);
     }
     await this.stripeService.updateProduct(pkg.productId, { active: false });
     await this.stripeService.updatePrice(pkg.priceId, { active: false });

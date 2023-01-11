@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import mongoose, { FilterQuery, Model, UpdateQuery } from 'mongoose';
+import { FilterQuery, Model, UpdateQuery } from 'mongoose';
 import { BaseService } from 'src/helpers/services/base.service';
 import { Product, ProductDocument } from './product.schema';
 
@@ -50,6 +50,9 @@ export class ProductService extends BaseService<ProductDocument> {
             $push: '$$ROOT',
           },
         },
+      },
+      {
+        $project: { _id: 0 },
       },
     ]);
   }

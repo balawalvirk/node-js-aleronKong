@@ -3,7 +3,7 @@ import mongoose, { Document } from 'mongoose';
 import { Address } from 'src/address/address.schema';
 import { Package } from 'src/package/package.schema';
 import { Product } from 'src/product/product.schema';
-import { AuthTypes, UserRole, UserStatus } from 'src/types';
+import { AuthTypes, UserRoles, UserStatus } from 'src/types';
 import { Report, ReportSchema } from './report.schema';
 
 export type UserDocument = User & Document;
@@ -34,7 +34,7 @@ export class User {
   @Prop({ default: AuthTypes.LOCAL, enum: AuthTypes })
   authType: string;
 
-  @Prop({ default: [UserRole.CUSTOMER], enum: UserRole, type: [String] })
+  @Prop({ default: [UserRoles.CUSTOMER], enum: UserRoles, type: [String] })
   role: string[];
 
   @Prop({ default: UserStatus.ACTIVE, enum: UserStatus })
