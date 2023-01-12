@@ -77,9 +77,8 @@ export class UserController {
         blockedUsers: { $in: [id] },
       });
       if (userFound) throw new HttpException('You already blocked this user.', HttpStatus.BAD_REQUEST);
-      await this.usersService.findOneRecordAndUpdate({ _id: user._id }, { $push: { blockedUsers: id } });
+      return await this.usersService.findOneRecordAndUpdate({ _id: user._id }, { $push: { blockedUsers: id } });
     }
-    return { message: 'User blocked successfully.' };
   }
 
   @Put(':id/unblock')
@@ -88,9 +87,8 @@ export class UserController {
     if (user.role.includes(UserRoles.ADMIN)) {
       await this.usersService.findOneRecordAndUpdate({ _id: id }, { status: UserStatus.ACTIVE });
     } else {
-      await this.usersService.findOneRecordAndUpdate({ _id: user._id }, { $pull: { blockedUsers: id } });
+      return await this.usersService.findOneRecordAndUpdate({ _id: user._id }, { $pull: { blockedUsers: id } });
     }
-    return { message: 'User unblocked successfully.' };
   }
 
   @Post('change-password')
