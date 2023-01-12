@@ -3,6 +3,7 @@ import * as mongoose from 'mongoose';
 import { ProductStatus, ProductType } from 'src/types';
 import { User } from 'src/users/users.schema';
 import { ProductCategory } from './category.schema';
+import { Review } from './review.schema';
 
 // @Schema({ versionKey: false, _id: false })
 // class Detail {
@@ -104,14 +105,17 @@ export class Product {
   @Prop()
   simultaneousDeviceUsage: string;
 
-  @Prop()
-  reviews: number;
-
   @Prop({ type: [String] })
   availableColors: string[];
 
   @Prop({ type: [String] })
   availableSizes: string[];
+
+  @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Review' }] })
+  reviews: Review[];
+
+  @Prop({ default: 0 })
+  avgRating: number;
 
   // @Prop({ type: [AttributeSchema] })
   // attributes: Attribute[];

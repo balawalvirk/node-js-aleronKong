@@ -37,6 +37,8 @@ import { AddToCartDto } from './dtos/add-to-cart.dto';
 import { SaleService } from './sale.service';
 import { UsersService } from 'src/users/users.service';
 import { FindStoreProductsQueryDto } from './dtos/find-store-products-query.dto';
+import { ReviewService } from './review.service';
+import { CreateReviewDto } from './dtos/create-review.dto';
 
 @Controller('product')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -50,7 +52,8 @@ export class ProductController {
     private readonly cartService: CartService,
     private readonly orderService: OrderService,
     private readonly saleService: SaleService,
-    private readonly userService: UsersService
+    private readonly userService: UsersService,
+    private readonly reviewService: ReviewService
   ) {}
 
   @Post('create')
@@ -108,9 +111,7 @@ export class ProductController {
       _id: address,
     });
     const cart = await this.cartService.findOne({ creator: user._id });
-    const subTotal = cart.items.reduce((n, { item, quantity }) => n + item.price * quantity, 0);
-    const tax = Math.round((2 / 100) * subTotal);
-    const total = subTotal + tax;
+    const { subTotal, total, tax } = this.cartService.calculateTax(cart.items);
     const paymentIntent = await this.stripeService.createPaymentIntent({
       currency: 'usd',
       payment_method: paymentMethod,
@@ -277,9 +278,7 @@ export class ProductController {
   async findCart(@GetUser() user: UserDocument) {
     const cart = await this.cartService.findOne({ creator: user._id });
     if (!cart) return { message: 'Your cart is empty.' };
-    const subTotal = cart.items.reduce((n, { item, quantity }) => n + item.price * quantity, 0);
-    const tax = Math.round((2 / 100) * subTotal);
-    const total = subTotal + tax;
+    const { tax, subTotal, total } = this.cartService.calculateTax(cart.items);
     return { ...cart, subTotal, total, tax };
   }
 
@@ -291,28 +290,34 @@ export class ProductController {
   ) {
     const product = await this.productService.findOneRecord({ _id: id });
     if (!product) throw new HttpException('Product does not exists', HttpStatus.BAD_REQUEST);
-    const cart = await this.cartService.findOneRecord({ creator: user._id });
+    const cartExists = await this.cartService.findOneRecord({ creator: user._id });
     // check if item is added first time then create a cart object.
-    if (!cart) {
-      return await this.cartService.createRecord({
+    if (!cartExists) {
+      const cart = await this.cartService.create({
         creator: user._id,
         items: [{ item: id, selectedColor, selectedSize }],
       });
+      const { total, subTotal, tax } = this.cartService.calculateTax(cart.items);
+      return { ...cart, subTotal, total, tax };
       // otherwise add item in items array
     } else {
       //@ts-ignore
-      const item = cart.items.find((item) => item.item == id);
+      const item = cartExists.items.find((item) => item.item == id);
       if (item) throw new HttpException('You already added this item in cart.', HttpStatus.BAD_REQUEST);
-      return await this.cartService.findOneRecordAndUpdate(
+      const cart = await this.cartService.findOneAndUpdate(
         { creator: user._id },
         { $push: { items: { item: id, selectedColor, selectedSize } } }
       );
+      const { total, subTotal, tax } = this.cartService.calculateTax(cart.items);
+      return { ...cart, total, subTotal, tax };
     }
   }
 
   @Put(':id/remove-from-cart')
   async removeProduct(@Param('id', ParseObjectId) id: string, @GetUser() user: UserDocument) {
-    return await this.cartService.findOneRecordAndUpdate({ creator: user._id }, { $pull: { items: { item: id } } });
+    const cart = await this.cartService.findOneAndUpdate({ creator: user._id }, { $pull: { items: { item: id } } });
+    const { total, subTotal, tax } = this.cartService.calculateTax(cart.items);
+    return { ...cart, total, subTotal, tax };
   }
 
   @Put(':id/cart/inc-dec')
@@ -324,13 +329,11 @@ export class ProductController {
   ) {
     await this.productService.findOneRecord({ _id: id });
     if (!inc && !dec) throw new HttpException('inc or dec query string is required', HttpStatus.BAD_REQUEST);
-    const cart = await this.cartService.update(
+    const cart = await this.cartService.findOneAndUpdate(
       { 'items.item': id, creator: user._id },
       { $inc: { 'items.$.quantity': inc ? 1 : -1 } }
     );
-    const subTotal = cart.items.reduce((n, { item, quantity }) => n + item.price * quantity, 0);
-    const tax = Math.round((2 / 100) * subTotal);
-    const total = subTotal + tax;
+    const { total, tax, subTotal } = this.cartService.calculateTax(cart.items);
     return { ...cart, total, tax, subTotal };
   }
 
@@ -357,5 +360,25 @@ export class ProductController {
   @Get('showcase/find-all')
   async findAllShowcaseProducts() {
     return await this.productService.findAllRecords({ isShowCase: true });
+  }
+
+  // ----------------------------------------------------------reviews apis-----------------------------------------------------------------------------------------
+  @Post('review/create')
+  async createReview(@GetUser() user: UserDocument, @Body() createReviewDto: CreateReviewDto) {
+    const product = await this.productService.findOneRecord({ _id: createReviewDto.product }).populate('reviews');
+    if (!product) throw new HttpException('Product does not exists.', HttpStatus.BAD_REQUEST);
+    const review = await this.reviewService.createRecord({ ...createReviewDto, creator: user._id });
+    const reviews = [...product.reviews, review];
+    const avgRating = reviews.reduce((n, { rating }) => n + rating / reviews.length, 0);
+    await this.productService.findOneRecordAndUpdate(
+      { _id: createReviewDto.product },
+      { $push: { reviews: review._id }, avgRating }
+    );
+    return { message: 'Thanks for sharing your review.' };
+  }
+
+  @Get('review/:id/find-all')
+  async findAllReviews(@Param('id', ParseObjectId) id: string) {
+    return await this.reviewService.findAllRecords({ product: id });
   }
 }

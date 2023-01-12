@@ -15,7 +15,7 @@ export class ProductService extends BaseService<ProductDocument> {
   }
 
   async findAll(query: FilterQuery<ProductDocument>) {
-    return await this.productModel.find(query).populate('category');
+    return await this.productModel.find(query).populate('category reviews');
   }
 
   async update(query: FilterQuery<ProductDocument>, updateQuery: UpdateQuery<ProductDocument>) {
