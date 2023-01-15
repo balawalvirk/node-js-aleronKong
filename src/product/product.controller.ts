@@ -94,6 +94,7 @@ export class ProductController {
     @GetUser() user: UserDocument
   ) {
     const ObjectId = mongoose.Types.ObjectId;
+    // if showboughtproducts is true then show user bought products in categories form else show store products in categories form
     if (!showBoughtProducts) {
       //loop through rest object and convert id string to mongo id
       Object.keys(rest).forEach((key) => (rest[key] = new ObjectId(rest[key])));
@@ -111,7 +112,7 @@ export class ProductController {
       _id: address,
     });
     const cart = await this.cartService.findOne({ creator: user._id });
-    const { subTotal, total, tax } = this.cartService.calculateTax(cart.items);
+    const { total } = this.cartService.calculateTax(cart.items);
     const paymentIntent = await this.stripeService.createPaymentIntent({
       currency: 'usd',
       payment_method: paymentMethod,
@@ -192,6 +193,11 @@ export class ProductController {
     });
     await this.userService.findOneRecordAndUpdate({ _id: user._id }, { $push: { boughtDigitalProducts: product._id } });
     return { message: 'Thanks for purchasing the product.' };
+  }
+
+  @Get('trending/find-all')
+  async findAllTrendingProducts(@Query('category', ParseObjectId) category: string) {
+    return await this.productService.find({ category }, { sort: { avgRating: -1 } });
   }
 
   //-----------------------------------------------collection apis---------------------------------------

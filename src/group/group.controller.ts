@@ -23,7 +23,7 @@ import { PostsService } from 'src/posts/posts.service';
 import { CreatePostsDto } from 'src/posts/dtos/create-posts';
 import { GroupDocument } from './group.schema';
 import { GroupPrivacy, PostType } from 'src/types';
-import { ParseObjectId } from 'src/helpers';
+import { makeQuery, ParseObjectId } from 'src/helpers';
 import { PostDocument } from 'src/posts/posts.schema';
 import { FundService } from 'src/fundraising/fund.service';
 import { FundraisingService } from 'src/fundraising/fundraising.service';
@@ -70,17 +70,28 @@ export class GroupController {
 
   //api to find all post of groups that user joined
   @Get('feed')
-  async feed(@GetUser() user: UserDocument) {
-    const groups = await this.groupService.feed({
+  async feed(@GetUser() user: UserDocument, @Query('page') page: string, @Query('limit') limit: string) {
+    const $q = makeQuery({ page, limit });
+    const options = { sort: $q.sort, limit: $q.limit, skip: $q.skip };
+    const condition = {
       'members.member': user._id,
-    });
+    };
+    const total = await this.groupService.countRecords({});
+    const groups = await this.groupService.feed(condition, options);
     let posts = [];
     groups.forEach((group) => {
       if (group.posts.length !== 0) {
         posts = [...posts, ...group.posts];
       }
     });
-    return posts;
+    const paginated = {
+      total,
+      pages: Math.floor(total / $q.limit),
+      page: $q.page,
+      limit: $q.limit,
+      data: posts,
+    };
+    return paginated;
   }
 
   @Get('find-one/:id')
@@ -136,7 +147,7 @@ export class GroupController {
 
   @Get('all-requests/:id')
   async findAllRequests(@Param('id', ParseObjectId) id: string) {
-    const group: GroupDocument = await this.groupService.findAllRequests({ _id: id });
+    const group = await this.groupService.findAllRequests({ _id: id });
     return group.requests;
   }
 
