@@ -3,6 +3,7 @@ import mongoose, { Document } from 'mongoose';
 import { Product } from 'src/product/product.schema';
 import { ProductType } from 'src/types';
 import { User } from 'src/users/users.schema';
+import { ProductCategory } from './category.schema';
 
 export type SaleDocument = Sale & Document;
 

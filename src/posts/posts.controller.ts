@@ -17,6 +17,7 @@ import { makeQuery, ParseObjectId, Roles } from 'src/helpers';
 import { GetUser } from 'src/helpers/decorators/user.decorator';
 import { MuteInterval, PostPrivacy, PostStatus, UserRoles } from 'src/types';
 import { UserDocument } from 'src/users/users.schema';
+import { UsersService } from 'src/users/users.service';
 import { CreateCommentDto } from './dtos/create-comment';
 import { MutePostDto } from './dtos/mute-post.dto';
 import { UpdateCommentDto } from './dtos/update-comment.dto';
@@ -26,7 +27,7 @@ import { PostsService } from './posts.service';
 @Controller('post')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class PostsController {
-  constructor(private postsService: PostsService) {}
+  constructor(private postsService: PostsService, private readonly userService: UsersService) {}
 
   @Roles(UserRoles.ADMIN)
   @Get('find-all')
@@ -52,32 +53,47 @@ export class PostsController {
 
   //find post of a specific user
   @Get('find-all/user/:id')
-  async findUserPost(@Param('id', ParseObjectId) id: string) {
-    return await this.postsService.findAllPosts({ creator: id });
+  async findUserPost(
+    @Param('id', ParseObjectId) id: string,
+    @Query('page') page: string,
+    @Query('limit') limit: string
+  ) {
+    const $q = makeQuery({ page, limit });
+    const condition = { creator: id };
+    const options = { sort: $q.sort, limit: $q.limit, skip: $q.skip };
+    const total = await this.postsService.countRecords({});
+    const posts = await this.postsService.find(condition, options);
+    const paginated = {
+      total,
+      pages: Math.floor(total / $q.limit),
+      page: $q.page,
+      limit: $q.limit,
+      data: posts,
+    };
+    return paginated;
   }
 
   @Get('home')
-  async findFeedPosts(@Query('page') page: string, @Query('limit') limit: string, @GetUser() user: UserDocument) {
+  async findHomePosts(@Query('page') page: string, @Query('limit') limit: string, @GetUser() user: UserDocument) {
     const $q = makeQuery({ page, limit });
+    const options = { sort: $q.sort, limit: $q.limit, skip: $q.skip };
+    const total = await this.postsService.countRecords({});
+    const followings = (await this.userService.findAllRecords({ friends: { $in: [user._id] } }).select('_id')).map(
+      (user) => user._id
+    );
     const condition = {
       creator: { $nin: user.blockedUsers },
       isBlocked: false,
       status: PostStatus.ACTIVE,
+      $or: user.isGuildMember
+        ? [{ privacy: PostPrivacy.PUBLIC }, { privacy: PostPrivacy.FOLLOWERS, creator: { $in: followings } }]
+        : [
+            { privacy: PostPrivacy.PUBLIC },
+            { privacy: PostPrivacy.FOLLOWERS, creator: { $in: followings } },
+            { privacy: PostPrivacy.GUILD_MEMBERS },
+          ],
     };
-    const options = { sort: $q.sort, limit: $q.limit, skip: $q.skip };
-    const total = await this.postsService.countRecords({});
-    const allPosts = await this.postsService.findAllPosts(condition, options);
-    const followersPosts = allPosts.filter((post) => {
-      if (post.privacy === PostPrivacy.FOLLOWERS) {
-        const isFriend = post.creator.friends.find((friend) => friend.toString() == user._id);
-        if (isFriend) return post;
-      }
-    });
-    const guildMemberPosts = allPosts.filter((post) => {
-      if (post.privacy === PostPrivacy.GUILD_MEMBERS) if (user.isGuildMember) return post;
-    });
-    const publicPosts = allPosts.filter((post) => post.privacy === PostPrivacy.PUBLIC);
-    const posts = [...guildMemberPosts, ...followersPosts, ...publicPosts];
+    const posts = await this.postsService.find(condition, options);
     const paginated = {
       total,
       pages: Math.floor(total / $q.limit),

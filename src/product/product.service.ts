@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { FilterQuery, Model, UpdateQuery } from 'mongoose';
+import { FilterQuery, Model, QueryOptions, UpdateQuery } from 'mongoose';
 import { BaseService } from 'src/helpers/services/base.service';
 import { Product, ProductDocument } from './product.schema';
 
@@ -11,15 +11,15 @@ export class ProductService extends BaseService<ProductDocument> {
   }
 
   async create(query: FilterQuery<ProductDocument>) {
-    return (await this.productModel.create(query)).populate('category');
+    return (await this.productModel.create(query)).populate('category creator');
   }
 
-  async findAll(query: FilterQuery<ProductDocument>) {
-    return await this.productModel.find(query).populate('category reviews');
+  async find(query: FilterQuery<ProductDocument>, options?: QueryOptions<ProductDocument>) {
+    return await this.productModel.find(query, {}, options).populate('category');
   }
 
   async update(query: FilterQuery<ProductDocument>, updateQuery: UpdateQuery<ProductDocument>) {
-    return await this.productModel.findOneAndUpdate(query, updateQuery).populate('category');
+    return await this.productModel.findOneAndUpdate(query, updateQuery).populate('category creator');
   }
 
   async findStoreProducts(query: FilterQuery<ProductDocument>, sort?: any) {
@@ -38,8 +38,17 @@ export class ProductService extends BaseService<ProductDocument> {
       },
       { $unwind: '$category' },
       {
+        $lookup: {
+          from: 'users',
+          localField: 'creator',
+          foreignField: '_id',
+          as: 'creator',
+        },
+      },
+      { $unwind: '$creator' },
+      {
         $group: {
-          _id: '$category.title',
+          _id: '$category._id',
           category: {
             $first: '$category.title',
           },

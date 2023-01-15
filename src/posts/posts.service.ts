@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { FilterQuery, Model, QueryOptions, UpdateQuery } from 'mongoose';
+import mongoose, { FilterQuery, Model, QueryOptions, UpdateQuery } from 'mongoose';
 import { BaseService } from 'src/helpers/services/base.service';
 import { PostDocument, Posts } from './posts.schema';
 
@@ -22,13 +22,13 @@ export class PostsService extends BaseService<PostDocument> {
         path: 'likes',
         select: 'firstName lastName avatar',
       },
-      { path: 'creator', select: 'firstName lastName avatar userName isGuildMember sellerId friends' },
+      { path: 'creator', select: 'firstName lastName avatar userName isGuildMember sellerId' },
       { path: 'group', select: 'name' },
       { path: 'fundraising', populate: [{ path: 'category' }, { path: 'subCategory' }] },
     ];
   }
 
-  async findAllPosts(query: FilterQuery<PostDocument>, options?: QueryOptions<PostDocument>) {
+  async find(query: FilterQuery<PostDocument>, options?: QueryOptions<PostDocument>) {
     return await this.postModel.find(query, {}, options).populate(this.getPopulateFields()).lean();
   }
 
@@ -49,5 +49,52 @@ export class PostsService extends BaseService<PostDocument> {
 
   async FindAllFundraisingProjects(query: FilterQuery<PostDocument>, options?: QueryOptions<PostDocument>) {
     return await this.postModel.find(query, {}, options).select('fundraising status').populate('fundraising').lean();
+  }
+
+  async findHomePosts() {
+    return await this.postModel.aggregate([
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'creator',
+          foreignField: '_id',
+          as: 'creator',
+        },
+      },
+      {
+        $unwind: '$creator',
+      },
+      {
+        $match: {
+          isBlocked: false,
+          status: 'active',
+          $or: [
+            {
+              privacy: 'guildMembers',
+            },
+            {
+              privacy: 'followers',
+              'creator.friends': {
+                $in: [new mongoose.Schema.Types.ObjectId('6347fe322f2915a130445870')],
+              },
+            },
+            {
+              privacy: 'public',
+            },
+          ],
+        },
+      },
+      {
+        $sort: {
+          createdAt: -1,
+        },
+      },
+      {
+        $skip: 10,
+      },
+      {
+        $limit: 10,
+      },
+    ]);
   }
 }
