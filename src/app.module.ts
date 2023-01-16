@@ -20,6 +20,7 @@ import { NotificationModule } from './notification/notification.module';
 import { ReportModule } from './report/report.module';
 import { SearchModule } from './search/search.module';
 import { AppController } from './app.controller';
+import { FirebaseModule } from './firebase/firebase.module';
 
 @Module({
   imports: [
@@ -40,6 +41,7 @@ import { AppController } from './app.controller';
     NotificationModule,
     ReportModule,
     SearchModule,
+    FirebaseModule,
   ],
   // global interceptor for transforming response.
   providers: [

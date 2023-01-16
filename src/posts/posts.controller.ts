@@ -13,11 +13,14 @@ import {
 } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/role.guard';
+import { FirebaseService } from 'src/firebase/firebase.service';
 import { makeQuery, ParseObjectId, Roles } from 'src/helpers';
 import { GetUser } from 'src/helpers/decorators/user.decorator';
-import { MuteInterval, PostPrivacy, PostStatus, UserRoles } from 'src/types';
+import { NotificationService } from 'src/notification/notification.service';
+import { MuteInterval, NotificationType, PostPrivacy, PostStatus, UserRoles } from 'src/types';
 import { UserDocument } from 'src/users/users.schema';
 import { UsersService } from 'src/users/users.service';
+import { CommentService } from './comment.service';
 import { CreateCommentDto } from './dtos/create-comment';
 import { MutePostDto } from './dtos/mute-post.dto';
 import { UpdateCommentDto } from './dtos/update-comment.dto';
@@ -27,7 +30,13 @@ import { PostsService } from './posts.service';
 @Controller('post')
 @UseGuards(JwtAuthGuard, RolesGuard)
 export class PostsController {
-  constructor(private postsService: PostsService, private readonly userService: UsersService) {}
+  constructor(
+    private readonly postsService: PostsService,
+    private readonly userService: UsersService,
+    private readonly commentService: CommentService,
+    private readonly firebaseService: FirebaseService,
+    private readonly notificationService: NotificationService
+  ) {}
 
   @Roles(UserRoles.ADMIN)
   @Get('find-all')
@@ -61,7 +70,7 @@ export class PostsController {
     const $q = makeQuery({ page, limit });
     const condition = { creator: id };
     const options = { sort: $q.sort, limit: $q.limit, skip: $q.skip };
-    const total = await this.postsService.countRecords({});
+    const total = await this.postsService.countRecords(condition);
     const posts = await this.postsService.find(condition, options);
     const paginated = {
       total,
@@ -106,48 +115,53 @@ export class PostsController {
 
   @Post('like/:id')
   async addLike(@Param('id', ParseObjectId) id: string, @GetUser() user: UserDocument) {
-    const post = await this.postsService.findOneRecord({ _id: id, likes: { $in: [user._id] } });
-    if (post) throw new HttpException('You already liked this post.', HttpStatus.BAD_REQUEST);
-    return await this.postsService.updatePost(
-      { _id: id },
-      {
-        $push: { likes: user._id },
-      }
-    );
+    const postExists = await this.postsService.findOneRecord({ _id: id, likes: { $in: [user._id] } });
+    // if (postExists) throw new HttpException('You already liked this post.', HttpStatus.BAD_REQUEST);
+    const post = await this.postsService.update({ _id: id }, { $push: { likes: user._id } });
+    await this.notificationService.createRecord({
+      post: post._id,
+      message: 'Your post liked',
+      type: NotificationType.POST,
+      sender: user._id,
+      //@ts-ignore
+      receiver: post.creator._id,
+    });
+    await this.firebaseService.sendNotification({
+      token:
+        'dFusJ6TrQducezzxOmS7JO:APA91bFwXW3OaSwqmh377ZIjnuFOTlhgb8BeoBhynTWGF6yBFtnzKhcJjKKDbtHlf3_LY6UXIZHj10nt_4k98cXWJNhZRETaLox2aY7jZxmb9c3D43RLgpuypgj178I9wO_9UMX1bUE2',
+      notification: { title: 'Your post liked' },
+      data: { postId: post._id.toString() },
+    });
+    return post;
   }
 
   @Put('un-like/:id')
   async unLike(@Param('id', ParseObjectId) id: string, @GetUser() user: UserDocument) {
-    return await this.postsService.updatePost({ _id: id }, { $pull: { likes: user._id } });
+    return await this.postsService.update({ _id: id }, { $pull: { likes: user._id } });
   }
 
   @Post('comment/:id')
   async createComment(@Param('id') id: string, @GetUser() user: UserDocument, @Body() body: CreateCommentDto) {
-    return await this.postsService.updatePost(
-      { _id: id },
-      {
-        $push: { comments: { content: body.content, creator: user._id } },
-      }
-    );
+    const comment = await this.commentService.createRecord({ content: body.content, creator: user._id, post: id });
+    return await this.postsService.update({ _id: id }, { $push: { comments: comment._id } });
   }
 
   @Put('comment/update')
   async updateComment(@Body() { postId, commentId, content }: UpdateCommentDto) {
-    return await this.postsService.updatePost(
-      { _id: postId, 'comments._id': commentId },
-      { $set: { 'comments.$.content': content } }
-    );
+    await this.commentService.findOneRecordAndUpdate({ _id: commentId }, { content });
+    return await this.postsService.findOne({ _id: postId });
   }
 
   @Delete(':postId/comment/:id/delete')
-  async deleteComment(@Param('id', ParseObjectId) id: string, @Param('postId', ParseObjectId) postId: string) {
-    await this.postsService.findOneRecordAndUpdate({ _id: postId }, { $pull: { comments: { _id: id } } });
+  async deleteComment(@Param('id', ParseObjectId) id: string) {
+    const comment = await this.commentService.deleteSingleRecord({ _id: id });
+    await this.postsService.findOneRecordAndUpdate({ _id: comment.post }, { $pull: { comments: comment._id } });
     return { message: 'Comment deleted successfully.' };
   }
 
   @Put(':id/update')
   async update(@Body() updatePostDto: UpdatePostDto, @Param('id', ParseObjectId) id: string) {
-    return await this.postsService.updatePost({ _id: id }, updatePostDto);
+    return await this.postsService.update({ _id: id }, updatePostDto);
   }
 
   @Put('mute')

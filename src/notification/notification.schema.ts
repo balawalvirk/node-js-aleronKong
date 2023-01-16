@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
+import { Posts } from 'src/posts/posts.schema';
 import { User } from 'src/users/users.schema';
 
 export type NotificationDocument = Notification & mongoose.Document;
@@ -20,6 +21,9 @@ export class Notification {
 
   @Prop({ default: false })
   isRead: boolean;
+
+  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Posts' })
+  post: Posts;
 }
 
 export const NotificationSchema = SchemaFactory.createForClass(Notification);

@@ -3,7 +3,7 @@ import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { ParseObjectId } from 'src/helpers';
 import { GetUser } from 'src/helpers/decorators/user.decorator';
 import { SocketGateway } from 'src/helpers/gateway/socket.gateway';
-import { FirebaseService } from 'src/helpers/services/firebase.service';
+import { FirebaseService } from 'src/firebase/firebase.service';
 import { NotificationService } from 'src/notification/notification.service';
 import { MuteInterval, NotificationType } from 'src/types';
 import { UserDocument } from 'src/users/users.schema';
@@ -77,13 +77,13 @@ export class ChatController {
           //check if current date is greater that the interval date i.e date is in past
           if (mute.date.getTime() < today.getTime()) {
             //send notification to user fcm token
-            await this.firebaseService.sendNotification(
-              {
+            await this.firebaseService.sendNotification({
+              token: receiver.fcmToken,
+              notification: {
                 title: `${user.firstName} ${user.lastName}`,
                 body: message.content,
               },
-              receiver.fcmToken
-            );
+            });
           }
         }
         // check if date is custom date
@@ -92,13 +92,13 @@ export class ChatController {
           if (today.getTime() <= mute.startTime.getTime() && today.getTime() >= mute.endTime.getTime()) {
             return;
           } else {
-            await this.firebaseService.sendNotification(
-              {
+            await this.firebaseService.sendNotification({
+              token: receiver.fcmToken,
+              notification: {
                 title: `${user.firstName} ${user.lastName}`,
                 body: message.content,
               },
-              receiver.fcmToken
-            );
+            });
           }
         }
       }
