@@ -22,11 +22,11 @@ export class ProductService extends BaseService<ProductDocument> {
     return await this.productModel.findOneAndUpdate(query, updateQuery).populate('category creator');
   }
 
-  async findStoreProducts(query: FilterQuery<ProductDocument>, sort?: any) {
+  async findStoreProducts(query: FilterQuery<ProductDocument>, options?: QueryOptions<ProductDocument>) {
     return await this.productModel.aggregate([
       { $match: query },
       {
-        $sort: !sort ? { createdAt: -1 } : sort,
+        $sort: !options?.sort ? { createdAt: -1 } : options?.sort,
       },
       {
         $lookup: {
@@ -58,10 +58,17 @@ export class ProductService extends BaseService<ProductDocument> {
           products: {
             $push: '$$ROOT',
           },
+          count: { $sum: 1 },
         },
       },
       {
-        $project: { _id: 0 },
+        $project: {
+          _id: 0,
+          products: { $slice: ['$products', 10] },
+          type: 1,
+          category: 1,
+          count: 1,
+        },
       },
     ]);
   }

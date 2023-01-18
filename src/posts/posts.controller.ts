@@ -1,16 +1,4 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  HttpException,
-  HttpStatus,
-  Param,
-  Post,
-  Put,
-  Query,
-  UseGuards,
-} from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/role.guard';
 import { FirebaseService } from 'src/firebase/firebase.service';
@@ -42,7 +30,7 @@ export class PostsController {
   @Get('find-all')
   async findAll(@Query('page') page: string, @Query('limit') limit: string) {
     const $q = makeQuery({ page, limit });
-    const options = { limit: $q.limit, skip: $q.skip };
+    const options = { limit: $q.limit, skip: $q.skip, sort: $q.sort };
     const posts = await this.postsService.paginate({}, options);
     const total = await this.postsService.countRecords({});
     const paginated = {
@@ -74,7 +62,7 @@ export class PostsController {
     const posts = await this.postsService.find(condition, options);
     const paginated = {
       total,
-      pages: Math.floor(total / $q.limit),
+      pages: Math.round(total / $q.limit),
       page: $q.page,
       limit: $q.limit,
       data: posts,
@@ -85,24 +73,30 @@ export class PostsController {
   @Get('home')
   async findHomePosts(@Query('page') page: string, @Query('limit') limit: string, @GetUser() user: UserDocument) {
     const $q = makeQuery({ page, limit });
-    const options = { sort: $q.sort, limit: $q.limit, skip: $q.skip };
-    const total = await this.postsService.countRecords({});
+    const options = { sort: $q.sort };
     const followings = (await this.userService.findAllRecords({ friends: { $in: [user._id] } }).select('_id')).map(
       (user) => user._id
     );
     const condition = {
-      creator: { $nin: user.blockedUsers },
+      creator: { $nin: [user.blockedUsers] },
       isBlocked: false,
       status: PostStatus.ACTIVE,
       $or: user.isGuildMember
-        ? [{ privacy: PostPrivacy.PUBLIC }, { privacy: PostPrivacy.FOLLOWERS, creator: { $in: followings } }]
-        : [
+        ? [
             { privacy: PostPrivacy.PUBLIC },
             { privacy: PostPrivacy.FOLLOWERS, creator: { $in: followings } },
             { privacy: PostPrivacy.GUILD_MEMBERS },
+          ]
+        : [
+            { privacy: PostPrivacy.PUBLIC },
+            { privacy: PostPrivacy.FOLLOWERS, creator: { $in: followings } },
+            {
+              $and: [{ privacy: PostPrivacy.GUILD_MEMBERS, creator: user._id }],
+            },
           ],
     };
     const posts = await this.postsService.find(condition, options);
+    const total = await this.postsService.countRecords(condition);
     const paginated = {
       total,
       pages: Math.floor(total / $q.limit),

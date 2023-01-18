@@ -17,7 +17,7 @@ import { AddressService } from 'src/address/address.service';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/role.guard';
 import { CartService } from 'src/product/cart.service';
-import { ParseObjectId, Roles, StripeService } from 'src/helpers';
+import { makeQuery, ParseObjectId, Roles, StripeService } from 'src/helpers';
 import { GetUser } from 'src/helpers/decorators/user.decorator';
 import { CollectionConditions, CollectionTypes, ProductType, UserRoles } from 'src/types';
 import { UserDocument } from 'src/users/users.schema';
@@ -39,6 +39,7 @@ import { UsersService } from 'src/users/users.service';
 import { FindStoreProductsQueryDto } from './dtos/find-store-products-query.dto';
 import { ReviewService } from './review.service';
 import { CreateReviewDto } from './dtos/create-review.dto';
+import { FindAllProductsQuery } from './dtos/find-all-products.query';
 
 @Controller('product')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -82,9 +83,20 @@ export class ProductController {
     return await this.productService.update({ _id: id }, updateProductDto);
   }
 
-  @Get('/inventory')
-  async inventory(@GetUser() user: UserDocument) {
-    await this.productService.findAllRecords({ creator: user._id });
+  @Get('find-all')
+  async findAllProducts(@Query() { page, limit, ...rest }: FindAllProductsQuery) {
+    const $q = makeQuery({ page, limit });
+    const options = { limit: $q.limit, skip: $q.skip, sort: $q.sort };
+    const total = await this.productService.countRecords(rest);
+    const products = await this.productService.findAllRecords(rest, options);
+    const paginated = {
+      total: total,
+      pages: Math.floor(total / $q.limit),
+      page: $q.page,
+      limit: $q.limit,
+      data: products,
+    };
+    return paginated;
   }
 
   // find user store products and all store products
@@ -383,7 +395,7 @@ export class ProductController {
     return { message: 'Thanks for sharing your review.' };
   }
 
-  @Get('review/:id/find-all')
+  @Get(':id/review/find-all')
   async findAllReviews(@Param('id', ParseObjectId) id: string) {
     return await this.reviewService.findAllRecords({ product: id });
   }

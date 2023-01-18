@@ -72,6 +72,7 @@ export class UserController {
     if (user.role.includes(UserRoles.ADMIN)) {
       await this.usersService.findOneRecordAndUpdate({ _id: id }, { status: UserStatus.BLOCKED });
     } else {
+      if (user._id == id) throw new HttpException('You cannot block yourself.', HttpStatus.BAD_REQUEST);
       const userFound = await this.usersService.findOneRecord({
         _id: user._id,
         blockedUsers: { $in: [id] },

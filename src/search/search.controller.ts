@@ -1,5 +1,4 @@
 import { Controller, Get, Query, UseGuards, DefaultValuePipe } from '@nestjs/common';
-import { SearchService } from './search.service';
 import { ProductService } from 'src/product/product.service';
 import { GroupService } from 'src/group/group.service';
 import { UsersService } from 'src/users/users.service';
@@ -12,7 +11,6 @@ import { GetUser } from 'src/helpers';
 @UseGuards(JwtAuthGuard)
 export class SearchController {
   constructor(
-    private readonly searchService: SearchService,
     private readonly productService: ProductService,
     private readonly groupService: GroupService,
     private readonly userService: UsersService
@@ -30,46 +28,50 @@ export class SearchController {
     let groups = [];
     let products = [];
     const ObjectId = mongoose.Types.ObjectId;
-    /**
-     * TODO: need to make this dynamic
-     */
     // if nothing is passed then show recommended products
     if (sort === 'createdAt' && filter === 'all' && !category && query.length === 0) {
       return this.productService.getRandomProducts();
     }
-
     const rjx = { $regex: query, $options: 'i' };
     if (filter === 'all') {
       users = await this.userService.findAllRecords(
-        {
-          $or: [{ firstName: rjx }, { lastName: rjx }],
-          _id: { $ne: user._id },
-        },
-        this.searchService.getSorting(sort, 'user')
+        { $or: [{ firstName: rjx }, { lastName: rjx }], _id: { $ne: user._id } },
+        { sort: sort === 'name' ? { firstName: -1, lastName: -1 } : { createdAt: -1 }, limit: 3 }
       );
+      const totalUsers = await this.userService.countRecords({
+        $or: [{ firstName: rjx }, { lastName: rjx }],
+        _id: { $ne: user._id },
+      });
 
       groups = await this.groupService.findAllRecords(
-        {
-          name: rjx,
-        },
-        this.searchService.getSorting(sort, 'group')
+        { name: rjx },
+        { sort: sort === 'name' ? { name: -1 } : { createdAt: -1 }, limit: 10 }
       );
+      const totalGroups = await this.groupService.countRecords({ name: rjx });
 
       products = await this.productService.findStoreProducts(
         {
           title: rjx,
         },
-        this.searchService.getSorting(sort, 'product')
+        { sort: sort === 'name' ? { title: -1 } : { createdAt: -1 }, limit: 10 }
       );
-      const totalProducts = products.reduce((n, { data }) => n + data.length, 0);
-      return { users, groups, products, total: users.length + groups.length + totalProducts };
+      const totalProducts = products.length > 0 ? products.reduce((n, { count }) => n + count, 0) : 0;
+      return {
+        users,
+        groups,
+        products,
+        total: totalUsers + totalGroups + totalProducts,
+        totalUsers,
+        totalGroups,
+        totalProducts,
+      };
     } else if (filter === 'people') {
       users = await this.userService.findAllRecords(
         {
           $or: [{ firstName: rjx }, { lastName: rjx }],
           _id: { $ne: user._id },
         },
-        this.searchService.getSorting(sort, 'user')
+        { sort: sort === 'name' ? { firstName: -1, lastName: -1 } : { createdAt: -1 } }
       );
       return { users, groups, products, total: users.length };
     } else if (filter === 'groups') {
@@ -77,7 +79,7 @@ export class SearchController {
         {
           name: rjx,
         },
-        this.searchService.getSorting(sort, 'group')
+        { sort: sort === 'name' ? { name: -1 } : { createdAt: -1 } }
       );
       return { users, groups, products, total: groups.length };
     } else {
@@ -87,12 +89,12 @@ export class SearchController {
             title: rjx,
             category: new ObjectId(category),
           },
-          this.searchService.getSorting(sort, 'product')
+          { sort: sort === 'name' ? { title: -1 } : { createdAt: -1 } }
         );
       } else {
         products = await this.productService.findAllRecords(
           { title: rjx },
-          this.searchService.getSorting(sort, 'product')
+          { sort: sort === 'name' ? { title: -1 } : { createdAt: -1 } }
         );
       }
       return { users, groups, products, total: products.length };

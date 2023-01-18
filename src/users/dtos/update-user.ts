@@ -10,10 +10,6 @@ export class UpdateUserDto {
   lastName: string;
 
   @IsOptional()
-  @IsString()
-  userName: string;
-
-  @IsOptional()
   @IsDateString()
   birthDate: Date;
 
