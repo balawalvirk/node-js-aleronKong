@@ -19,11 +19,7 @@ export class BaseService<T> {
    * Creates a find query: gets a list of documents that match filter.
    * @param filter
    */
-  findAllRecords = (filter?: FilterQuery<T>, sort?: any) =>
-    this.model
-      .find(filter)
-      .sort(sort ? sort : { createdAt: -1 })
-      .lean();
+  findAllRecords = (filter?: FilterQuery<T>, options?: QueryOptions<T>) => this.model.find(filter, {}, options).lean();
 
   /**
    * Finds one document.
