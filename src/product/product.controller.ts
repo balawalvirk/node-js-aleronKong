@@ -382,16 +382,14 @@ export class ProductController {
 
   // ----------------------------------------------------------reviews apis-----------------------------------------------------------------------------------------
   @Post('review/create')
-  async createReview(@GetUser() user: UserDocument, @Body() createReviewDto: CreateReviewDto) {
-    const product = await this.productService.findOneRecord({ _id: createReviewDto.product }).populate('reviews');
-    if (!product) throw new HttpException('Product does not exists.', HttpStatus.BAD_REQUEST);
-    const review = await this.reviewService.createRecord({ ...createReviewDto, creator: user._id });
-    const reviews = [...product.reviews, review];
+  async createReview(@GetUser() user: UserDocument, @Body() { order, review, rating, product }: CreateReviewDto) {
+    const productFound = await this.productService.findOneRecord({ _id: product }).populate('reviews');
+    if (!productFound) throw new HttpException('Product does not exists.', HttpStatus.BAD_REQUEST);
+    const reviw = await this.reviewService.createRecord({ review, product, rating, creator: user._id });
+    const reviews = [...productFound.reviews, reviw];
     const avgRating = reviews.reduce((n, { rating }) => n + rating / reviews.length, 0);
-    await this.productService.findOneRecordAndUpdate(
-      { _id: createReviewDto.product },
-      { $push: { reviews: review._id }, avgRating }
-    );
+    await this.productService.findOneRecordAndUpdate({ _id: product }, { $push: { reviews: reviw._id }, avgRating });
+    await this.orderService.findOneRecordAndUpdate({ _id: order }, { review: reviw._id });
     return { message: 'Thanks for sharing your review.' };
   }
 

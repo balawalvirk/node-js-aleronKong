@@ -1,4 +1,4 @@
-import { IsMongoId, IsNumber, IsString } from 'class-validator';
+import { IsMongoId, IsNumber, IsOptional, IsString } from 'class-validator';
 
 export class CreateReviewDto {
   @IsNumber()
@@ -9,4 +9,8 @@ export class CreateReviewDto {
 
   @IsMongoId()
   product: string;
+
+  @IsOptional()
+  @IsMongoId()
+  order: string;
 }
