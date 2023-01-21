@@ -2,6 +2,7 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
 import { FundraisingCategory } from 'src/fundraising/category.schema';
 import { FundraisingSubcategory } from 'src/fundraising/subCategory.schema';
+import { User } from 'src/users/users.schema';
 
 export type FundraisingDocument = Fundraising & mongoose.Document;
 @Schema({ timestamps: true })
@@ -50,6 +51,12 @@ export class Fundraising {
 
   @Prop({ default: 0 })
   currentFunding: number;
+
+  @Prop({ default: false })
+  isApproved: boolean;
+
+  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User' })
+  creator: User;
 }
 
 export const FundraisingSchema = SchemaFactory.createForClass(Fundraising);

@@ -65,7 +65,7 @@ export class PackageController {
     const rjx = { $regex: query ? query : '', $options: 'i' };
     const options = { limit: $q.limit, skip: $q.skip, sort: $q.sort };
     const condition = { ...rest, title: rjx };
-    const total = await this.packageService.countRecords({});
+    const total = await this.packageService.countRecords(condition);
     const packages = await this.packageService.paginate(condition, options);
     const paginated = {
       total: total,
