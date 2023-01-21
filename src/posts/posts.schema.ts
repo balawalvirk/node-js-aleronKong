@@ -46,6 +46,9 @@ export class Posts {
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Fundraising' })
   fundraising: Fundraising;
 
+  @Prop({ default: false })
+  isFeatured: boolean;
+
   @Prop({ type: MuteSchema })
   mutes: Mute[];
 }

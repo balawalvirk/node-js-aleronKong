@@ -9,6 +9,7 @@ import {
   HttpException,
   HttpStatus,
   Query,
+  Put,
 } from '@nestjs/common';
 import { CreateFudraisingDto } from './dtos/create-fudraising.dto';
 import { PostsService } from 'src/posts/posts.service';
@@ -41,15 +42,19 @@ export class FundraisingController {
 
   @Post('create')
   async createFundraiser(@Body() createFudraisingDto: CreateFudraisingDto, @GetUser() user: UserDocument) {
-    const fundraising: FundraisingDocument = await this.fundraisingService.createRecord(createFudraisingDto);
-    const post = await this.postService.createPost({
-      fundraising: fundraising._id,
+    await this.fundraisingService.createRecord({
+      ...createFudraisingDto,
       creator: user._id,
-      type: PostType.FUNDRAISING,
-      status: PostStatus.INACTIVE,
-      privacy: PostPrivacy.PUBLIC,
     });
-    return post;
+    return { message: 'Your project has been submitted for review.' };
+    // const post = await this.postService.createPost({
+    //   fundraising: fundraising._id,
+    //   creator: user._id,
+    //   type: PostType.FUNDRAISING,
+    //   status: PostStatus.INACTIVE,
+    //   privacy: PostPrivacy.PUBLIC,
+    // });
+    // return post;
   }
 
   @Post('fund')
@@ -90,11 +95,11 @@ export class FundraisingController {
     const rjx = { $regex: query ? query : '', $options: 'i' };
     const options = { limit: $q.limit, skip: $q.skip, sort: $q.sort };
     const condition = { title: rjx, type: PostType.FUNDRAISING };
-    const total = await this.postService.countRecords({ type: PostType.FUNDRAISING });
-    const projects = await this.postService.FindAllFundraisingProjects(condition, options);
+    const total = await this.fundraisingService.countRecords(condition);
+    const projects = await this.fundraisingService.findAllRecords(condition, options);
     const paginated = {
       total: total,
-      pages: Math.round(total / $q.limit),
+      pages: Math.ceil(total / $q.limit),
       page: $q.page,
       limit: $q.limit,
       data: projects,
@@ -102,25 +107,39 @@ export class FundraisingController {
     return paginated;
   }
 
-  // @Roles(UserRoles.ADMIN)
+  @Roles(UserRoles.ADMIN)
+  @Put(':id/approve')
+  async approve(@Param('id', ParseObjectId) id: string) {
+    const project = await this.fundraisingService.findOneRecordAndUpdate({ _id: id }, { isApproved: true });
+    await this.postService.createRecord({
+      fundraising: project._id,
+      creator: project.creator,
+      type: PostType.FUNDRAISING,
+      status: PostStatus.ACTIVE,
+      privacy: PostPrivacy.PUBLIC,
+    });
+    return { message: 'Fundraising project approved successfully.' };
+  }
+
+  @Roles(UserRoles.ADMIN)
   @Post('category/create')
   async createCategory(@Body() createFudraisingCategoryDto: CreateFudraisingCategoryDto) {
     return await this.categoryService.createRecord(createFudraisingCategoryDto);
   }
 
-  // @Roles(UserRoles.ADMIN)
+  @Roles(UserRoles.ADMIN)
   @Get('category/find-all')
   async findAllCategories() {
     return await this.categoryService.findAllRecords();
   }
 
-  // @Roles(UserRoles.ADMIN)
+  @Roles(UserRoles.ADMIN)
   @Delete('category/:id/delete')
   async deleteCategory(@Param('id', ParseObjectId) id: string) {
     return await this.categoryService.deleteSingleRecord({ _id: id });
   }
 
-  // @Roles(UserRoles.ADMIN)
+  @Roles(UserRoles.ADMIN)
   @Post('sub-category/create')
   async createSubCategory(@Body() createFudraisingSubCategoryDto: CreateFudraisingSubCategoryDto) {
     return await this.subCategoryService.createRecord(createFudraisingSubCategoryDto);
@@ -131,7 +150,7 @@ export class FundraisingController {
     return await this.subCategoryService.findAllRecords({ category: categoryId });
   }
 
-  // @Roles(UserRoles.ADMIN)
+  @Roles(UserRoles.ADMIN)
   @Delete('sub-category/:id/delete')
   async deleteSubCategory(@Param('id', ParseObjectId) id: string) {
     return await this.subCategoryService.deleteSingleRecord({ _id: id });
