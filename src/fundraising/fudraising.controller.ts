@@ -80,11 +80,12 @@ export class FundraisingController {
       //@ts-ignore
       beneficiary: post.creator._id,
     });
-    await this.fundraisingService.findOneRecordAndUpdate(
+    const project = await this.fundraisingService.findOneRecordAndUpdate(
       { _id: projectId },
       { $inc: { currentFunding: amount, backers: 1 } }
     );
-    post.fundraising.backers += 1;
+    post.fundraising.backers = project.backers;
+    post.fundraising.currentFunding = project.currentFunding;
     return post;
   }
 

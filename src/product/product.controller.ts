@@ -1,17 +1,4 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  HttpException,
-  HttpStatus,
-  Param,
-  ParseEnumPipe,
-  Post,
-  Put,
-  Query,
-  UseGuards,
-} from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpException, HttpStatus, Param, ParseEnumPipe, Post, Put, Query, UseGuards } from '@nestjs/common';
 import mongoose from 'mongoose';
 import { AddressService } from 'src/address/address.service';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
@@ -65,16 +52,10 @@ export class ProductController {
   @Delete(':id/delete')
   async remove(@Param('id', ParseObjectId) id: string, @GetUser() user: UserDocument) {
     const product = await this.productService.deleteSingleRecord({ _id: id });
-    await this.collectionService.updateManyRecords(
-      { products: { $in: [product._id] } },
-      { $pull: { products: product._id } }
-    );
+    await this.collectionService.updateManyRecords({ products: { $in: [product._id] } }, { $pull: { products: product._id } });
     await this.saleService.deleteManyRecord({ product: product._id });
     if (product.type === ProductType.DIGITAL)
-      await this.userService.findOneRecordAndUpdate(
-        { _id: user._id },
-        { $pull: { boughtDigitalProducts: product._id } }
-      );
+      await this.userService.findOneRecordAndUpdate({ _id: user._id }, { $pull: { boughtDigitalProducts: product._id } });
     return product;
   }
 
@@ -91,7 +72,7 @@ export class ProductController {
     const products = await this.productService.findAllRecords(rest, options);
     const paginated = {
       total: total,
-      pages: Math.floor(total / $q.limit),
+      pages: Math.ceil(total / $q.limit),
       page: $q.page,
       limit: $q.limit,
       data: products,
@@ -101,10 +82,7 @@ export class ProductController {
 
   // find user store products and all store products
   @Get('store')
-  async findStoreProducts(
-    @Query() { showBoughtProducts, ...rest }: FindStoreProductsQueryDto,
-    @GetUser() user: UserDocument
-  ) {
+  async findStoreProducts(@Query() { showBoughtProducts, ...rest }: FindStoreProductsQueryDto, @GetUser() user: UserDocument) {
     const ObjectId = mongoose.Types.ObjectId;
     // if showboughtproducts is true then show user bought products in categories form else show store products in categories form
     if (!showBoughtProducts) {
@@ -178,9 +156,7 @@ export class ProductController {
 
   @Post('buy')
   async buyProduct(@GetUser() user: UserDocument, @Body() buyProductDto: BuyProductDto) {
-    const product = await this.productService
-      .findOneRecord({ _id: buyProductDto.product })
-      .populate({ path: 'creator', select: 'sellerId' });
+    const product = await this.productService.findOneRecord({ _id: buyProductDto.product }).populate({ path: 'creator', select: 'sellerId' });
     if (!product) throw new HttpException('Product does not exists.', HttpStatus.BAD_REQUEST);
     const subTotal = product.price;
     const tax = Math.round((2 / 100) * subTotal);
@@ -301,11 +277,7 @@ export class ProductController {
   }
 
   @Post(':id/add-to-cart')
-  async addItem(
-    @GetUser() user: UserDocument,
-    @Param('id', ParseObjectId) id: string,
-    @Body() { selectedColor, selectedSize }: AddToCartDto
-  ) {
+  async addItem(@GetUser() user: UserDocument, @Param('id', ParseObjectId) id: string, @Body() { selectedColor, selectedSize }: AddToCartDto) {
     const product = await this.productService.findOneRecord({ _id: id });
     if (!product) throw new HttpException('Product does not exists', HttpStatus.BAD_REQUEST);
     const cartExists = await this.cartService.findOneRecord({ creator: user._id });
@@ -322,10 +294,7 @@ export class ProductController {
       //@ts-ignore
       const item = cartExists.items.find((item) => item.item == id);
       if (item) throw new HttpException('You already added this item in cart.', HttpStatus.BAD_REQUEST);
-      const cart = await this.cartService.findOneAndUpdate(
-        { creator: user._id },
-        { $push: { items: { item: id, selectedColor, selectedSize } } }
-      );
+      const cart = await this.cartService.findOneAndUpdate({ creator: user._id }, { $push: { items: { item: id, selectedColor, selectedSize } } });
       const { total, subTotal, tax } = this.cartService.calculateTax(cart.items);
       return { ...cart, total, subTotal, tax };
     }
@@ -347,10 +316,7 @@ export class ProductController {
   ) {
     await this.productService.findOneRecord({ _id: id });
     if (!inc && !dec) throw new HttpException('inc or dec query string is required', HttpStatus.BAD_REQUEST);
-    const cart = await this.cartService.findOneAndUpdate(
-      { 'items.item': id, creator: user._id },
-      { $inc: { 'items.$.quantity': inc ? 1 : -1 } }
-    );
+    const cart = await this.cartService.findOneAndUpdate({ 'items.item': id, creator: user._id }, { $inc: { 'items.$.quantity': inc ? 1 : -1 } });
     const { total, tax, subTotal } = this.cartService.calculateTax(cart.items);
     return { ...cart, total, tax, subTotal };
   }
@@ -382,19 +348,24 @@ export class ProductController {
 
   // ----------------------------------------------------------reviews apis-----------------------------------------------------------------------------------------
   @Post('review/create')
-  async createReview(@GetUser() user: UserDocument, @Body() { order, review, rating, product }: CreateReviewDto) {
-    const productFound = await this.productService.findOneRecord({ _id: product }).populate('reviews');
-    if (!productFound) throw new HttpException('Product does not exists.', HttpStatus.BAD_REQUEST);
-    const reviw = await this.reviewService.createRecord({ review, product, rating, creator: user._id });
-    const reviews = [...productFound.reviews, reviw];
-    const avgRating = reviews.reduce((n, { rating }) => n + rating / reviews.length, 0);
-    await this.productService.findOneRecordAndUpdate({ _id: product }, { $push: { reviews: reviw._id }, avgRating });
-    await this.orderService.findOneRecordAndUpdate({ _id: order }, { review: reviw._id });
+  async createReview(@GetUser() user: UserDocument, @Body() createReviewDto: CreateReviewDto) {
+    const product = await this.productService.findOneRecord({ _id: createReviewDto.product }).populate('reviews');
+    if (!product) throw new HttpException('Product does not exists.', HttpStatus.BAD_REQUEST);
+    const review = await this.reviewService.createRecord({
+      review: createReviewDto.review,
+      product: createReviewDto.product,
+      rating: createReviewDto.rating,
+      creator: user._id,
+    });
+    const reviews = [...product.reviews, review];
+    const avgRating = Math.round(reviews.reduce((n, { rating }) => n + rating / reviews.length, 0) * 10) / 10;
+    await this.productService.findOneRecordAndUpdate({ _id: createReviewDto.product }, { $push: { reviews: review._id }, avgRating });
+    await this.orderService.findOneRecordAndUpdate({ _id: createReviewDto.order }, { review: review._id });
     return { message: 'Thanks for sharing your review.' };
   }
 
   @Get(':id/review/find-all')
   async findAllReviews(@Param('id', ParseObjectId) id: string) {
-    return await this.reviewService.findAllRecords({ product: id });
+    return await this.reviewService.find({ product: id }, { sort: { createdAt: -1 } });
   }
 }
