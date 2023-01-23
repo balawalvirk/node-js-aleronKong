@@ -50,11 +50,7 @@ export class PostsController {
 
   //find post of a specific user
   @Get('find-all/user/:id')
-  async findUserPost(
-    @Param('id', ParseObjectId) id: string,
-    @Query('page') page: string,
-    @Query('limit') limit: string
-  ) {
+  async findUserPost(@Param('id', ParseObjectId) id: string, @Query('page') page: string, @Query('limit') limit: string) {
     const $q = makeQuery({ page, limit });
     const condition = { creator: id };
     const options = { sort: $q.sort, limit: $q.limit, skip: $q.skip };
@@ -73,33 +69,25 @@ export class PostsController {
   @Get('home')
   async findHomePosts(@Query('page') page: string, @Query('limit') limit: string, @GetUser() user: UserDocument) {
     const $q = makeQuery({ page, limit });
-    const options = { sort: $q.sort };
-    const followings = (await this.userService.findAllRecords({ friends: { $in: [user._id] } }).select('_id')).map(
-      (user) => user._id
-    );
+    const options = { sort: $q.sort, limit: $q.limit, skip: $q.skip };
+    const followings = (await this.userService.findAllRecords({ friends: { $in: [user._id] } }).select('_id')).map((user) => user._id);
     const condition = {
       creator: { $nin: [user.blockedUsers] },
       isBlocked: false,
       status: PostStatus.ACTIVE,
       $or: user.isGuildMember
-        ? [
-            { privacy: PostPrivacy.PUBLIC },
-            { privacy: PostPrivacy.FOLLOWERS, creator: { $in: followings } },
-            { privacy: PostPrivacy.GUILD_MEMBERS },
-          ]
+        ? [{ privacy: PostPrivacy.PUBLIC }, { privacy: PostPrivacy.FOLLOWERS, creator: { $in: followings } }, { privacy: PostPrivacy.GUILD_MEMBERS }]
         : [
             { privacy: PostPrivacy.PUBLIC },
             { privacy: PostPrivacy.FOLLOWERS, creator: { $in: followings } },
-            {
-              $and: [{ privacy: PostPrivacy.GUILD_MEMBERS, creator: user._id }],
-            },
+            { $and: [{ privacy: PostPrivacy.GUILD_MEMBERS, creator: user._id }] },
           ],
     };
     const posts = await this.postsService.find(condition, options);
     const total = await this.postsService.countRecords(condition);
     const paginated = {
       total,
-      pages: Math.floor(total / $q.limit),
+      pages: Math.ceil(total / $q.limit),
       page: $q.page,
       limit: $q.limit,
       data: posts,

@@ -16,7 +16,7 @@ export class PostsService extends BaseService<PostDocument> {
         path: 'comments',
         options: { sort: { createdAt: -1 } },
         populate: { path: 'creator', select: 'firstName lastName avatar isGuildMember userName' },
-        select: 'content',
+        select: '-post',
       },
       {
         path: 'likes',
