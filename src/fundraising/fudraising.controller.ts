@@ -1,19 +1,7 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  Param,
-  Delete,
-  UseGuards,
-  HttpException,
-  HttpStatus,
-  Query,
-  Put,
-} from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Delete, UseGuards, HttpException, HttpStatus, Query, Put } from '@nestjs/common';
 import { CreateFudraisingDto } from './dtos/create-fudraising.dto';
 import { PostsService } from 'src/posts/posts.service';
-import { PostPrivacy, PostStatus, PostType, UserRoles } from 'src/types';
+import { NotificationType, PostPrivacy, PostStatus, PostType, UserRoles } from 'src/types';
 import { GetUser, makeQuery, ParseObjectId, Roles, StripeService } from 'src/helpers';
 import { UserDocument } from 'src/users/users.schema';
 import { CreateFudraisingCategoryDto } from './dtos/create-category';
@@ -27,6 +15,8 @@ import { FundraisingDocument } from './fundraising.schema';
 import { FundProjectDto } from './dtos/fund-project.dto';
 import { FindAllFundraisingQueryDto } from './dtos/find-all-query.dto';
 import { FundService } from './fund.service';
+import { NotificationService } from 'src/notification/notification.service';
+import { FirebaseService } from 'src/firebase/firebase.service';
 
 @Controller('fundraising')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -37,7 +27,9 @@ export class FundraisingController {
     private readonly subCategoryService: FudraisingSubCategoryService,
     private readonly fundraisingService: FundraisingService,
     private readonly stripeService: StripeService,
-    private readonly fundService: FundService
+    private readonly fundService: FundService,
+    private readonly notificationService: NotificationService,
+    private readonly firebaseService: FirebaseService
   ) {}
 
   @Post('create')
@@ -80,12 +72,24 @@ export class FundraisingController {
       //@ts-ignore
       beneficiary: post.creator._id,
     });
-    const project = await this.fundraisingService.findOneRecordAndUpdate(
-      { _id: projectId },
-      { $inc: { currentFunding: amount, backers: 1 } }
-    );
+    const project = await this.fundraisingService.findOneRecordAndUpdate({ _id: projectId }, { $inc: { currentFunding: amount, backers: 1 } });
     post.fundraising.backers = project.backers;
     post.fundraising.currentFunding = project.currentFunding;
+
+    await this.notificationService.createRecord({
+      post: post._id,
+      sender: user._id,
+      //@ts-ignore
+      receiver: post.creator._id,
+      message: `User has funded ${amount}$ for your project`,
+      type: NotificationType.PROJECT_FUNDED,
+    });
+    await this.firebaseService.sendNotification({
+      token: post.creator.fcmToken,
+      notification: { title: `User has funded ${amount}$ for your project` },
+      data: { post: post._id, type: NotificationType.PROJECT_FUNDED },
+    });
+
     return post;
   }
 
@@ -112,6 +116,8 @@ export class FundraisingController {
   @Put(':id/approve')
   async approve(@Param('id', ParseObjectId) id: string) {
     const project = await this.fundraisingService.findOneRecordAndUpdate({ _id: id }, { isApproved: true });
+    const post = await this.postService.findOneRecord({ fundraising: project._id });
+    if (post) throw new HttpException('This project is already approved.', HttpStatus.BAD_REQUEST);
     await this.postService.createRecord({
       fundraising: project._id,
       creator: project.creator,

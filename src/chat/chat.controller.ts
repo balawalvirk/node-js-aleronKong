@@ -47,10 +47,7 @@ export class ChatController {
       ...createMessageDto,
       sender: user._id,
     });
-    const chat = await this.chatService.findOneRecordAndUpdate(
-      { _id: createMessageDto.chat },
-      { lastMessage: message._id }
-    );
+    const chat = await this.chatService.findOneRecordAndUpdate({ _id: createMessageDto.chat }, { lastMessage: message._id });
 
     //send socket message to members of chat
     this.socketService.triggerMessage(createMessageDto.chat, message);
@@ -79,10 +76,8 @@ export class ChatController {
             //send notification to user fcm token
             await this.firebaseService.sendNotification({
               token: receiver.fcmToken,
-              notification: {
-                title: `${user.firstName} ${user.lastName}`,
-                body: message.content,
-              },
+              notification: { title: `User has send you message.` },
+              data: { user: user._id, type: NotificationType.MESSAGE },
             });
           }
         }
@@ -94,10 +89,8 @@ export class ChatController {
           } else {
             await this.firebaseService.sendNotification({
               token: receiver.fcmToken,
-              notification: {
-                title: `${user.firstName} ${user.lastName}`,
-                body: message.content,
-              },
+              notification: { title: `User has send you message.` },
+              data: { user: user._id, type: NotificationType.MESSAGE },
             });
           }
         }

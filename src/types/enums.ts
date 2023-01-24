@@ -69,6 +69,14 @@ export enum MuteInterval {
 export enum NotificationType {
   POST = 'post',
   MESSAGE = 'message',
+  USER = 'user',
+  ORDER = 'order',
+  BOUGHT = 'bought',
+  GROUP_JOIN_REQUEST = 'groupJoinRequest',
+  GROUP_JOINED = 'groupJoined',
+  GROUP_POST = 'groupPost',
+  PROJECT_APPROVED = 'projectApproved',
+  PROJECT_FUNDED = 'projectFunded',
 }
 
 export enum ReportType {

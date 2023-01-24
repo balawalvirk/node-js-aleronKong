@@ -6,7 +6,7 @@ import { RolesGuard } from 'src/auth/role.guard';
 import { CartService } from 'src/product/cart.service';
 import { makeQuery, ParseObjectId, Roles, StripeService } from 'src/helpers';
 import { GetUser } from 'src/helpers/decorators/user.decorator';
-import { CollectionConditions, CollectionTypes, ProductType, UserRoles } from 'src/types';
+import { CollectionConditions, CollectionTypes, NotificationType, ProductType, UserRoles } from 'src/types';
 import { UserDocument } from 'src/users/users.schema';
 import { ProductCategoryService } from './category.service';
 import { CollectionDocument } from './collection.schema';
@@ -27,6 +27,8 @@ import { FindStoreProductsQueryDto } from './dtos/find-store-products-query.dto'
 import { ReviewService } from './review.service';
 import { CreateReviewDto } from './dtos/create-review.dto';
 import { FindAllProductsQuery } from './dtos/find-all-products.query';
+import { NotificationService } from 'src/notification/notification.service';
+import { FirebaseService } from 'src/firebase/firebase.service';
 
 @Controller('product')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -41,7 +43,9 @@ export class ProductController {
     private readonly orderService: OrderService,
     private readonly saleService: SaleService,
     private readonly userService: UsersService,
-    private readonly reviewService: ReviewService
+    private readonly reviewService: ReviewService,
+    private readonly notificationService: NotificationService,
+    private readonly firebaseService: FirebaseService
   ) {}
 
   @Post('create')
@@ -127,7 +131,8 @@ export class ProductController {
         //@ts-ignore
         product: item._id,
         customer: user._id,
-        seller: item.creator,
+        //@ts-ignore
+        seller: item.creator._id,
         price: item.price,
         quantity,
         productType: ProductType.PHYSICAL,
@@ -135,7 +140,7 @@ export class ProductController {
     }
 
     for (const { item, quantity, selectedColor, selectedSize } of cart.items) {
-      await this.orderService.createRecord({
+      const order = await this.orderService.createRecord({
         customer: user._id,
         address: address,
         //@ts-ignore
@@ -144,9 +149,25 @@ export class ProductController {
         selectedColor: selectedColor,
         selectedSize: selectedSize,
         paymentMethod,
-        seller: item.creator,
+        //@ts-ignore
+        seller: item.creator._id,
         paymentIntent: paymentIntent.id,
         orderNumber: this.orderService.getOrderNumber(),
+      });
+      await this.notificationService.createRecord({
+        order: order._id,
+        sender: user._id,
+        //@ts-ignore
+        receiver: item.creator._id,
+        message: 'User has placed an order',
+        type: NotificationType.ORDER,
+      });
+      await this.firebaseService.sendNotification({
+        token: item.creator.fcmToken,
+        notification: {
+          title: 'User has placed an order',
+        },
+        data: { order: order._id, type: NotificationType.ORDER },
       });
     }
 
@@ -156,7 +177,9 @@ export class ProductController {
 
   @Post('buy')
   async buyProduct(@GetUser() user: UserDocument, @Body() buyProductDto: BuyProductDto) {
-    const product = await this.productService.findOneRecord({ _id: buyProductDto.product }).populate({ path: 'creator', select: 'sellerId' });
+    const product = await this.productService
+      .findOneRecord({ _id: buyProductDto.product })
+      .populate({ path: 'creator', select: 'sellerId fcmToken' });
     if (!product) throw new HttpException('Product does not exists.', HttpStatus.BAD_REQUEST);
     const subTotal = product.price;
     const tax = Math.round((2 / 100) * subTotal);
@@ -178,6 +201,21 @@ export class ProductController {
       seller: product.creator._id,
       price: product.price,
       product: product._id,
+    });
+    await this.notificationService.createRecord({
+      productId: product._id,
+      sender: user._id,
+      //@ts-ignore
+      receiver: product.creator._id,
+      type: NotificationType.BOUGHT,
+      message: 'User has bought your product.',
+    });
+    await this.firebaseService.sendNotification({
+      token: product.creator.fcmToken,
+      notification: {
+        title: 'User has bought your product.',
+      },
+      data: { product: product._id, type: NotificationType.BOUGHT },
     });
     await this.userService.findOneRecordAndUpdate({ _id: user._id }, { $push: { boughtDigitalProducts: product._id } });
     return { message: 'Thanks for purchasing the product.' };

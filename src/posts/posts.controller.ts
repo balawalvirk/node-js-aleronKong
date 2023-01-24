@@ -1,4 +1,4 @@
-import { Body, Controller, Delete, Get, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, HttpException, HttpStatus, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/role.guard';
 import { FirebaseService } from 'src/firebase/firebase.service';
@@ -98,21 +98,20 @@ export class PostsController {
   @Post('like/:id')
   async addLike(@Param('id', ParseObjectId) id: string, @GetUser() user: UserDocument) {
     const postExists = await this.postsService.findOneRecord({ _id: id, likes: { $in: [user._id] } });
-    // if (postExists) throw new HttpException('You already liked this post.', HttpStatus.BAD_REQUEST);
+    if (postExists) throw new HttpException('You already liked this post.', HttpStatus.BAD_REQUEST);
     const post = await this.postsService.update({ _id: id }, { $push: { likes: user._id } });
     await this.notificationService.createRecord({
       post: post._id,
-      message: 'Your post liked',
+      message: 'Your post has been liked.',
       type: NotificationType.POST,
       sender: user._id,
       //@ts-ignore
       receiver: post.creator._id,
     });
     await this.firebaseService.sendNotification({
-      token:
-        'dFusJ6TrQducezzxOmS7JO:APA91bFwXW3OaSwqmh377ZIjnuFOTlhgb8BeoBhynTWGF6yBFtnzKhcJjKKDbtHlf3_LY6UXIZHj10nt_4k98cXWJNhZRETaLox2aY7jZxmb9c3D43RLgpuypgj178I9wO_9UMX1bUE2',
-      notification: { title: 'Your post liked' },
-      data: { postId: post._id.toString() },
+      token: post.creator.fcmToken,
+      notification: { title: 'Your post has been liked.' },
+      data: { post: post._id.toString(), type: NotificationType.POST },
     });
     return post;
   }
@@ -125,7 +124,21 @@ export class PostsController {
   @Post('comment/:id')
   async createComment(@Param('id') id: string, @GetUser() user: UserDocument, @Body() body: CreateCommentDto) {
     const comment = await this.commentService.createRecord({ content: body.content, creator: user._id, post: id });
-    return await this.postsService.update({ _id: id }, { $push: { comments: comment._id } });
+    const post = await this.postsService.update({ _id: id }, { $push: { comments: comment._id } });
+    await this.notificationService.createRecord({
+      post: post._id,
+      message: 'Your post has been commented.',
+      type: NotificationType.POST,
+      sender: user._id,
+      //@ts-ignore
+      receiver: post.creator._id,
+    });
+    await this.firebaseService.sendNotification({
+      token: post.creator.fcmToken,
+      notification: { title: 'Your post has been commented.' },
+      data: { post: post._id.toString(), type: NotificationType.POST },
+    });
+    return post;
   }
 
   @Put('comment/update')
@@ -179,5 +192,12 @@ export class PostsController {
       }
     );
     return { message: 'Post muted successfully.' };
+  }
+
+  @Roles(UserRoles.ADMIN)
+  @Put(':id/feature')
+  async featurePost(@Param('id', ParseObjectId) id: string) {
+    await this.postsService.findOneRecordAndUpdate({ _id: id }, { isFeatured: true });
+    return { message: 'Post featured successfully.' };
   }
 }

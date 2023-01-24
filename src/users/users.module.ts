@@ -1,13 +1,14 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
+import { FirebaseModule } from 'src/firebase/firebase.module';
 import { StripeService } from 'src/helpers';
-import { PostsModule } from 'src/posts/posts.module';
+import { NotificationModule } from 'src/notification/notification.module';
 import { User, UserSchema } from 'src/users/users.schema';
 import { UserController } from './users.controller';
 import { UsersService } from './users.service';
 
 @Module({
-  imports: [MongooseModule.forFeature([{ name: User.name, schema: UserSchema }])],
+  imports: [MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]), NotificationModule, FirebaseModule],
   controllers: [UserController],
   providers: [UsersService, StripeService],
   exports: [UsersService],

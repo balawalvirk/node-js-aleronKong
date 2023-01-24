@@ -30,7 +30,9 @@ export class SearchController {
     const ObjectId = mongoose.Types.ObjectId;
     // if nothing is passed then show recommended products
     if (sort === 'createdAt' && filter === 'all' && !category && query.length === 0) {
-      return this.productService.getRandomProducts();
+      const products = await this.productService.getSearchProducts();
+      //@ts-ignore
+      return products[0].products;
     }
     const rjx = { $regex: query, $options: 'i' };
     if (filter === 'all') {
@@ -43,10 +45,7 @@ export class SearchController {
         _id: { $ne: user._id },
       });
 
-      groups = await this.groupService.findAllRecords(
-        { name: rjx },
-        { sort: sort === 'name' ? { name: -1 } : { createdAt: -1 }, limit: 10 }
-      );
+      groups = await this.groupService.findAllRecords({ name: rjx }, { sort: sort === 'name' ? { name: -1 } : { createdAt: -1 }, limit: 10 });
       const totalGroups = await this.groupService.countRecords({ name: rjx });
 
       products = await this.productService.findStoreProducts(
@@ -92,10 +91,7 @@ export class SearchController {
           { sort: sort === 'name' ? { title: -1 } : { createdAt: -1 } }
         );
       } else {
-        products = await this.productService.findAllRecords(
-          { title: rjx },
-          { sort: sort === 'name' ? { title: -1 } : { createdAt: -1 } }
-        );
+        products = await this.productService.findAllRecords({ title: rjx }, { sort: sort === 'name' ? { title: -1 } : { createdAt: -1 } });
       }
       return { users, groups, products, total: products.length };
     }
