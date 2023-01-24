@@ -12,7 +12,6 @@ import { SocialLoginDto } from './dtos/social-login.dto';
 import { Otp, OtpDocument } from './otp.schema';
 import { NotificationService } from 'src/notification/notification.service';
 import { NotificationType } from 'src/types';
-import { Notification } from 'src/notification/notification.schema';
 
 @Injectable()
 export class AuthService {
@@ -111,16 +110,10 @@ export class AuthService {
   }
 
   async findNotifications(userId: string) {
-    const Notifications = await this.NotificationService.findAllRecords({
-      receiver: userId,
-      isRead: false,
-    });
-
+    const Notifications = await this.NotificationService.findAllRecords({ receiver: userId, isRead: false });
     //get un read messages and notifications
     const unReadMessages = Notifications.filter((notification) => notification.type === NotificationType.MESSAGE);
-
     const unReadNotifications = Notifications.filter((notification) => notification.type !== NotificationType.MESSAGE);
-
     return { unReadMessages, unReadNotifications };
   }
 }

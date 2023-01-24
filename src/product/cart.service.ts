@@ -29,6 +29,7 @@ export class CartService extends BaseService<CartDocument> {
       .populate({
         path: 'items.item',
         select: 'media title creator price',
+        populate: { path: 'creator', select: 'fcmToken' },
       })
       .lean();
   }

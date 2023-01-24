@@ -22,11 +22,13 @@ import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { PostsService } from 'src/posts/posts.service';
 import { CreatePostsDto } from 'src/posts/dtos/create-posts';
 import { GroupDocument } from './group.schema';
-import { GroupPrivacy, PostType } from 'src/types';
+import { GroupPrivacy, NotificationType, PostType } from 'src/types';
 import { makeQuery, ParseObjectId } from 'src/helpers';
 import { PostDocument } from 'src/posts/posts.schema';
 import { FundService } from 'src/fundraising/fund.service';
 import { FundraisingService } from 'src/fundraising/fundraising.service';
+import { NotificationService } from 'src/notification/notification.service';
+import { FirebaseService } from 'src/firebase/firebase.service';
 
 @Controller('group')
 @UseGuards(JwtAuthGuard)
@@ -35,7 +37,9 @@ export class GroupController {
     private readonly groupService: GroupService,
     private readonly postService: PostsService,
     private readonly fundraisingService: FundraisingService,
-    private readonly fundService: FundService
+    private readonly fundService: FundService,
+    private readonly notificationService: NotificationService,
+    private readonly firebaseService: FirebaseService
   ) {}
 
   @Post('create')
@@ -45,12 +49,25 @@ export class GroupController {
 
   @Post('post/create')
   async createPost(@Body() createPostDto: CreatePostsDto, @GetUser() user: UserDocument) {
-    const post: PostDocument = await this.postService.createPost({
+    const post = await this.postService.createPost({
       ...createPostDto,
       creator: user._id,
     });
     if (post.group) {
-      await this.groupService.findOneRecordAndUpdate({ _id: post.group }, { $push: { posts: post._id } });
+      const group = await this.groupService.findOneRecordAndUpdate({ _id: post.group }, { $push: { posts: post._id } });
+      await this.notificationService.createRecord({
+        type: NotificationType.GROUP_POST,
+        group: group._id,
+        message: `User has posted in your ${group.name} group`,
+        sender: user._id,
+        //@ts-ignore
+        receiver: group.creator._id,
+      });
+      await this.firebaseService.sendNotification({
+        token: group.creator.fcmToken,
+        notification: { title: `User has posted in your ${group.name} group` },
+        data: { group: group._id },
+      });
     }
     return post;
   }
@@ -108,20 +125,44 @@ export class GroupController {
 
   @Put('join/:id')
   async joinGroup(@GetUser() user: UserDocument, @Param('id') id: string) {
-    const group = await this.groupService.findOneRecord({ _id: id });
+    const group = await this.groupService.findOneRecord({ _id: id }).populate({ path: 'creator', select: 'fcmToken' });
     if (group) {
       //check if user is already a member of this group
       const memberFound = group.members.filter((member) => member.member === user._id);
-      if (memberFound.length > 0)
-        throw new HttpException('You are already a member of this group.', HttpStatus.BAD_REQUEST);
+      if (memberFound.length > 0) throw new HttpException('You are already a member of this group.', HttpStatus.BAD_REQUEST);
       //check if group is private
       if (group.privacy === GroupPrivacy.PRIVATE) {
         //check if user request is already in request array  of this group
         const requestFound = group.requests.filter((request) => request === user._id);
-        if (requestFound.length > 0)
-          throw new HttpException('Your request to join group is pending.', HttpStatus.BAD_REQUEST);
+        if (requestFound.length > 0) throw new HttpException('Your request to join group is pending.', HttpStatus.BAD_REQUEST);
+        await this.notificationService.createRecord({
+          type: NotificationType.GROUP_JOIN_REQUEST,
+          group: group._id,
+          message: `User has send a join request for ${group.name} group`,
+          sender: user._id,
+          //@ts-ignore
+          receiver: group.creator._id,
+        });
+        await this.firebaseService.sendNotification({
+          token: group.creator.fcmToken,
+          notification: { title: `User has send a join request for ${group.name} group` },
+          data: { group: group._id },
+        });
         return await this.groupService.findOneRecordAndUpdate({ _id: id }, { $push: { requests: user._id } });
       }
+      await this.notificationService.createRecord({
+        type: NotificationType.GROUP_JOINED,
+        group: group._id,
+        message: `User has joined your ${group.name} group`,
+        sender: user._id,
+        //@ts-ignore
+        receiver: group.creator._id,
+      });
+      await this.firebaseService.sendNotification({
+        token: group.creator.fcmToken,
+        notification: { title: `User has joined your ${group.name} group` },
+        data: { group: group._id },
+      });
       return await this.groupService.findOneRecordAndUpdate({ _id: id }, { $push: { members: { member: user._id } } });
     } else throw new HttpException('Group does not exists.', HttpStatus.BAD_REQUEST);
   }
@@ -158,10 +199,7 @@ export class GroupController {
     @Param('userId', ParseObjectId) userId: string
   ) {
     if (isApproved) {
-      await this.groupService.findOneRecordAndUpdate(
-        { _id: id },
-        { $pull: { requests: userId }, $push: { members: { member: userId } } }
-      );
+      await this.groupService.findOneRecordAndUpdate({ _id: id }, { $pull: { requests: userId }, $push: { members: { member: userId } } });
       return 'Request approved successfully.';
     } else {
       await this.groupService.findOneRecordAndUpdate({ _id: id }, { $pull: { requests: userId } });
@@ -170,11 +208,7 @@ export class GroupController {
   }
 
   @Get('find-all')
-  async findAllGroups(
-    @Query('type') type: string,
-    @Query('query', new DefaultValuePipe('')) query: string,
-    @GetUser() user: UserDocument
-  ) {
+  async findAllGroups(@Query('type') type: string, @Query('query', new DefaultValuePipe('')) query: string, @GetUser() user: UserDocument) {
     let groups;
     if (type === 'forYou') {
       groups = await this.groupService.findAllRecords({
@@ -187,10 +221,7 @@ export class GroupController {
       });
     } else if (type === 'discover') {
       groups = await this.groupService.findAllRecords({
-        $and: [
-          { name: { $regex: query, $options: 'i' } },
-          { 'members.member': { $ne: user._id }, creator: { $ne: user._id } },
-        ],
+        $and: [{ name: { $regex: query, $options: 'i' } }, { 'members.member': { $ne: user._id }, creator: { $ne: user._id } }],
       });
     } else {
       groups = await this.groupService.findAllRecords();

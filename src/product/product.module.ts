@@ -17,6 +17,8 @@ import { SaleService } from './sale.service';
 import { UsersModule } from 'src/users/users.module';
 import { Review, ReviewSchema } from './review.schema';
 import { ReviewService } from './review.service';
+import { NotificationModule } from 'src/notification/notification.module';
+import { FirebaseModule } from 'src/firebase/firebase.module';
 
 @Module({
   imports: [
@@ -29,17 +31,11 @@ import { ReviewService } from './review.service';
     AddressModule,
     OrderModule,
     UsersModule,
+    NotificationModule,
+    FirebaseModule,
   ],
   controllers: [ProductController],
-  providers: [
-    ProductService,
-    CollectionService,
-    StripeService,
-    ProductCategoryService,
-    CartService,
-    SaleService,
-    ReviewService,
-  ],
+  providers: [ProductService, CollectionService, StripeService, ProductCategoryService, CartService, SaleService, ReviewService],
   exports: [ProductService, CartService],
 })
 export class ProductModule {}

@@ -73,441 +73,204 @@ export class ProductService extends BaseService<ProductDocument> {
     ]);
   }
 
-  getRandomProducts() {
-    const products = [
+  async getSearchProducts() {
+    return await this.productModel.aggregate([
       {
-        _id: 'trending audiobooks',
-        category: 'AudioBook',
-        type: 'digital',
-        data: [
-          {
-            _id: '63b3c35f5e3c3606719b3ef8',
-            title: 'Legand of Tarzan',
-            description: 'This is the dummy description of the audio book',
-            category: {
-              _id: '639045265a7d4cf7fd9e3b63',
-              title: 'AudioBook',
-              type: 'digital',
-              createdAt: '2022-12-07T07:47:50.079+00:00',
-              updatedAt: '2022-12-07T07:47:50.079+00:00',
-            },
-            type: 'digital',
-            media: ['https://aleron-kong.s3.amazonaws.com/20230103T055539322Z265501'],
-            file: 'https://aleron-kong.s3.amazonaws.com/20230103T055541734Z996630',
-            price: 60,
-            status: 'active',
-            syncWithAmazon: true,
-            creator: '6386d7b17cb5575cf3d5b759',
-            tags: [],
-            audioSample: 'https://aleron-kong.s3.amazonaws.com/20230103T055542652Z375145',
-            asin: 'sd233sf',
-            publicationDate: '2023-01-03T00:00:00.000Z',
-            language: 'English',
-            fileSize: 1693405,
-            textToSpeech: true,
-            xRay: true,
-            wordWise: true,
-            printLength: 1,
-            lending: true,
-            simultaneousDeviceUsage: 'unlimited',
-            availableColors: [],
-            availableSizes: [],
-            createdAt: '2023-01-03T05:55:43.195Z',
-            updatedAt: '2023-01-03T05:55:43.195Z',
-            __v: 0,
-          },
-          {
-            _id: '63b2b32a4db767712cecc984',
-            title: 'Darkness of sea',
-            description: 'This is the story of a sailer, who was living on a boat for the fishing in the sea',
-            category: {
-              _id: '639045265a7d4cf7fd9e3b63',
-              title: 'AudioBook',
-              type: 'digital',
-              createdAt: '2022-12-07T07:47:50.079+00:00',
-              updatedAt: '2022-12-07T07:47:50.079+00:00',
-            },
-            type: 'digital',
-            media: ['https://aleron-kong.s3.amazonaws.com/20230102T103415321Z829788'],
-            file: 'https://aleron-kong.s3.amazonaws.com/20230102T103416740Z783042',
-            price: 40,
-            status: 'active',
-            syncWithAmazon: true,
-            creator: '6386d7b17cb5575cf3d5b759',
-            tags: [],
-            audioSample: 'https://aleron-kong.s3.amazonaws.com/20230102T103418077Z379129',
-            asin: '223gdg',
-            publicationDate: '2022-01-02T00:00:00.000Z',
-            language: 'English',
-            fileSize: 307453,
-            printLength: 1,
-            simultaneousDeviceUsage: 'unlimited',
-            availableColors: [],
-            availableSizes: [],
-            createdAt: '2023-01-02T10:34:18.608Z',
-            updatedAt: '2023-01-02T10:34:18.608Z',
-            __v: 0,
-          },
-        ],
+        $lookup: {
+          from: 'productcategories',
+          localField: 'category',
+          foreignField: '_id',
+          as: 'category',
+        },
       },
-
       {
-        _id: 'trending Comics',
-        category: 'Comic',
-        type: 'digital',
-        data: [
-          {
-            _id: '63b2b14d4db767712cecc962',
-            title: 'Lost Hero',
-            description: 'This is the dummy description of this comic',
-            category: {
-              _id: '639045325a7d4cf7fd9e3b66',
-              title: 'Comic',
-              type: 'digital',
-              createdAt: '2022-12-07T07:48:02.199+00:00',
-              updatedAt: '2022-12-07T07:48:02.199+00:00',
-            },
-            type: 'digital',
-            media: ['https://aleron-kong.s3.amazonaws.com/20230102T102620811Z918308'],
-            file: 'https://aleron-kong.s3.amazonaws.com/20230102T102621394Z444736',
-            price: 50,
-            status: 'active',
-            syncWithAmazon: true,
-            creator: '6386d7b17cb5575cf3d5b759',
-            tags: [],
-            asin: '778sasa',
-            publicationDate: '2020-01-02T00:00:00.000Z',
-            language: 'English',
-            fileSize: 3028,
-            textToSpeech: true,
-            enhancedTypeSetting: true,
-            xRay: true,
-            wordWise: true,
-            printLength: 4,
-            lending: true,
-            simultaneousDeviceUsage: 'unlimited',
-            availableColors: [],
-            availableSizes: [],
-            createdAt: '2023-01-02T10:26:21.878Z',
-            updatedAt: '2023-01-02T10:26:21.878Z',
-            __v: 0,
-          },
-          {
-            _id: '63a9bfd4c4dfd74522a214f1',
-            title: 'New hoddie',
-            description: 'red hoodies',
-            category: {
-              _id: '639045325a7d4cf7fd9e3b66',
-              title: 'Comic',
-              type: 'digital',
-              createdAt: '2022-12-07T07:48:02.199+00:00',
-              updatedAt: '2022-12-07T07:48:02.199+00:00',
-            },
-            type: 'physical',
-            media: ['www.aws.com', 'www.aws.com'],
-            file: 'www.aws.com',
-            price: 20,
-            quantity: 2,
-            status: 'active',
-            syncWithAmazon: true,
-            creator: '6347fe322f2915a130445870',
-            tags: [],
-            availableColors: [],
-            availableSizes: [],
-            attributes: [],
-            createdAt: '2022-12-26T15:37:56.421Z',
-            updatedAt: '2022-12-26T15:37:56.421Z',
-            __v: 0,
-          },
-        ],
+        $unwind: {
+          path: '$category',
+          preserveNullAndEmptyArrays: true,
+        },
       },
-
       {
-        _id: 'trending e books',
-        category: 'Comic',
-        type: 'digital',
-        data: [
-          {
-            _id: '63a9bf891db11e6346646110',
-            title: 'New hoddie',
-            description: 'red hoodies',
-            category: {
-              _id: '639045325a7d4cf7fd9e3b66',
-              title: 'Comic',
-              type: 'digital',
-              createdAt: '2022-12-07T07:48:02.199+00:00',
-              updatedAt: '2022-12-07T07:48:02.199+00:00',
-            },
-            type: 'physical',
-            media: ['www.aws.com', 'www.aws.com'],
-            file: 'www.aws.com',
-            price: 20,
-            quantity: 2,
-            status: 'active',
-            syncWithAmazon: true,
-            creator: '6347fe322f2915a130445870',
-            tags: [],
-            availableColors: [],
-            availableSizes: [],
-            attributes: [
-              {
-                name: 'color',
-                details: [
-                  {
-                    value: 'red',
-                    quantity: 2,
-                  },
-                ],
+        $facet: {
+          latest: [
+            {
+              $sort: {
+                createdAt: -1,
               },
-            ],
-            createdAt: '2022-12-26T15:36:41.655Z',
-            updatedAt: '2022-12-26T15:36:41.655Z',
-            __v: 0,
-          },
-          {
-            _id: '6391e967dd9fd475b4aa5185',
-            title: 'The Land Founding',
-            description: 'A man who was feeling a fear in his heart and was not able to see any way to out...',
-            category: {
-              _id: '639045005a7d4cf7fd9e3b60',
-              title: 'Ebook',
-              type: 'digital',
-              createdAt: '2022-12-07T07:47:12.099+00:00',
-              updatedAt: '2022-12-07T07:47:12.099+00:00',
             },
-            type: 'digital',
-            media: ['https://aleron-kong.s3.amazonaws.com/20221208T062553780Z234065'],
-            file: 'https://aleron-kong.s3.amazonaws.com/20221208T062554382Z818127',
-            price: 60,
-            status: 'active',
-            syncWithAmazon: true,
-            creator: '6386d7b17cb5575cf3d5b759',
-            tags: [],
-            asin: 'gghy667h',
-            publicationDate: '2021-10-08T00:00:00.000Z',
-            language: 'English',
-            fileSize: 3028,
-            textToSpeech: true,
-            enhancedTypeSetting: true,
-            xRay: true,
-            wordWise: true,
-            printLength: 10,
-            lending: true,
-            availableColors: [],
-            availableSizes: [],
-            createdAt: '2022-12-08T13:40:55.564Z',
-            updatedAt: '2022-12-08T13:40:55.564Z',
-            __v: 0,
-          },
-        ],
+            {
+              $group: {
+                _id: '$category._id',
+                categoryTitle: {
+                  $first: '$category.title',
+                },
+                type: {
+                  $first: '$$ROOT.type',
+                },
+                products: {
+                  $push: '$$ROOT',
+                },
+                count: {
+                  $sum: 1,
+                },
+                category: {
+                  $first: 'Latest',
+                },
+              },
+            },
+            {
+              $set: {
+                category: {
+                  $concat: ['$category', ' ', '$categoryTitle'],
+                },
+              },
+            },
+          ],
+          trending: [
+            {
+              $sort: {
+                avgRating: -1,
+              },
+            },
+            {
+              $group: {
+                _id: '$category._id',
+                categoryTitle: {
+                  $first: '$category.title',
+                },
+                type: {
+                  $first: '$$ROOT.type',
+                },
+                products: {
+                  $push: '$$ROOT',
+                },
+                count: {
+                  $sum: 1,
+                },
+                category: {
+                  $first: 'Trending',
+                },
+              },
+            },
+            {
+              $set: {
+                category: {
+                  $concat: ['$category', ' ', '$categoryTitle'],
+                },
+              },
+            },
+          ],
+          popular: [
+            {
+              $lookup: {
+                from: 'sales',
+                localField: '_id',
+                foreignField: 'product',
+                as: 'sales',
+              },
+            },
+            {
+              $set: {
+                salesCount: {
+                  $size: '$sales',
+                },
+              },
+            },
+            {
+              $sort: {
+                salesCount: -1,
+              },
+            },
+            {
+              $project: {
+                sales: 0,
+              },
+            },
+            {
+              $group: {
+                _id: '$category._id',
+                categoryTitle: {
+                  $first: '$category.title',
+                },
+                type: {
+                  $first: '$$ROOT.type',
+                },
+                products: {
+                  $push: '$$ROOT',
+                },
+                count: {
+                  $sum: 1,
+                },
+                category: {
+                  $first: 'Most Popular',
+                },
+              },
+            },
+            {
+              $set: {
+                category: {
+                  $concat: ['$category', ' ', '$categoryTitle'],
+                },
+              },
+            },
+          ],
+        },
       },
-
       {
-        _id: 'popular audio books',
-        category: 'Ebook',
-        type: 'digital',
-        data: [
-          {
-            _id: '63918f7f42fa8539c1bd56c1',
-            title: 'AleronKong Kong - The Land Founding',
-            description: 'This is a really nice introduction of the upcoming novels and books',
-            category: {
-              _id: '639045005a7d4cf7fd9e3b60',
-              title: 'Ebook',
-              type: 'digital',
-              createdAt: '2022-12-07T07:47:12.099+00:00',
-              updatedAt: '2022-12-07T07:47:12.099+00:00',
+        $project: {
+          latest: {
+            $map: {
+              input: '$latest',
+              as: 'latest',
+              in: {
+                category: '$$latest.category',
+                count: '$$latest.count',
+                type: '$$latest.type',
+                products: {
+                  $slice: ['$$latest.products', 10],
+                },
+              },
             },
-            type: 'digital',
-            media: ['https://aleron-kong.s3.amazonaws.com/20221208T062553780Z234065'],
-            file: 'https://aleron-kong.s3.amazonaws.com/20221208T062554382Z818127',
-            price: 80,
-            quantity: 10,
-            status: 'active',
-            syncWithAmazon: true,
-            creator: '6386d7b17cb5575cf3d5b759',
-            tags: [],
-            asin: 'aasiin',
-            publicationDate: '2021-10-08T00:00:00.000Z',
-            language: 'English',
-            fileSize: 3028,
-            textToSpeech: true,
-            enhancedTypeSetting: true,
-            xRay: true,
-            wordWise: true,
-            printLength: 12,
-            lending: true,
-            availableColors: [],
-            availableSizes: [],
-            createdAt: '2022-12-08T07:17:19.697Z',
-            updatedAt: '2022-12-08T07:17:19.697Z',
-            __v: 0,
           },
-          {
-            _id: '639182e142fa8539c1bd5688',
-            title: 'Chao’s Kids Hoddie',
-            description: 'This product includes really stuff and clothing is very heigh quality',
-            category: {
-              _id: '6387564671a5b2d97be1001e',
-              title: 'Hoddie',
-              type: 'physical',
-              createdAt: '2022-11-30T13:10:30.287+00:00',
-              updatedAt: '2022-11-30T13:10:30.287+00:00',
+          popular: {
+            $map: {
+              input: '$popular',
+              as: 'popular',
+              in: {
+                _id: 0,
+                category: '$$popular.category',
+                count: '$$popular.count',
+                type: '$$popular.type',
+                products: {
+                  $slice: ['$$popular.products', 10],
+                },
+              },
             },
-            type: 'physical',
-            media: ['https://aleron-kong.s3.amazonaws.com/20221208T062116254Z164410'],
-            price: 50,
-            quantity: 5,
-            status: 'active',
-            syncWithAmazon: true,
-            creator: '6386d7b17cb5575cf3d5b759',
-            tags: [],
-            availableColors: ['Black & White', 'Red & Black'],
-            availableSizes: ['Small', 'Medium', 'Large'],
-            createdAt: '2022-12-08T06:23:29.278Z',
-            updatedAt: '2022-12-08T06:23:29.278Z',
-            __v: 0,
           },
-        ],
+          trending: {
+            $map: {
+              input: '$trending',
+              as: 'trending',
+              in: {
+                _id: 0,
+                categoryTitle: 0,
+                category: '$$trending.category',
+                count: '$$trending.count',
+                type: '$$trending.type',
+                products: {
+                  $slice: ['$$trending.products', 10],
+                },
+              },
+            },
+          },
+        },
       },
-
       {
-        _id: 'popular comics',
-        category: 'Hoddie',
-        type: 'physical',
-        data: [
-          {
-            _id: '6386fc21f230f2056c697cd3',
-            title: 'New hoddie',
-            description: 'red hoodies',
-            category: {
-              _id: '6387564671a5b2d97be1001e',
-              title: 'Hoddie',
-              type: 'physical',
-              createdAt: '2022-11-30T13:10:30.287+00:00',
-              updatedAt: '2022-11-30T13:10:30.287+00:00',
-            },
-            type: 'physical',
-            media: ['www.aws.com', 'www.aws.com'],
-            file: 'www.aws.com',
-            price: 20,
-            quantity: 2,
-            status: 'active',
-            syncWithAmazon: true,
-            creator: '6347fe322f2915a130445870',
-            tags: [],
-            createdAt: '2022-11-30T06:45:53.284Z',
-            updatedAt: '2022-11-30T06:45:53.284Z',
-            __v: 0,
+        $project: {
+          products: {
+            $concatArrays: ['$trending', '$popular', '$latest'],
           },
-          {
-            _id: '63865b7b7cb5575cf3d5b707',
-            title: 'New hoddie',
-            description: 'red hoodies',
-            category: {
-              _id: '6387564671a5b2d97be1001e',
-              title: 'Hoddie',
-              type: 'physical',
-              createdAt: '2022-11-30T13:10:30.287+00:00',
-              updatedAt: '2022-11-30T13:10:30.287+00:00',
-            },
-            state: 'physical',
-            media: ['www.aws.com', 'www.aws.com'],
-            file: 'www.aws.com',
-            price: 20,
-            quantity: 2,
-            type: 'active',
-            syncWithAmazon: true,
-            creator: '6347fe322f2915a130445870',
-            tags: [],
-            createdAt: '2022-11-29T19:20:27.782Z',
-            updatedAt: '2022-11-29T19:20:27.782Z',
-            __v: 0,
-          },
-        ],
+        },
       },
-
-      {
-        _id: 'Latest audiobooks',
-        data: [
-          {
-            _id: '638657007cb5575cf3d5b6fc',
-            title: 'New hoddie',
-            description: 'red hoodies',
-            category: {
-              _id: '6387564671a5b2d97be1001e',
-              title: 'Hoddie',
-              type: 'physical',
-              createdAt: '2022-11-30T13:10:30.287+00:00',
-              updatedAt: '2022-11-30T13:10:30.287+00:00',
-            },
-            state: 'physical',
-            media: ['www.aws.com', 'www.aws.com'],
-            file: 'www.aws.com',
-            price: 20,
-            quantity: 2,
-            type: 'active',
-            syncWithAmazon: true,
-            creator: '6347fe322f2915a130445870',
-            tags: [],
-            createdAt: '2022-11-29T19:01:20.239Z',
-            updatedAt: '2022-11-29T19:01:20.239Z',
-            __v: 0,
-          },
-          {
-            _id: '6386567c7cb5575cf3d5b6f7',
-            title: 'New hoddie',
-            description: 'red hoodies',
-            category: {
-              _id: '6387564671a5b2d97be1001e',
-              title: 'Hoddie',
-              type: 'physical',
-              createdAt: '2022-11-30T13:10:30.287+00:00',
-              updatedAt: '2022-11-30T13:10:30.287+00:00',
-            },
-            state: 'physical',
-            media: ['www.aws.com', 'www.aws.com'],
-            file: 'www.aws.com',
-            price: 20,
-            quantity: 2,
-            type: 'active',
-            syncWithAmazon: true,
-            creator: '6347fe322f2915a130445870',
-            tags: [],
-            createdAt: '2022-11-29T18:59:08.205Z',
-            updatedAt: '2022-11-29T18:59:08.205Z',
-            __v: 0,
-          },
-
-          {
-            _id: '63859ff2e2934099a5e16007',
-            title: ' blue hoddie',
-            description: 'blue hoodies',
-            category: {
-              _id: '6387564671a5b2d97be1001e',
-              title: 'Hoddie',
-              type: 'physical',
-              createdAt: '2022-11-30T13:10:30.287+00:00',
-              updatedAt: '2022-11-30T13:10:30.287+00:00',
-            },
-
-            state: 'physical',
-            media: ['www.aws.com', 'www.aws.com'],
-            file: 'www.aws.com',
-            price: 30,
-            quantity: 2,
-            type: 'physical',
-            syncWithAmazon: true,
-            creator: '6347fe322f2915a130445870',
-            tags: [],
-            createdAt: '2022-11-29T06:00:18.986Z',
-            updatedAt: '2022-11-30T06:56:57.395Z',
-            __v: 0,
-            status: 'draft',
-          },
-        ],
-      },
-    ];
-    return products;
+    ]);
   }
 }

@@ -1,14 +1,4 @@
-import {
-  Body,
-  Controller,
-  HttpException,
-  HttpStatus,
-  Ip,
-  Post,
-  UploadedFile,
-  UseGuards,
-  UseInterceptors,
-} from '@nestjs/common';
+import { Body, Controller, HttpException, HttpStatus, Ip, Post, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
 import { hash } from 'bcrypt';
 import { UsersService } from '../users/users.service';
 import { AuthService } from './auth.service';
@@ -21,7 +11,6 @@ import { ResetPasswordDto } from './dtos/reset-pass.dto';
 import { SocialLoginDto } from './dtos/social-login.dto';
 import { EmailService } from 'src/helpers/services/email.service';
 import { CartService } from 'src/product/cart.service';
-import { CartDocument } from 'src/product/cart.schema';
 import { UserRoles } from 'src/types';
 import { FileInterceptor } from '@nestjs/platform-express';
 import { FileService } from 'src/file/file.service';
@@ -63,8 +52,7 @@ export class AuthController {
   @UseGuards(LocalAuthGuard)
   @Post('admin/login')
   async adminLogin(@GetUser() user: UserDocument) {
-    if (!user.role.includes(UserRoles.ADMIN))
-      throw new HttpException('Invalid email/password', HttpStatus.UNAUTHORIZED);
+    if (!user.role.includes(UserRoles.ADMIN)) throw new HttpException('Invalid email/password', HttpStatus.UNAUTHORIZED);
     const { access_token } = await this.authService.login(user.userName, user._id);
     return { access_token, user };
   }
@@ -81,10 +69,7 @@ export class AuthController {
     }
     // first create stripe connect (custom) account and customer account of newly register user.
     const sellerAccount = await this.authService.createSellerAccount(body, ip);
-    const customerAccount = await this.authService.createCustomerAccount(
-      body.email,
-      `${body.firstName} ${body.lastName}`
-    );
+    const customerAccount = await this.authService.createCustomerAccount(body.email, `${body.firstName} ${body.lastName}`);
     const user: UserDocument = await this.userService.createRecord({
       ...body,
       password: await hash(body.password, 10),

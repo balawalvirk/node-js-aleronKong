@@ -11,6 +11,8 @@ import { FundraisingService } from './fundraising.service';
 import { StripeService } from 'src/helpers';
 import { Fund, FundSchema } from './fund.schema';
 import { FundService } from './fund.service';
+import { NotificationModule } from 'src/notification/notification.module';
+import { FirebaseModule } from 'src/firebase/firebase.module';
 
 @Module({
   imports: [
@@ -19,6 +21,8 @@ import { FundService } from './fund.service';
     MongooseModule.forFeature([{ name: FundraisingSubcategory.name, schema: FundraisingSubcategorySchema }]),
     MongooseModule.forFeature([{ name: Fundraising.name, schema: FundraisingSchema }]),
     MongooseModule.forFeature([{ name: Fund.name, schema: FundSchema }]),
+    NotificationModule,
+    FirebaseModule,
   ],
   controllers: [FundraisingController],
   providers: [FudraisingCategoryService, FudraisingSubCategoryService, FundraisingService, StripeService, FundService],
