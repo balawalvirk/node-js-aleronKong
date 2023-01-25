@@ -1,4 +1,18 @@
-import { Body, Controller, DefaultValuePipe, Delete, Get, HttpException, HttpStatus, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  ValidationPipe,
+  Delete,
+  Get,
+  HttpException,
+  HttpStatus,
+  Param,
+  Post,
+  Put,
+  Query,
+  UseGuards,
+  UsePipes,
+} from '@nestjs/common';
 import { compare, hash } from 'bcrypt';
 import { ChangePasswordDto } from 'src/auth/dtos/change-pass.dto';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
@@ -10,6 +24,7 @@ import { NotificationService } from 'src/notification/notification.service';
 import { NotificationType, UserRoles, UserStatus } from 'src/types';
 import { UserDocument } from 'src/users/users.schema';
 import { CreateBankAccountDto } from './dtos/create-bank-account.dto';
+import { FindAllUsersQueryDto } from './dtos/find-all-users.query.dto';
 import { UpdateBankAccountDto } from './dtos/update-bank-account.dto';
 import { UpdateUserDto } from './dtos/update-user';
 import { UsersService } from './users.service';
@@ -36,19 +51,20 @@ export class UserController {
 
   @Roles(UserRoles.ADMIN)
   @Get('find-all')
-  async findAll(@Query('page') page: string, @Query('limit') limit: string, @Query('query', new DefaultValuePipe('')) query: string) {
+  @UsePipes(new ValidationPipe({ transform: true }))
+  async findAll(@Query() { page, limit, query, role }: FindAllUsersQueryDto) {
     const $q = makeQuery({ page, limit });
     const rjx = { $regex: query, $options: 'i' };
     const options = { limit: $q.limit, skip: $q.skip, sort: $q.sort };
     const condition = {
-      role: { $nin: [UserRoles.ADMIN] },
-      $or: [{ firstName: rjx }, { lastName: rjx }, { email: rjx }],
+      role: { $nin: [UserRoles.ADMIN], $in: [role] },
+      $or: [{ firstName: rjx }, { lastName: rjx }, { email: rjx }, { userName: rjx }],
     };
-    const total = await this.usersService.countRecords({});
-    const users = await this.usersService.paginate(condition, options);
+    const total = await this.usersService.countRecords(condition);
+    const users = await this.usersService.findAllRecords(condition, options);
     const paginated = {
       total: total,
-      pages: Math.round(total / $q.limit),
+      pages: Math.ceil(total / $q.limit),
       page: $q.page,
       limit: $q.limit,
       data: users,
@@ -61,6 +77,7 @@ export class UserController {
     // if admin is doing this request then permanently block this user.
     if (user.role.includes(UserRoles.ADMIN)) {
       await this.usersService.findOneRecordAndUpdate({ _id: id }, { status: UserStatus.BLOCKED });
+      return { message: 'User blocked successfully.' };
     } else {
       if (user._id == id) throw new HttpException('You cannot block yourself.', HttpStatus.BAD_REQUEST);
       const userFound = await this.usersService.findOneRecord({
@@ -77,6 +94,7 @@ export class UserController {
     // if admin is doing this request then un block this user.
     if (user.role.includes(UserRoles.ADMIN)) {
       await this.usersService.findOneRecordAndUpdate({ _id: id }, { status: UserStatus.ACTIVE });
+      return { message: 'User unblocked successfully.' };
     } else {
       return await this.usersService.findOneRecordAndUpdate({ _id: user._id }, { $pull: { blockedUsers: id } });
     }

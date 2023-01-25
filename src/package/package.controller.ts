@@ -1,16 +1,4 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  Patch,
-  Param,
-  Delete,
-  UseGuards,
-  HttpException,
-  HttpStatus,
-  Query,
-} from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, HttpException, HttpStatus, Query } from '@nestjs/common';
 import { PackageService } from './package.service';
 import { CreatePackageDto } from './dto/create-package.dto';
 import { UpdatePackageDto } from './dto/update-package.dto';
@@ -66,10 +54,10 @@ export class PackageController {
     const options = { limit: $q.limit, skip: $q.skip, sort: $q.sort };
     const condition = { ...rest, title: rjx };
     const total = await this.packageService.countRecords(condition);
-    const packages = await this.packageService.paginate(condition, options);
+    const packages = await this.packageService.findAllRecords(condition, options);
     const paginated = {
       total: total,
-      pages: Math.round(total / $q.limit),
+      pages: Math.ceil(total / $q.limit),
       page: $q.page,
       limit: $q.limit,
       data: packages,
@@ -112,10 +100,7 @@ export class PackageController {
         product: product.id,
       });
 
-      return await this.packageService.findOneRecordAndUpdate(
-        { _id: packageFound._id },
-        { ...updatePackageDto, priceId: price.id }
-      );
+      return await this.packageService.findOneRecordAndUpdate({ _id: packageFound._id }, { ...updatePackageDto, priceId: price.id });
     }
   }
 
@@ -129,17 +114,14 @@ export class PackageController {
 
     //check if package is not guild pakage
     if (!pkg.isGuildPackage) {
-      const userFound = await this.userService
-        .findOneRecord({ _id: user._id })
-        .populate({ path: 'supportingPackages', select: 'creator' });
+      const userFound = await this.userService.findOneRecord({ _id: user._id }).populate({ path: 'supportingPackages', select: 'creator' });
 
       //check if user has more than one packages of same authors
       const authorFound = userFound.supportingPackages.find(
         //@ts-ignore
         (supportingPackage) => supportingPackage.creator == pkg.creator._id
       );
-      if (authorFound)
-        throw new HttpException('You already subscribed to one of the packages of this owner.', HttpStatus.BAD_REQUEST);
+      if (authorFound) throw new HttpException('You already subscribed to one of the packages of this owner.', HttpStatus.BAD_REQUEST);
     }
 
     // create subscription in stripe platform
@@ -154,10 +136,7 @@ export class PackageController {
 
     //check if package is guild package then make user guild member
     if (pkg.isGuildPackage) {
-      await this.userService.findOneRecordAndUpdate(
-        { _id: user._id },
-        { $push: { supportingPackages: pkg._id }, isGuildMember: true }
-      );
+      await this.userService.findOneRecordAndUpdate({ _id: user._id }, { $push: { supportingPackages: pkg._id }, isGuildMember: true });
     } else {
       await this.userService.findOneRecordAndUpdate({ _id: user._id }, { $push: { supportingPackages: pkg._id } });
     }
@@ -181,10 +160,7 @@ export class PackageController {
     for (const subscription of subscriptions.data) {
       await this.stripeService.cancelSubscription(subscription.id);
     }
-    await this.userService.updateManyRecords(
-      { supportingPackages: { $in: [pkg._id] } },
-      { $pull: { supportingPackages: pkg._id } }
-    );
+    await this.userService.updateManyRecords({ supportingPackages: { $in: [pkg._id] } }, { $pull: { supportingPackages: pkg._id } });
 
     return await this.packageService.deleteSingleRecord({ _id: id });
   }
@@ -213,10 +189,7 @@ export class PackageController {
 
     //check if package is guild package then make isGuildMember false
     if (pkg.isGuildPackage) {
-      await this.userService.findOneRecordAndUpdate(
-        { _id: user._id },
-        { $pull: { supportingPackages: pkg._id }, isGuildMember: false }
-      );
+      await this.userService.findOneRecordAndUpdate({ _id: user._id }, { $pull: { supportingPackages: pkg._id }, isGuildMember: false });
     } else {
       await this.userService.findOneRecordAndUpdate({ _id: user._id }, { $pull: { supportingPackages: pkg._id } });
     }
@@ -237,8 +210,7 @@ export class PackageController {
       customer: user.customerId,
       price: pkg.priceId,
     });
-    if (subscriptions.data.length === 0)
-      throw new HttpException('There is no active subscription of this item.', HttpStatus.BAD_REQUEST);
+    if (subscriptions.data.length === 0) throw new HttpException('There is no active subscription of this item.', HttpStatus.BAD_REQUEST);
     const allInvoices = await this.stripeService.findAllInvoices({
       subscription: subscriptions.data[0].id,
       customer: user.customerId,

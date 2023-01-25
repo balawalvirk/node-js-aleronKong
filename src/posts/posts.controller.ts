@@ -1,4 +1,18 @@
-import { Body, Controller, Delete, Get, HttpException, HttpStatus, Param, Post, Put, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpException,
+  HttpStatus,
+  Param,
+  Post,
+  Put,
+  Query,
+  UseGuards,
+  ValidationPipe,
+  UsePipes,
+} from '@nestjs/common';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/role.guard';
 import { FirebaseService } from 'src/firebase/firebase.service';
@@ -10,6 +24,7 @@ import { UserDocument } from 'src/users/users.schema';
 import { UsersService } from 'src/users/users.service';
 import { CommentService } from './comment.service';
 import { CreateCommentDto } from './dtos/create-comment';
+import { FindAllPostQuery } from './dtos/find-all-post.query.dto';
 import { MutePostDto } from './dtos/mute-post.dto';
 import { UpdateCommentDto } from './dtos/update-comment.dto';
 import { UpdatePostDto } from './dtos/update-post.dto';
@@ -28,11 +43,14 @@ export class PostsController {
 
   @Roles(UserRoles.ADMIN)
   @Get('find-all')
-  async findAll(@Query('page') page: string, @Query('limit') limit: string) {
+  @UsePipes(new ValidationPipe({ transform: true }))
+  async findAll(@Query() { page, limit, query }: FindAllPostQuery) {
     const $q = makeQuery({ page, limit });
     const options = { limit: $q.limit, skip: $q.skip, sort: $q.sort };
-    const posts = await this.postsService.paginate({}, options);
-    const total = await this.postsService.countRecords({});
+    const rjx = { $regex: query, $options: 'i' };
+    const condition = { content: rjx };
+    const posts = await this.postsService.findAllRecords(condition, options);
+    const total = await this.postsService.countRecords(condition);
     const paginated = {
       total: total,
       pages: Math.floor(total / $q.limit),
