@@ -55,12 +55,15 @@ export class ProductController {
 
   @Delete(':id/delete')
   async remove(@Param('id', ParseObjectId) id: string, @GetUser() user: UserDocument) {
-    const product = await this.productService.deleteSingleRecord({ _id: id });
-    await this.collectionService.updateManyRecords({ products: { $in: [product._id] } }, { $pull: { products: product._id } });
-    await this.saleService.deleteManyRecord({ product: product._id });
-    if (product.type === ProductType.DIGITAL)
-      await this.userService.findOneRecordAndUpdate({ _id: user._id }, { $pull: { boughtDigitalProducts: product._id } });
-    return product;
+    const productFound = await this.productService.findOneRecord({ _id: id });
+    // check if user is creator of this product or user is admin.
+    if (productFound.creator == user._id.toString() || user.role.includes(UserRoles.ADMIN)) {
+      const product = await this.productService.deleteSingleRecord({ _id: id });
+      await this.saleService.deleteManyRecord({ product: product._id });
+      if (product.type === ProductType.DIGITAL)
+        await this.userService.findOneRecordAndUpdate({ _id: user._id }, { $pull: { boughtDigitalProducts: product._id } });
+      return product;
+    } else throw new HttpException('Forbidden resource', HttpStatus.FORBIDDEN);
   }
 
   @Put(':id/update')
@@ -82,6 +85,11 @@ export class ProductController {
       data: products,
     };
     return paginated;
+  }
+
+  @Get(':id/find-one')
+  async findOne(@Param('id') id: string) {
+    return await this.productService.findOneRecord({ _id: id });
   }
 
   // find user store products and all store products

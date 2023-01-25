@@ -28,14 +28,6 @@ export class BaseService<T> {
   findOneRecord = (filter?: FilterQuery<T>) => this.model.findOne(filter).lean();
 
   /**
-   * Paginated Data
-   * @param condition Paginated
-   * @returns Paginations
-   */
-  paginate = (condition?: FilterQuery<T>, paginate?: QueryOptions<T>) =>
-    this.model.find(condition, {}, paginate).lean();
-
-  /**
    * Creates a countDocuments query: counts the number of documents that match filter.
    * @param filter
    */
@@ -64,9 +56,7 @@ export class BaseService<T> {
    * @param filter
    * @param update
    */
-  findOneRecordAndUpdate = (filter: FilterQuery<T>, update: UpdateQuery<T>) =>
-    this.model.findOneAndUpdate(filter, update, { new: true }).lean();
+  findOneRecordAndUpdate = (filter: FilterQuery<T>, update: UpdateQuery<T>) => this.model.findOneAndUpdate(filter, update, { new: true }).lean();
 
-  updateManyRecords = (filter?: FilterQuery<T>, update?: UpdateQuery<T>) =>
-    this.model.updateMany(filter, update, { new: true });
+  updateManyRecords = (filter?: FilterQuery<T>, update?: UpdateQuery<T>) => this.model.updateMany(filter, update, { new: true });
 }

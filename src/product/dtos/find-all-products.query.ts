@@ -6,6 +6,10 @@ export class FindAllProductsQuery {
   category: string;
 
   @IsOptional()
+  @IsMongoId()
+  creator: string;
+
+  @IsOptional()
   limit: string;
 
   @IsOptional()
