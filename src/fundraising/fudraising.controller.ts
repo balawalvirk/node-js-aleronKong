@@ -134,7 +134,6 @@ export class FundraisingController {
     return await this.categoryService.createRecord(createFudraisingCategoryDto);
   }
 
-  @Roles(UserRoles.ADMIN)
   @Get('category/find-all')
   async findAllCategories() {
     return await this.categoryService.findAllRecords();
