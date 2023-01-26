@@ -80,7 +80,7 @@ export class AuthService {
         dob: {
           year: dob.getFullYear(),
           day: dob.getDate(),
-          month: dob.getMonth(),
+          month: dob.getMonth() + 1,
         },
         address: {
           city: 'Schenectady',
