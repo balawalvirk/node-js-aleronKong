@@ -12,6 +12,7 @@ import {
   UseGuards,
   ValidationPipe,
   UsePipes,
+  ParseBoolPipe,
 } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/role.guard';
@@ -213,9 +214,16 @@ export class PostsController {
   }
 
   @Roles(UserRoles.ADMIN)
-  @Put(':id/feature')
-  async featurePost(@Param('id', ParseObjectId) id: string) {
-    await this.postsService.findOneRecordAndUpdate({ _id: id }, { isFeatured: true });
-    return { message: 'Post featured successfully.' };
+  @Put(':id/block-unblock')
+  async block(@Param('id', ParseObjectId) id: string, @Query('block', ParseBoolPipe) block: boolean) {
+    await this.postsService.findOneRecordAndUpdate({ _id: id }, { isBlocked: block === true ? true : false });
+    return { message: `Post ${block === true ? 'blocked' : 'unblock'} successfully.` };
+  }
+
+  @Roles(UserRoles.ADMIN)
+  @Put(':id/feature-unfeature')
+  async featurePost(@Param('id', ParseObjectId) id: string, @Query('isFeatured', ParseBoolPipe) isFeatured: boolean) {
+    await this.postsService.findOneRecordAndUpdate({ _id: id }, { isFeatured: isFeatured === true ? true : false });
+    return { message: `Post ${isFeatured ? 'featured' : 'un featured'} successfully.` };
   }
 }
