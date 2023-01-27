@@ -54,7 +54,7 @@ export class PostsController {
     const total = await this.postsService.countRecords(condition);
     const paginated = {
       total: total,
-      pages: Math.floor(total / $q.limit),
+      pages: Math.ceil(total / $q.limit),
       page: $q.page,
       limit: $q.limit,
       data: posts,
