@@ -1,4 +1,19 @@
-import { Body, Controller, Delete, Get, HttpException, HttpStatus, Param, ParseEnumPipe, Post, Put, Query, UseGuards } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  HttpException,
+  HttpStatus,
+  Param,
+  ParseEnumPipe,
+  Post,
+  Put,
+  Query,
+  UseGuards,
+  UsePipes,
+  ValidationPipe,
+} from '@nestjs/common';
 import mongoose from 'mongoose';
 import { AddressService } from 'src/address/address.service';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
@@ -29,6 +44,8 @@ import { CreateReviewDto } from './dtos/create-review.dto';
 import { FindAllProductsQuery } from './dtos/find-all-products.query';
 import { NotificationService } from 'src/notification/notification.service';
 import { FirebaseService } from 'src/firebase/firebase.service';
+import { FindAllCategoriesQueryDto } from './dtos/find-all-categories.query.dto';
+import { UpdateProductCategoryDto } from './dtos/update.category.dto';
 
 @Controller('product')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -72,11 +89,14 @@ export class ProductController {
   }
 
   @Get('find-all')
-  async findAllProducts(@Query() { page, limit, ...rest }: FindAllProductsQuery) {
+  @UsePipes(new ValidationPipe({ transform: true }))
+  async findAllProducts(@Query() { page, limit, query, ...rest }: FindAllProductsQuery) {
     const $q = makeQuery({ page, limit });
     const options = { limit: $q.limit, skip: $q.skip, sort: $q.sort };
-    const total = await this.productService.countRecords(rest);
-    const products = await this.productService.findAllRecords(rest, options);
+    const rjx = { $regex: query, $options: 'i' };
+    const condition = { ...rest, title: rjx };
+    const total = await this.productService.countRecords(condition);
+    const products = await this.productService.find(condition, options);
     const paginated = {
       total: total,
       pages: Math.ceil(total / $q.limit),
@@ -290,26 +310,44 @@ export class ProductController {
     return await this.collectionService.findOneRecordAndUpdate({ _id: collection }, { $push: { products: product } });
   }
 
-  // categories apis
+  //-----------------------------------------------------------------------categories apis ---------------------------------------------------------
   @Roles(UserRoles.ADMIN)
   @Post('category/create')
   async createCategory(@Body() createProductCategoryDto: CreateProductCategoryDto) {
     const { value, ...rest } = createProductCategoryDto;
-    const category = await this.categoryService.findOneRecord({
-      title: createProductCategoryDto.title,
-    });
-    if (category) throw new HttpException('Category already exists with this title.', HttpStatus.BAD_REQUEST);
-    return await this.categoryService.createRecord({ ...rest });
+    return await this.categoryService.createRecord(rest);
   }
 
   @Get('category/find-all')
-  async findAllCategories(@Query() query) {
-    return await this.categoryService.findAllRecords(query);
+  async findAllCategories(@Query() { query, limit, page, ...rest }: FindAllCategoriesQueryDto) {
+    const $q = makeQuery({ page, limit, query });
+    const options = { limit: $q.limit, skip: $q.skip, sort: $q.sort };
+    const rjx = { $regex: $q.query, $options: 'i' };
+    const condition = { ...rest, title: rjx };
+    const total = await this.categoryService.countRecords(condition);
+    const categories = await this.categoryService.findAllRecords(condition, options);
+    const paginated = {
+      total: total,
+      pages: Math.ceil(total / $q.limit),
+      page: $q.page,
+      limit: $q.limit,
+      data: categories,
+    };
+    return paginated;
   }
 
+  @Roles(UserRoles.ADMIN)
   @Delete('category/:id/delete')
   async deleteCategory(@Param('id', ParseObjectId) id: string) {
-    return await this.categoryService.deleteSingleRecord({ _id: id });
+    await this.categoryService.deleteSingleRecord({ _id: id });
+    return { message: 'Category deleted successfully.' };
+  }
+
+  @Roles(UserRoles.ADMIN)
+  @Put('category/:id/update')
+  async updateCategory(@Param('id', ParseObjectId) id: string, @Body() { title, type }: UpdateProductCategoryDto) {
+    await this.categoryService.findOneRecordAndUpdate({ _id: id }, { title, type });
+    return { message: 'Category updated successfully.' };
   }
 
   // ----------------------------------------------------------------cart apis -----------------------------------------------

@@ -14,4 +14,7 @@ export class FindAllProductsQuery {
 
   @IsOptional()
   page: string;
+
+  @IsOptional()
+  query: string = '';
 }
