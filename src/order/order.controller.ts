@@ -1,17 +1,4 @@
-import {
-  Controller,
-  Get,
-  Post,
-  Body,
-  Patch,
-  Param,
-  Delete,
-  UseGuards,
-  Put,
-  HttpException,
-  HttpStatus,
-  Query,
-} from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, UseGuards, Put, HttpException, HttpStatus, Query } from '@nestjs/common';
 import { OrderService } from './order.service';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { GetUser, ParseObjectId, StripeService } from 'src/helpers';
@@ -27,7 +14,7 @@ export class OrderController {
 
   @Get('find-all')
   async findAll(@GetUser() user: UserDocument, @Query() findAllQueryDto: FindAllQueryDto) {
-    return await this.orderService.findAll({ customer: user._id, ...findAllQueryDto });
+    return await this.orderService.findAll(findAllQueryDto);
   }
 
   @Get(':id/find-one')
