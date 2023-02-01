@@ -13,7 +13,7 @@ export class Message {
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true })
   sender: User;
 
-  @Prop({ required: true })
+  @Prop()
   content: string;
 
   @Prop()

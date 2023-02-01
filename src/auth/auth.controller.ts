@@ -34,9 +34,7 @@ export class AuthController {
     const { access_token } = await this.authService.login(user.userName, user._id);
     const { unReadMessages, unReadNotifications } = await this.authService.findNotifications(user._id);
     const cart = await this.cartService.findOneRecord({ creator: user._id });
-    if (user.defaultPaymentMethod) {
-      paymentMethod = await this.authService.findOnePaymentMethod(user.defaultPaymentMethod);
-    }
+    if (user.defaultPaymentMethod) paymentMethod = await this.authService.findOnePaymentMethod(user.defaultPaymentMethod);
     return {
       access_token,
       user: {

@@ -36,6 +36,6 @@ import { FirebaseModule } from 'src/firebase/firebase.module';
   ],
   controllers: [ProductController],
   providers: [ProductService, CollectionService, StripeService, ProductCategoryService, CartService, SaleService, ReviewService],
-  exports: [ProductService, CartService],
+  exports: [ProductService, CartService, SaleService],
 })
 export class ProductModule {}
