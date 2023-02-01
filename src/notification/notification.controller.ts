@@ -1,6 +1,6 @@
-import { Controller, Get, Param, Put, UseGuards } from '@nestjs/common';
+import { Controller, Get, Put, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
-import { GetUser, ParseObjectId } from 'src/helpers';
+import { GetUser } from 'src/helpers';
 import { UserDocument } from 'src/users/users.schema';
 import { NotificationService } from './notification.service';
 
@@ -14,8 +14,9 @@ export class NotificationController {
     return await this.notificationServie.findAllRecords({ receiver: user._id });
   }
 
-  @Put(':id/read')
-  async read(@Param('id', ParseObjectId) id: string) {
-    return await this.notificationServie.findOneRecordAndUpdate({ _id: id }, { isRead: true });
+  @Put('read-all')
+  async read(@GetUser() user: UserDocument) {
+    await this.notificationServie.updateManyRecords({ receiver: user._id }, { isRead: true });
+    return { message: 'Notifications read successfully.' };
   }
 }

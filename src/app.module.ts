@@ -19,8 +19,8 @@ import { FundraisingModule } from './fundraising/fudraising.module';
 import { NotificationModule } from './notification/notification.module';
 import { ReportModule } from './report/report.module';
 import { SearchModule } from './search/search.module';
-import { AppController } from './app.controller';
 import { FirebaseModule } from './firebase/firebase.module';
+import { DashboardModule } from './dashboard/dashboard.module';
 
 @Module({
   imports: [
@@ -42,6 +42,7 @@ import { FirebaseModule } from './firebase/firebase.module';
     ReportModule,
     SearchModule,
     FirebaseModule,
+    DashboardModule,
   ],
   // global interceptor for transforming response.
   providers: [
@@ -50,6 +51,5 @@ import { FirebaseModule } from './firebase/firebase.module';
       useClass: TransformInterceptor,
     },
   ],
-  controllers: [AppController],
 })
 export class AppModule {}

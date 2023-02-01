@@ -43,10 +43,7 @@ export class ChatController {
 
   @Post('/message/create')
   async createMessage(@Body() createMessageDto: CreateMessageDto, @GetUser() user: UserDocument) {
-    const message = await this.messageService.createRecord({
-      ...createMessageDto,
-      sender: user._id,
-    });
+    const message = await this.messageService.createRecord({ ...createMessageDto, sender: user._id });
     const chat = await this.chatService.findOneRecordAndUpdate({ _id: createMessageDto.chat }, { lastMessage: message._id });
 
     //send socket message to members of chat
@@ -57,7 +54,7 @@ export class ChatController {
 
     //create notification obj in database
     await this.notificationService.createRecord({
-      message: message.content,
+      message: 'User has send you message.',
       sender: user._id,
       receiver: receiver,
       type: NotificationType.MESSAGE,

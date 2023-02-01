@@ -87,7 +87,7 @@ export class FundraisingController {
     await this.firebaseService.sendNotification({
       token: post.creator.fcmToken,
       notification: { title: `User has funded ${amount}$ for your project` },
-      data: { post: post._id, type: NotificationType.PROJECT_FUNDED },
+      data: { post: post._id.toString(), type: NotificationType.PROJECT_FUNDED },
     });
 
     return post;

@@ -13,12 +13,12 @@ export class OrderController {
   constructor(private readonly orderService: OrderService, private readonly stripeService: StripeService) {}
 
   @Get('find-all')
-  async findAll(@GetUser() user: UserDocument, @Query() findAllQueryDto: FindAllQueryDto) {
+  async findAll(@Query() findAllQueryDto: FindAllQueryDto) {
     return await this.orderService.findAll(findAllQueryDto);
   }
 
   @Get(':id/find-one')
-  async findOne(@GetUser() user: UserDocument, @Param('id', ParseObjectId) id: string) {
+  async findOne(@Param('id', ParseObjectId) id: string) {
     const order = await this.orderService.findOne({ _id: id });
     if (!order) throw new HttpException('Order does not exists.', HttpStatus.BAD_REQUEST);
     const paymentMethod = await this.stripeService.findOnePaymentMethod(order.paymentMethod);

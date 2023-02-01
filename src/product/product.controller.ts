@@ -84,7 +84,10 @@ export class ProductController {
   }
 
   @Put(':id/update')
-  async update(@Param('id') id: string, @Body() updateProductDto: UpdateProductDto) {
+  async update(@Param('id') id: string, @Body() updateProductDto: UpdateProductDto, @GetUser() user: UserDocument) {
+    const product = await this.productService.findOneRecord({ _id: id });
+    if (!product) throw new HttpException('Product does not exists.', HttpStatus.BAD_REQUEST);
+    if (product.creator != user._id.toString()) throw new HttpException('Forbidden resource', HttpStatus.FORBIDDEN);
     return await this.productService.update({ _id: id }, updateProductDto);
   }
 

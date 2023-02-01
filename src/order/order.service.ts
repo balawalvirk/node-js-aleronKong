@@ -19,7 +19,10 @@ export class OrderService extends BaseService<OrderDocument> {
 
   async findAll(query: FilterQuery<OrderDocument>) {
     return await this.OrderModel.find(query)
-      .populate([{ path: 'product', select: 'price' }])
+      .populate([
+        { path: 'product', select: 'price' },
+        { path: 'customer', select: 'firstName lastName email' },
+      ])
       .lean();
   }
 
@@ -32,6 +35,7 @@ export class OrderService extends BaseService<OrderDocument> {
           populate: { path: 'creator', select: 'sellerId' },
         },
         { path: 'address' },
+        { path: 'customer', select: 'firstName lastName email' },
       ])
       .lean();
   }
