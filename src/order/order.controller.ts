@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, UseGuards, Put, HttpException, HttpStatus, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, UseGuards, Put, HttpException, HttpStatus, Query, Delete } from '@nestjs/common';
 import { OrderService } from './order.service';
 import { UpdateOrderDto } from './dto/update-order.dto';
 import { GetUser, ParseObjectId, StripeService } from 'src/helpers';
@@ -49,5 +49,11 @@ export class OrderController {
       await this.stripeService.createRefund({ payment_intent: order.paymentIntent });
     }
     return order;
+  }
+
+  @Delete(':id/delete')
+  async delete(@Param('id', ParseObjectId) id: string) {
+    await this.orderService.deleteSingleRecord({ _id: id });
+    return { message: 'Order deleted successfully.' };
   }
 }
