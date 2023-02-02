@@ -120,12 +120,7 @@ export class StripeService {
     return await this.stripe.accounts.createExternalAccount(id, params, options);
   }
 
-  async deleteBankAccount(
-    accountId: string,
-    id: string,
-    params?: Stripe.ExternalAccountDeleteParams,
-    options?: Stripe.RequestOptions
-  ) {
+  async deleteBankAccount(accountId: string, id: string, params?: Stripe.ExternalAccountDeleteParams, options?: Stripe.RequestOptions) {
     return await this.stripe.accounts.deleteExternalAccount(accountId, id, params, options);
   }
 
@@ -133,12 +128,7 @@ export class StripeService {
     return await this.stripe.accounts.listExternalAccounts(id, params, options);
   }
 
-  async updateBankAccount(
-    accountId: string,
-    id: string,
-    params?: Stripe.ExternalAccountUpdateParams,
-    options?: Stripe.RequestOptions
-  ) {
+  async updateBankAccount(accountId: string, id: string, params?: Stripe.ExternalAccountUpdateParams, options?: Stripe.RequestOptions) {
     return await this.stripe.accounts.updateExternalAccount(accountId, id, params, options);
   }
 
@@ -148,5 +138,9 @@ export class StripeService {
 
   async createRefund(params?: Stripe.RefundCreateParams, options?: Stripe.RequestOptions) {
     return await this.stripe.refunds.create(params, options);
+  }
+
+  async createPayout(params: Stripe.PayoutCreateParams, options?: Stripe.RequestOptions) {
+    return await this.stripe.payouts.create(params, options);
   }
 }

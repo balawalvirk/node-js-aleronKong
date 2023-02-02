@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { FilterQuery, Model, UpdateQuery } from 'mongoose';
+import { FilterQuery, Model, QueryOptions, UpdateQuery } from 'mongoose';
 import { BaseService } from 'src/helpers';
 import { Order, OrderDocument } from './order.schema';
 
@@ -17,10 +17,10 @@ export class OrderService extends BaseService<OrderDocument> {
     return random_number;
   }
 
-  async findAll(query: FilterQuery<OrderDocument>) {
-    return await this.OrderModel.find(query)
+  async find(query: FilterQuery<OrderDocument>, options?: QueryOptions<OrderDocument>) {
+    return await this.OrderModel.find(query, {}, options)
       .populate([
-        { path: 'product', select: 'price' },
+        { path: 'product', select: 'media title creator price' },
         { path: 'customer', select: 'firstName lastName email' },
       ])
       .lean();

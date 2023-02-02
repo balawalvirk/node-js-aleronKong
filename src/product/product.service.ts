@@ -18,6 +18,10 @@ export class ProductService extends BaseService<ProductDocument> {
     return await this.productModel.find(query, {}, options).populate('category');
   }
 
+  async findOne(query: FilterQuery<ProductDocument>) {
+    return await this.productModel.findOne(query).populate('category');
+  }
+
   async update(query: FilterQuery<ProductDocument>, updateQuery: UpdateQuery<ProductDocument>) {
     return await this.productModel.findOneAndUpdate(query, updateQuery, { new: true }).populate('category creator');
   }
