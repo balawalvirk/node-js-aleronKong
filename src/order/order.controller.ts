@@ -14,7 +14,7 @@ export class OrderController {
 
   @Get('find-all')
   async findAll(@Query() findAllQueryDto: FindAllQueryDto) {
-    return await this.orderService.findAll(findAllQueryDto);
+    return await this.orderService.find(findAllQueryDto);
   }
 
   @Get(':id/find-one')

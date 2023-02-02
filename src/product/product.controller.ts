@@ -198,7 +198,7 @@ export class ProductController {
         notification: {
           title: 'User has placed an order',
         },
-        data: { order: order._id, type: NotificationType.ORDER },
+        data: { order: order._id.toString(), type: NotificationType.ORDER },
       });
     }
 

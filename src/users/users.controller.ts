@@ -24,6 +24,7 @@ import { NotificationService } from 'src/notification/notification.service';
 import { NotificationType, UserRoles, UserStatus } from 'src/types';
 import { UserDocument } from 'src/users/users.schema';
 import { CreateBankAccountDto } from './dtos/create-bank-account.dto';
+import { CreatePayoutDto } from './dtos/create-payout.dto';
 import { FindAllUsersQueryDto } from './dtos/find-all-users.query.dto';
 import { UpdateBankAccountDto } from './dtos/update-bank-account.dto';
 import { UpdateUserDto } from './dtos/update-user';
@@ -125,6 +126,7 @@ export class UserController {
         account_number: accountNumber,
       },
     });
+    await this.stripeService.updateAccount(user.sellerId, { settings: { payouts: { schedule: { interval: 'manual' } } } });
     if (!user.defaultWithDrawAccountId) {
       await this.usersService.findOneRecordAndUpdate({ _id: user._id }, { defaultWithDrawAccountId: bankAccount.id });
     }
@@ -153,6 +155,13 @@ export class UserController {
       account_holder_name: accountHolderName,
     });
   }
+
+  @Post('payout/create')
+  async createPayout(@Body() { amount }: CreatePayoutDto) {
+    await this.stripeService.createPayout({ currency: 'usd', amount: amount * 100 });
+    return { message: 'Amount withdraw successfully.' };
+  }
+
   //----------------------------------------------friends api-----------------------------------
   @Put('friend/:id/create')
   async addFriend(@Param('id', ParseObjectId) id: string, @GetUser() user: UserDocument) {

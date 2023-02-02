@@ -41,7 +41,7 @@ export class Order {
   paymentIntent: string;
 
   @Prop({ required: true })
-  orderNumber: number;
+  orderNumber: string;
 
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Review' })
   review: Review;
