@@ -81,10 +81,7 @@ export class UserController {
       return { message: 'User blocked successfully.' };
     } else {
       if (user._id == id) throw new HttpException('You cannot block yourself.', HttpStatus.BAD_REQUEST);
-      const userFound = await this.usersService.findOneRecord({
-        _id: user._id,
-        blockedUsers: { $in: [id] },
-      });
+      const userFound = await this.usersService.findOneRecord({ _id: user._id, blockedUsers: { $in: [id] } });
       if (userFound) throw new HttpException('You already blocked this user.', HttpStatus.BAD_REQUEST);
       return await this.usersService.findOneRecordAndUpdate({ _id: user._id }, { $push: { blockedUsers: id } });
     }

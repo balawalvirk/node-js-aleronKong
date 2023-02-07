@@ -1,22 +1,37 @@
-import { Controller, Get, Put, UseGuards } from '@nestjs/common';
+import { Body, Controller, Get, Put, Query, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
-import { GetUser } from 'src/helpers';
+import { GetUser, makeQuery } from 'src/helpers';
 import { UserDocument } from 'src/users/users.schema';
+import { DeleteNotificationDto } from './dto/delete-notification.dto';
+import { FindAllNotificationsQueryDto } from './dto/find-all-notifications.query.dto';
 import { NotificationService } from './notification.service';
 
 @Controller('notification')
 @UseGuards(JwtAuthGuard)
 export class NotificationController {
-  constructor(private readonly notificationServie: NotificationService) {}
+  constructor(private readonly notificationService: NotificationService) {}
 
   @Get('find-all')
-  async findAll(@GetUser() user: UserDocument) {
-    return await this.notificationServie.findAllRecords({ receiver: user._id });
+  async findAll(@GetUser() user: UserDocument, @Query() { page, limit }: FindAllNotificationsQueryDto) {
+    const $q = makeQuery({ page, limit });
+    const options = { limit: $q.limit, skip: $q.skip, sort: $q.sort };
+    const condition = { receiver: user._id };
+    await this.notificationService.updateManyRecords({ receiver: user._id, isRead: false }, { isRead: true });
+    const notifications = await this.notificationService.findAllRecords(condition, options);
+    const total = await this.notificationService.countRecords(condition);
+    const paginated = {
+      total: total,
+      pages: Math.ceil(total / $q.limit),
+      page: $q.page,
+      limit: $q.limit,
+      data: notifications,
+    };
+    return paginated;
   }
 
-  @Put('read-all')
-  async read(@GetUser() user: UserDocument) {
-    await this.notificationServie.updateManyRecords({ receiver: user._id }, { isRead: true });
-    return { message: 'Notifications read successfully.' };
+  @Put('delete')
+  async delete(@Body() deleteNotificationDto: DeleteNotificationDto) {
+    await this.notificationService.deleteManyRecord({ _id: { $in: deleteNotificationDto.notifications } });
+    return { message: 'Notifications deleted successfully.' };
   }
 }

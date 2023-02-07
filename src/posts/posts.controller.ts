@@ -181,7 +181,7 @@ export class PostsController {
   @Put('mute')
   async muteChat(@Body() mutePostDto: MutePostDto, @GetUser() user: UserDocument) {
     const now = new Date();
-    let date = new Date(now);
+    const date = new Date(now);
     let updatedObj: any = { user: user._id, interval: mutePostDto.interval };
     if (mutePostDto.interval === MuteInterval.DAY) {
       //check if mute interval is one day then add 1 day in date
