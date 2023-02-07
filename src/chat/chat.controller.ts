@@ -53,7 +53,7 @@ export class ChatController {
     const receiver = chat.members.find((member) => member.toString() != user._id);
 
     //create notification obj in database
-    const notification = await this.notificationService.createRecord({
+    await this.notificationService.createRecord({
       message: 'User has send you message.',
       sender: user._id,
       receiver: receiver,

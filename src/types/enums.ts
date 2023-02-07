@@ -68,7 +68,7 @@ export enum MuteInterval {
 
 export enum NotificationType {
   POST = 'post',
-  MESSAGE = 'message',
+  MESSAGE = 'newMessage',
   USER = 'user',
   ORDER = 'order',
   BOUGHT = 'bought',

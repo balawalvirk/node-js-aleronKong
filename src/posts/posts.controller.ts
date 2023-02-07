@@ -121,7 +121,7 @@ export class PostsController {
     const post = await this.postsService.update({ _id: id }, { $push: { likes: user._id } });
     await this.notificationService.createRecord({
       post: post._id,
-      message: 'Your post has been liked.',
+      message: 'Liked your post.',
       type: NotificationType.POST,
       sender: user._id,
       //@ts-ignore
@@ -129,7 +129,7 @@ export class PostsController {
     });
     await this.firebaseService.sendNotification({
       token: post.creator.fcmToken,
-      notification: { title: 'Your post has been liked.' },
+      notification: { title: 'Liked your post.' },
       data: { post: post._id.toString(), type: NotificationType.POST },
     });
     return post;
@@ -146,7 +146,7 @@ export class PostsController {
     const post = await this.postsService.update({ _id: id }, { $push: { comments: comment._id } });
     await this.notificationService.createRecord({
       post: post._id,
-      message: 'Your post has been commented.',
+      message: 'Your Post Commented',
       type: NotificationType.POST,
       sender: user._id,
       //@ts-ignore
@@ -154,7 +154,7 @@ export class PostsController {
     });
     await this.firebaseService.sendNotification({
       token: post.creator.fcmToken,
-      notification: { title: 'Your post has been commented.' },
+      notification: { title: 'Your Post Commented' },
       data: { post: post._id.toString(), type: NotificationType.POST },
     });
     return post;

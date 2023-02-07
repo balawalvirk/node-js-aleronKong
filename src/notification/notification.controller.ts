@@ -17,7 +17,7 @@ export class NotificationController {
     const options = { limit: $q.limit, skip: $q.skip, sort: $q.sort };
     const condition = { receiver: user._id };
     await this.notificationService.updateManyRecords({ receiver: user._id, isRead: false }, { isRead: true });
-    const notifications = await this.notificationService.findAllRecords(condition, options);
+    const notifications = await this.notificationService.find(condition, options);
     const total = await this.notificationService.countRecords(condition);
     const paginated = {
       total: total,
