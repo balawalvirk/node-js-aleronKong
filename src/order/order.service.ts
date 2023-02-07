@@ -11,10 +11,7 @@ export class OrderService extends BaseService<OrderDocument> {
   }
 
   getOrderNumber() {
-    const timestamp = new Date().toISOString().replace(/[-:.]/g, '');
-    const random = ('' + Math.random()).substring(2, 8);
-    const random_number = timestamp + random;
-    return random_number;
+    return Math.floor(100000 + Math.random() * 900000);
   }
 
   async find(query: FilterQuery<OrderDocument>, options?: QueryOptions<OrderDocument>) {

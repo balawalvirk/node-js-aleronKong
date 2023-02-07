@@ -50,10 +50,10 @@ export class ChatController {
     this.socketService.triggerMessage(createMessageDto.chat, message);
 
     //find receiver from chat object
-    const receiver = chat.members.find((member) => member !== user._id);
+    const receiver = chat.members.find((member) => member.toString() != user._id);
 
     //create notification obj in database
-    await this.notificationService.createRecord({
+    const notification = await this.notificationService.createRecord({
       message: 'User has send you message.',
       sender: user._id,
       receiver: receiver,
