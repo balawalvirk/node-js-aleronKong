@@ -37,12 +37,17 @@ export class SocketGateway implements OnGatewayInit, OnGatewayConnection, OnGate
     this.logger.log(`client connected: ${client.id}`);
   }
 
-  @SubscribeMessage('online')
+  @SubscribeMessage('login')
   loginUser(@MessageBody() userId: string, @ConnectedSocket() client: Socket) {
     if (!this.onlineUsers.some((user) => user.userId === userId)) {
       this.onlineUsers.push({ userId, socketId: client.id });
-      this.wss.emit('online', this.onlineUsers);
     }
+  }
+
+  @SubscribeMessage('check-status')
+  checkStatus(@MessageBody() userId: string) {
+    if (!this.onlineUsers.some((user) => user.userId === userId)) this.wss.emit('check-status', { online: true });
+    else this.wss.emit('check-status', { online: false });
   }
 
   triggerMessage(event: string, payload: any) {

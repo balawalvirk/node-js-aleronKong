@@ -162,8 +162,10 @@ export class UserController {
   //----------------------------------------------friends api-----------------------------------
   @Put('friend/:id/create')
   async addFriend(@Param('id', ParseObjectId) id: string, @GetUser() user: UserDocument) {
-    const friend = await this.usersService.findOneRecord({ _id: user._id, friends: { $in: [id] } });
-    if (friend) throw new HttpException('User is already your friend.', HttpStatus.BAD_REQUEST);
+    const userFound = await this.usersService.findOneRecord({ _id: user._id, friends: { $in: [id] } });
+    if (userFound) throw new HttpException('User is already your friend.', HttpStatus.BAD_REQUEST);
+    const friend = await this.usersService.findOneRecord({ _id: id });
+    const updatedUser = await this.usersService.findOneRecordAndUpdate({ _id: user._id }, { $push: { friends: id } });
     await this.notificationService.createRecord({
       user: id,
       message: 'User is following you.',
@@ -172,11 +174,11 @@ export class UserController {
       receiver: id,
     });
     await this.firebaseService.sendNotification({
-      token: id,
+      token: friend.fcmToken,
       notification: { title: 'User is following you.' },
       data: { user: id, type: NotificationType.USER },
     });
-    return await this.usersService.findOneRecordAndUpdate({ _id: user._id }, { $push: { friends: id } });
+    return updatedUser;
   }
 
   @Put('friend/:id/remove')
