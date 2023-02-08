@@ -22,13 +22,13 @@ import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { PostsService } from 'src/posts/posts.service';
 import { CreatePostsDto } from 'src/posts/dtos/create-posts';
 import { GroupDocument } from './group.schema';
-import { GroupPrivacy, NotificationType, PostType } from 'src/types';
+import { GroupPrivacy, MuteInterval, NotificationType, PostType } from 'src/types';
 import { makeQuery, ParseObjectId } from 'src/helpers';
-import { PostDocument } from 'src/posts/posts.schema';
 import { FundService } from 'src/fundraising/fund.service';
 import { FundraisingService } from 'src/fundraising/fundraising.service';
 import { NotificationService } from 'src/notification/notification.service';
 import { FirebaseService } from 'src/firebase/firebase.service';
+import { MuteGroupDto } from './dto/mute-group.dto';
 
 @Controller('group')
 @UseGuards(JwtAuthGuard)
@@ -54,7 +54,10 @@ export class GroupController {
       creator: user._id,
     });
     if (post.group) {
-      const group = await this.groupService.findOneRecordAndUpdate({ _id: post.group }, { $push: { posts: post._id } });
+      const group = await this.groupService
+        .findOneRecordAndUpdate({ _id: post.group }, { $push: { posts: post._id } })
+        .populate({ path: 'creator', select: 'fcmToken' });
+
       await this.notificationService.createRecord({
         type: NotificationType.GROUP_POST,
         group: group._id,
@@ -63,11 +66,14 @@ export class GroupController {
         //@ts-ignore
         receiver: group.creator._id,
       });
-      await this.firebaseService.sendNotification({
-        token: group.creator.fcmToken,
-        notification: { title: `User has posted in your ${group.name} group` },
-        data: { group: group._id },
-      });
+      //@ts-ignore
+      if (!this.groupService.isGroupMuted(group.mutes, group.creator._id)) {
+        await this.firebaseService.sendNotification({
+          token: group.creator.fcmToken,
+          notification: { title: `User has posted in your ${group.name} group` },
+          data: { group: group._id.toString() },
+        });
+      }
     }
     return post;
   }
@@ -113,7 +119,7 @@ export class GroupController {
 
   @Get('find-one/:id')
   async findOne(@Param('id') id: string) {
-    return await this.groupService.findOne({ _id: id });
+    return await this.groupService.findOneRecord({ _id: id });
   }
 
   @Put('update/:id')
@@ -143,11 +149,15 @@ export class GroupController {
           //@ts-ignore
           receiver: group.creator._id,
         });
-        await this.firebaseService.sendNotification({
-          token: group.creator.fcmToken,
-          notification: { title: `User has send a join request for ${group.name} group` },
-          data: { group: group._id },
-        });
+        //@ts-ignore
+        if (!this.groupService.isGroupMuted(group.mutes, group.creator._id)) {
+          await this.firebaseService.sendNotification({
+            token: group.creator.fcmToken,
+            notification: { title: `User has send a join request for ${group.name} group` },
+            data: { group: group._id },
+          });
+        }
+
         return await this.groupService.findOneRecordAndUpdate({ _id: id }, { $push: { requests: user._id } });
       }
       await this.notificationService.createRecord({
@@ -158,11 +168,15 @@ export class GroupController {
         //@ts-ignore
         receiver: group.creator._id,
       });
-      await this.firebaseService.sendNotification({
-        token: group.creator.fcmToken,
-        notification: { title: `User has joined your ${group.name} group` },
-        data: { group: group._id },
-      });
+      //@ts-ignore
+      if (!this.groupService.isGroupMuted(group.mutes, group.creator._id)) {
+        await this.firebaseService.sendNotification({
+          token: group.creator.fcmToken,
+          notification: { title: `User has joined your ${group.name} group` },
+          data: { group: group._id },
+        });
+      }
+
       return await this.groupService.findOneRecordAndUpdate({ _id: id }, { $push: { members: { member: user._id } } });
     } else throw new HttpException('Group does not exists.', HttpStatus.BAD_REQUEST);
   }
@@ -231,5 +245,28 @@ export class GroupController {
   async report(@Param('id', ParseObjectId) id: string, @GetUser() user: UserDocument, @Body('reason') reason: string) {
     await this.groupService.findOneRecordAndUpdate({ _id: id }, { $push: { reports: { reporter: user._id, reason } } });
     return 'Report submitted successfully.';
+  }
+
+  @Put('mute')
+  async muteChat(@Body() muteGroupDto: MuteGroupDto, @GetUser() user: UserDocument) {
+    const now = new Date();
+    const date = new Date(now);
+    let updatedObj: any = { user: user._id, interval: muteGroupDto.interval };
+    if (muteGroupDto.interval === MuteInterval.DAY) {
+      //check if mute interval is one day then add 1 day in date
+      date.setDate(now.getDate() + 1);
+    } else if (muteGroupDto.interval === MuteInterval.WEEK) {
+      //check if mute interval is one day then add 7 day in date
+      date.setDate(now.getDate() + 7);
+    }
+    date.toLocaleDateString();
+
+    if (muteGroupDto.interval === MuteInterval.DAY || MuteInterval.WEEK) updatedObj = { ...updatedObj, date };
+    else {
+      updatedObj = { ...updatedObj, startTime: muteGroupDto.startTime, endTime: muteGroupDto.endTime };
+    }
+
+    await this.groupService.findOneRecordAndUpdate({ _id: muteGroupDto.group }, { $push: { mutes: { ...updatedObj } } });
+    return { message: 'Group muted successfully.' };
   }
 }

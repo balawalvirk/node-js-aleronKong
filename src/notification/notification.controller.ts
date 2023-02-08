@@ -1,4 +1,4 @@
-import { Body, Controller, Get, Put, Query, UseGuards } from '@nestjs/common';
+import { Body, Controller, Delete, Get, Put, Query, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { GetUser, makeQuery } from 'src/helpers';
 import { UserDocument } from 'src/users/users.schema';
@@ -32,6 +32,12 @@ export class NotificationController {
   @Put('delete')
   async delete(@Body() deleteNotificationDto: DeleteNotificationDto) {
     await this.notificationService.deleteManyRecord({ _id: { $in: deleteNotificationDto.notifications } });
+    return { message: 'Notifications deleted successfully.' };
+  }
+
+  @Delete('delete-all')
+  async deleteAll(@GetUser() user: UserDocument) {
+    await this.notificationService.deleteManyRecord({ receiver: user._id });
     return { message: 'Notifications deleted successfully.' };
   }
 }
