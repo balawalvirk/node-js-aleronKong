@@ -18,5 +18,6 @@ import { FirebaseModule } from 'src/firebase/firebase.module';
   ],
   providers: [ChatService, SocketGateway, MessageService],
   controllers: [ChatController],
+  exports: [MessageService, ChatService],
 })
 export class ChatModule {}

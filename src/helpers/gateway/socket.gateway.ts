@@ -21,27 +21,22 @@ export class SocketGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 
   private readonly logger = new Logger(SocketGateway.name);
 
-  // life cycle event called when client connection disconnected
-  handleDisconnect(client: Socket) {
-    this.logger.log(`client disconnected ${client.id}`);
-    this.onlineUsers = this.onlineUsers.filter((user) => user.socketId !== client.id);
+  handleDisconnect(socket: Socket) {
+    this.logger.log(`client disconnected ${socket.id}`);
+    this.onlineUsers = this.onlineUsers.filter((user) => user.socketId !== socket.id);
   }
 
-  // life cycle event called when web socket is initialized
   afterInit(wss: Server) {
     this.logger.log('Websocket connection started.');
   }
 
-  // life cycle event called when client connected
-  handleConnection(client: Socket) {
-    this.logger.log(`client connected: ${client.id}`);
+  handleConnection(socket: Socket) {
+    this.logger.log(`client connected: ${socket.id}`);
   }
 
   @SubscribeMessage('login')
-  loginUser(@MessageBody() userId: string, @ConnectedSocket() client: Socket) {
-    if (!this.onlineUsers.some((user) => user.userId === userId)) {
-      this.onlineUsers.push({ userId, socketId: client.id });
-    }
+  loginUser(@MessageBody() userId: string, @ConnectedSocket() socket: Socket) {
+    if (!this.onlineUsers.some((user) => user.userId === userId)) this.onlineUsers.push({ userId, socketId: socket.id });
   }
 
   @SubscribeMessage('check-status')

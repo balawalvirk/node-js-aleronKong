@@ -36,6 +36,9 @@ export class Chat {
 
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Message' })
   lastMessage: Message;
+
+  @Prop({ messages: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Message' }] })
+  messages: Message[];
 }
 
 export const ChatSchema = SchemaFactory.createForClass(Chat);

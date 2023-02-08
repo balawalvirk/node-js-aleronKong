@@ -111,8 +111,8 @@ export class AuthService {
 
   async findNotifications(userId: string) {
     const Notifications = await this.NotificationService.findAllRecords({ receiver: userId, isRead: false });
-    const unReadMessages = Notifications.filter((notification) => notification.type === NotificationType.MESSAGE);
-    const unReadNotifications = Notifications.filter((notification) => notification.type !== NotificationType.MESSAGE);
+    const unReadMessages = Notifications.filter((notification) => notification.type === NotificationType.NEW_MESSAGE);
+    const unReadNotifications = Notifications.filter((notification) => notification.type !== NotificationType.NEW_MESSAGE);
     return { unReadMessages, unReadNotifications };
   }
 }

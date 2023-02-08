@@ -17,6 +17,7 @@ import { compare, hash } from 'bcrypt';
 import { ChangePasswordDto } from 'src/auth/dtos/change-pass.dto';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/role.guard';
+import { MessageService } from 'src/chat/message.service';
 import { FirebaseService } from 'src/firebase/firebase.service';
 import { makeQuery, ParseObjectId, Roles, StripeService } from 'src/helpers';
 import { GetUser } from 'src/helpers/decorators/user.decorator';
@@ -37,7 +38,8 @@ export class UserController {
     private readonly usersService: UsersService,
     private readonly stripeService: StripeService,
     private readonly notificationService: NotificationService,
-    private readonly firebaseService: FirebaseService
+    private readonly firebaseService: FirebaseService,
+    private readonly messageService: MessageService
   ) {}
 
   @Put('update')
@@ -187,5 +189,19 @@ export class UserController {
     const isFriend = user.friends.find((friend) => friend == id);
     if (!isFriend) throw new HttpException('User is not your friend.', HttpStatus.BAD_REQUEST);
     return await this.usersService.findOneRecordAndUpdate({ _id: user._id }, { $pull: { friends: id } });
+  }
+
+  //get count of unread messages
+  @Get('unread-messages')
+  async findUnreadMessages(@GetUser() user: UserDocument) {
+    const messages = await this.messageService.countRecords({ receiver: user._id, isRead: false });
+    return { messages };
+  }
+
+  //get count of unread notifications
+  @Get('unread-notifications')
+  async findUnreadNotifications(@GetUser() user: UserDocument) {
+    const notifications = await this.notificationService.countRecords({ receiver: user._id, isRead: false });
+    return { notifications };
   }
 }

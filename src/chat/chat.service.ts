@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { FilterQuery, Model } from 'mongoose';
+import { FilterQuery, Model, QueryOptions } from 'mongoose';
 import { BaseService } from 'src/helpers/services/base.service';
 import { Chat, ChatDocument } from './chat.schema';
 
@@ -18,8 +18,8 @@ export class ChatService extends BaseService<ChatDocument> {
     });
   }
 
-  async findAll(query: FilterQuery<ChatDocument>, userId: string) {
-    return await this.ChatModel.find(query).populate([
+  async findAll(query: FilterQuery<ChatDocument>, userId: string, options?: QueryOptions<ChatDocument>) {
+    return await this.ChatModel.find(query, {}, options).populate([
       {
         path: 'members',
         match: { _id: { $ne: userId } },
@@ -28,6 +28,7 @@ export class ChatService extends BaseService<ChatDocument> {
       {
         path: 'lastMessage',
       },
+      { path: 'messages', match: { isRead: false, receiver: userId } },
     ]);
   }
 

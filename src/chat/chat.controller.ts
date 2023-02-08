@@ -33,7 +33,7 @@ export class ChatController {
 
   @Get('/recent-chat')
   async recentChat(@GetUser() user: UserDocument) {
-    return await this.chatService.findAll({ members: { $in: [user._id] } }, user._id);
+    return await this.chatService.findAll({ members: { $in: [user._id] } }, user._id, { sort: { updatedAt: -1 } });
   }
 
   @Get('/find-one/:receiverId')
@@ -43,21 +43,27 @@ export class ChatController {
 
   @Post('/message/create')
   async createMessage(@Body() createMessageDto: CreateMessageDto, @GetUser() user: UserDocument) {
-    const message = await this.messageService.createRecord({ ...createMessageDto, sender: user._id });
-    const chat = await this.chatService.findOneRecordAndUpdate({ _id: createMessageDto.chat }, { lastMessage: message._id });
+    const chatFound = await this.chatService.findOneRecord({ _id: createMessageDto.chat });
+    //find receiver from chat object
+    const receiver = chatFound.members.find((member) => member.toString() != user._id);
+
+    const message = await this.messageService.createRecord({ ...createMessageDto, sender: user._id, receiver });
+
+    const chat = await this.chatService.findOneRecordAndUpdate(
+      { _id: createMessageDto.chat },
+      { lastMessage: message._id, $push: { messages: message._id } }
+    );
 
     //send socket message to members of chat
     this.socketService.triggerMessage(createMessageDto.chat, message);
-
-    //find receiver from chat object
-    const receiver = chat.members.find((member) => member.toString() != user._id);
+    this.socketService.triggerMessage('new-message', { chat: createMessageDto.chat, lastMessage: chat.lastMessage });
 
     //create notification obj in database
     await this.notificationService.createRecord({
       message: 'User has send you message.',
       sender: user._id,
       receiver: receiver,
-      type: NotificationType.MESSAGE,
+      type: NotificationType.NEW_MESSAGE,
     });
 
     if (chat.mutes) {
@@ -74,7 +80,7 @@ export class ChatController {
             await this.firebaseService.sendNotification({
               token: receiver.fcmToken,
               notification: { title: `User has send you message.` },
-              data: { user: user._id, type: NotificationType.MESSAGE },
+              data: { user: user._id, type: NotificationType.NEW_MESSAGE },
             });
           }
         }
@@ -87,7 +93,7 @@ export class ChatController {
             await this.firebaseService.sendNotification({
               token: receiver.fcmToken,
               notification: { title: `User has send you message.` },
-              data: { user: user._id, type: NotificationType.MESSAGE },
+              data: { user: user._id, type: NotificationType.NEW_MESSAGE },
             });
           }
         }
@@ -142,5 +148,11 @@ export class ChatController {
       }
     );
     return { message: 'Chat muted successfully.' };
+  }
+
+  @Put(':id/read-messages')
+  async readMessages(@Param('id', ParseObjectId) id: string) {
+    await this.messageService.updateManyRecords({ chat: id, isRead: false }, { isRead: true });
+    return { message: 'Message read successfully.' };
   }
 }

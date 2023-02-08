@@ -1,5 +1,6 @@
 import { Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
+import { ChatModule } from 'src/chat/chat.module';
 import { FirebaseModule } from 'src/firebase/firebase.module';
 import { StripeService } from 'src/helpers';
 import { NotificationModule } from 'src/notification/notification.module';
@@ -9,7 +10,7 @@ import { UserController } from './users.controller';
 import { UsersService } from './users.service';
 
 @Module({
-  imports: [MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]), NotificationModule, FirebaseModule, OrderModule],
+  imports: [MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]), NotificationModule, FirebaseModule, OrderModule, ChatModule],
   controllers: [UserController],
   providers: [UsersService, StripeService],
   exports: [UsersService],

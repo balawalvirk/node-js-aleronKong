@@ -13,6 +13,9 @@ export class Message {
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true })
   sender: User;
 
+  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true })
+  receiver: User;
+
   @Prop()
   content: string;
 
@@ -24,6 +27,9 @@ export class Message {
 
   @Prop({ type: [String] })
   images: string[];
+
+  @Prop({ default: false })
+  isRead: boolean;
 }
 
 export const MessageSchema = SchemaFactory.createForClass(Message);
