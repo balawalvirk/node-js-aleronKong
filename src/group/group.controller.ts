@@ -29,6 +29,7 @@ import { FundraisingService } from 'src/fundraising/fundraising.service';
 import { NotificationService } from 'src/notification/notification.service';
 import { FirebaseService } from 'src/firebase/firebase.service';
 import { MuteGroupDto } from './dto/mute-group.dto';
+import { FindPostsOfGroupQueryDto } from './dto/findGroupPost.query.dto';
 
 @Controller('group')
 @UseGuards(JwtAuthGuard)
@@ -154,7 +155,7 @@ export class GroupController {
           await this.firebaseService.sendNotification({
             token: group.creator.fcmToken,
             notification: { title: `User has send a join request for ${group.name} group` },
-            data: { group: group._id },
+            data: { group: group._id.toString() },
           });
         }
 
@@ -173,7 +174,7 @@ export class GroupController {
         await this.firebaseService.sendNotification({
           token: group.creator.fcmToken,
           notification: { title: `User has joined your ${group.name} group` },
-          data: { group: group._id },
+          data: { group: group._id.toString() },
         });
       }
 
@@ -268,5 +269,22 @@ export class GroupController {
 
     await this.groupService.findOneRecordAndUpdate({ _id: muteGroupDto.group }, { $push: { mutes: { ...updatedObj } } });
     return { message: 'Group muted successfully.' };
+  }
+
+  @Get(':id/post/find-all')
+  async findPostsOfGroups(@Param('id', ParseObjectId) id: string, @Query() { limit, page }: FindPostsOfGroupQueryDto) {
+    const $q = makeQuery({ page, limit });
+    const options = { sort: $q.sort, limit: $q.limit, skip: $q.skip };
+    const condition = { group: id };
+    const posts = await this.postService.find(condition, options);
+    const total = await this.postService.countRecords(condition);
+    const paginated = {
+      total,
+      pages: Math.ceil(total / $q.limit),
+      page: $q.page,
+      limit: $q.limit,
+      data: posts,
+    };
+    return paginated;
   }
 }

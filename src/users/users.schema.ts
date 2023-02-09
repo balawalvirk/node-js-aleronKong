@@ -80,6 +80,9 @@ export class User {
 
   @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Product' }] })
   boughtDigitalProducts: Product[];
+
+  @Prop({ default: true })
+  notificationEnabled: boolean;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

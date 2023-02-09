@@ -24,7 +24,7 @@ export enum GroupPrivacy {
 
 export enum ProductStatus {
   ACTIVE = 'active',
-  ARCHIEVED = 'archieved',
+  ARCHIEVED = 'archived',
   DRAFT = 'draft',
 }
 

@@ -21,15 +21,11 @@ import { RolesGuard } from 'src/auth/role.guard';
 import { CartService } from 'src/product/cart.service';
 import { makeQuery, ParseObjectId, Roles, StripeService } from 'src/helpers';
 import { GetUser } from 'src/helpers/decorators/user.decorator';
-import { CollectionConditions, CollectionTypes, NotificationType, ProductType, UserRoles } from 'src/types';
+import { NotificationType, ProductType, UserRoles } from 'src/types';
 import { UserDocument } from 'src/users/users.schema';
 import { ProductCategoryService } from './category.service';
-import { CollectionDocument } from './collection.schema';
-import { CollectionService } from './collection.service';
-import { AddProductDto } from './dtos/add-product.dto';
 import { CreateProductCategoryDto } from './dtos/create-category.dto';
 import { CreateCheckoutDto } from './dtos/create-checkout.dto';
-import { CreateCollectionDto } from './dtos/create-collection.dto';
 import { CreateProductDto } from './dtos/create-product.dto';
 import { UpdateProductDto } from './dtos/update-product.dto';
 import { ProductService } from './product.service';
@@ -39,7 +35,7 @@ import { AddToCartDto } from './dtos/add-to-cart.dto';
 import { SaleService } from './sale.service';
 import { UsersService } from 'src/users/users.service';
 import { FindStoreProductsQueryDto } from './dtos/find-store-products-query.dto';
-import { ReviewService } from './review.service';
+import { ReviewService } from '../review/review.service';
 import { CreateReviewDto } from './dtos/create-review.dto';
 import { FindAllProductsQuery } from './dtos/find-all-products.query';
 import { NotificationService } from 'src/notification/notification.service';
@@ -52,7 +48,6 @@ import { UpdateProductCategoryDto } from './dtos/update.category.dto';
 export class ProductController {
   constructor(
     private readonly productService: ProductService,
-    private readonly collectionService: CollectionService,
     private readonly stripeService: StripeService,
     private readonly addressService: AddressService,
     private readonly categoryService: ProductCategoryService,
@@ -133,9 +128,7 @@ export class ProductController {
 
   @Post('checkout')
   async checkout(@Body() { paymentMethod, address }: CreateCheckoutDto, @GetUser() user: UserDocument) {
-    const { city, line1, line2, country, state, postalCode } = await this.addressService.findOneRecord({
-      _id: address,
-    });
+    const { city, line1, line2, country, state, postalCode } = await this.addressService.findOneRecord({ _id: address });
     const cart = await this.cartService.findOne({ creator: user._id });
     const { total } = this.cartService.calculateTax(cart.items);
     const paymentIntent = await this.stripeService.createPaymentIntent({
@@ -246,7 +239,7 @@ export class ProductController {
       notification: {
         title: 'User has bought your product.',
       },
-      data: { product: product._id, type: NotificationType.BOUGHT },
+      data: { product: product._id.toString(), type: NotificationType.BOUGHT },
     });
     await this.userService.findOneRecordAndUpdate({ _id: user._id }, { $push: { boughtDigitalProducts: product._id } });
     return { message: 'Thanks for purchasing the product.' };
@@ -255,62 +248,6 @@ export class ProductController {
   @Get('trending/find-all')
   async findAllTrendingProducts(@Query('category', ParseObjectId) category: string) {
     return await this.productService.find({ category }, { sort: { avgRating: -1 } });
-  }
-
-  //-----------------------------------------------collection apis---------------------------------------
-  @Post('collection/create')
-  async createCollection(@Body() createCollectionDto: CreateCollectionDto, @GetUser() user: UserDocument) {
-    const collection = await this.collectionService.createRecord({
-      ...createCollectionDto,
-      creator: user._id,
-    });
-
-    let products;
-    // check if collection type is automated
-    if (collection.type === CollectionTypes.AUTOMATED) {
-      //check if collection condition is any
-      if (collection.conditions === CollectionConditions.ANY) {
-        products = await this.productService.findAllRecords({
-          tags: { $in: collection.tags },
-        });
-      } else if (collection.conditions === CollectionConditions.All) {
-        products = await this.productService.findAllRecords({
-          tags: { $all: collection.tags },
-        });
-      }
-      return await this.collectionService.findOneRecordAndUpdate({ _id: collection._id }, { $push: { products } });
-    }
-    return collection;
-  }
-
-  @Get('collection/find-all')
-  async findAllCollections(
-    @Query('type', new ParseEnumPipe(['automated', 'manual', 'all']))
-    type: string,
-    @GetUser() user: UserDocument
-  ) {
-    let collections: CollectionDocument[];
-    if (type === 'all') {
-      collections = await this.collectionService.findAllCollections({
-        creator: user._id,
-      });
-    } else {
-      collections = await this.collectionService.findAllCollections({
-        type: type,
-        creator: user._id,
-      });
-    }
-    return collections;
-  }
-
-  @Get('collection/find-one')
-  async findOneCollections(@GetUser() user: UserDocument) {
-    return await this.collectionService.findOneRecord({ creator: user._id });
-  }
-
-  @Put('collection/add-product')
-  async addProduct(@Body() { collection, product }: AddProductDto) {
-    return await this.collectionService.findOneRecordAndUpdate({ _id: collection }, { $push: { products: product } });
   }
 
   //-----------------------------------------------------------------------categories apis ---------------------------------------------------------
@@ -443,11 +380,11 @@ export class ProductController {
       product: createReviewDto.product,
       rating: createReviewDto.rating,
       creator: user._id,
+      order: createReviewDto.order,
     });
     const reviews = [...product.reviews, review];
     const avgRating = Math.round(reviews.reduce((n, { rating }) => n + rating / reviews.length, 0) * 10) / 10;
     await this.productService.findOneRecordAndUpdate({ _id: createReviewDto.product }, { $push: { reviews: review._id }, avgRating });
-    await this.orderService.findOneRecordAndUpdate({ _id: createReviewDto.order }, { review: review._id });
     return { message: 'Thanks for sharing your review.' };
   }
 
