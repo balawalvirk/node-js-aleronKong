@@ -6,7 +6,6 @@ import {
   HttpException,
   HttpStatus,
   Param,
-  ParseEnumPipe,
   Post,
   Put,
   Query,
