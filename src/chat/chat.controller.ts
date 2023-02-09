@@ -105,7 +105,9 @@ export class ChatController {
 
   @Get('/message/find-all/:chatId')
   async findAllMessage(@Param('chatId') chatId: string) {
-    return await this.messageService.findAllRecords({ chat: chatId }).sort({ createdAt: 1 });
+    const messages = await this.messageService.findAllRecords({ chat: chatId }).sort({ createdAt: 1 });
+    await this.messageService.updateManyRecords({ chat: chatId, isRead: false }, { isRead: true });
+    return messages;
   }
 
   @Delete('/delete/:id')
