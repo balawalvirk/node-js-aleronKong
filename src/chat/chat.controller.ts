@@ -56,7 +56,7 @@ export class ChatController {
 
     //send socket message to members of chat
     this.socketService.triggerMessage(createMessageDto.chat, message);
-    this.socketService.triggerMessage('new-message', { chat: createMessageDto.chat, lastMessage: chat.lastMessage });
+    this.socketService.triggerMessage('new-message', { chat: createMessageDto.chat, lastMessage: message });
 
     //create notification obj in database
     await this.notificationService.createRecord({
@@ -80,7 +80,7 @@ export class ChatController {
             await this.firebaseService.sendNotification({
               token: receiver.fcmToken,
               notification: { title: `User has send you message.` },
-              data: { user: user._id, type: NotificationType.NEW_MESSAGE },
+              data: { user: user._id.toString(), type: NotificationType.NEW_MESSAGE },
             });
           }
         }
@@ -93,7 +93,7 @@ export class ChatController {
             await this.firebaseService.sendNotification({
               token: receiver.fcmToken,
               notification: { title: `User has send you message.` },
-              data: { user: user._id, type: NotificationType.NEW_MESSAGE },
+              data: { user: user._id.toString(), type: NotificationType.NEW_MESSAGE },
             });
           }
         }

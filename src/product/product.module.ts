@@ -15,19 +15,17 @@ import { OrderModule } from 'src/order/order.module';
 import { Sale, SaleSchema } from './sale.schema';
 import { SaleService } from './sale.service';
 import { UsersModule } from 'src/users/users.module';
-import { Review, ReviewSchema } from './review.schema';
-import { ReviewService } from './review.service';
 import { NotificationModule } from 'src/notification/notification.module';
 import { FirebaseModule } from 'src/firebase/firebase.module';
+import { ReviewModule } from 'src/review/review.module';
 
 @Module({
   imports: [
     MongooseModule.forFeature([{ name: Product.name, schema: ProductSchema }]),
-    MongooseModule.forFeature([{ name: Collection.name, schema: CollectionSchema }]),
     MongooseModule.forFeature([{ name: ProductCategory.name, schema: ProductCategorySchema }]),
     MongooseModule.forFeature([{ name: Cart.name, schema: CartSchema }]),
     MongooseModule.forFeature([{ name: Sale.name, schema: SaleSchema }]),
-    MongooseModule.forFeature([{ name: Review.name, schema: ReviewSchema }]),
+    ReviewModule,
     AddressModule,
     OrderModule,
     UsersModule,
@@ -35,7 +33,7 @@ import { FirebaseModule } from 'src/firebase/firebase.module';
     FirebaseModule,
   ],
   controllers: [ProductController],
-  providers: [ProductService, CollectionService, StripeService, ProductCategoryService, CartService, SaleService, ReviewService],
+  providers: [ProductService, StripeService, ProductCategoryService, CartService, SaleService],
   exports: [ProductService, CartService, SaleService],
 })
 export class ProductModule {}

@@ -11,8 +11,6 @@ export class ReviewService extends BaseService<ReviewDocument> {
   }
 
   async find(query: FilterQuery<ReviewDocument>, options?: QueryOptions<ReviewDocument>) {
-    return await this.reviewModel
-      .find(query, {}, options)
-      .populate({ path: 'creator', select: 'firstName lastName avatar' });
+    return await this.reviewModel.find(query, {}, options).populate({ path: 'creator', select: 'firstName lastName avatar' });
   }
 }

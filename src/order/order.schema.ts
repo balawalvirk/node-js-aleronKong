@@ -2,7 +2,6 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
 import { Address } from 'src/address/address.schema';
 import { Product } from 'src/product/product.schema';
-import { Review } from 'src/product/review.schema';
 import { OrderStatus } from 'src/types';
 import { User } from 'src/users/users.schema';
 
@@ -42,9 +41,6 @@ export class Order {
 
   @Prop({ required: true })
   orderNumber: number;
-
-  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Review' })
-  review: Review;
 }
 
 export const OrderSchema = SchemaFactory.createForClass(Order);

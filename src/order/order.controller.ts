@@ -6,11 +6,16 @@ import { UserDocument } from 'src/users/users.schema';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { OrderStatus } from 'src/types';
 import { FindAllQueryDto } from './dto/find-all-query.dto';
+import { ReviewService } from 'src/review/review.service';
 
 @Controller('order')
 @UseGuards(JwtAuthGuard)
 export class OrderController {
-  constructor(private readonly orderService: OrderService, private readonly stripeService: StripeService) {}
+  constructor(
+    private readonly orderService: OrderService,
+    private readonly stripeService: StripeService,
+    private readonly reviewService: ReviewService
+  ) {}
 
   @Get('find-all')
   async findAll(@Query() findAllQueryDto: FindAllQueryDto) {
@@ -55,5 +60,10 @@ export class OrderController {
   async delete(@Param('id', ParseObjectId) id: string) {
     await this.orderService.deleteSingleRecord({ _id: id });
     return { message: 'Order deleted successfully.' };
+  }
+
+  @Get(':id/review/find-all')
+  async findReviews(@Param('id', ParseObjectId) id: string) {
+    return await this.reviewService.find({ order: id });
   }
 }

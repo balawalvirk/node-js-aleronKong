@@ -3,7 +3,7 @@ import * as mongoose from 'mongoose';
 import { ProductStatus, ProductType } from 'src/types';
 import { User } from 'src/users/users.schema';
 import { ProductCategory } from './category.schema';
-import { Review } from './review.schema';
+import { Review } from '../review/review.schema';
 
 export type ProductDocument = Product & mongoose.Document;
 @Schema({ timestamps: true })

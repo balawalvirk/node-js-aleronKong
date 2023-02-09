@@ -21,6 +21,7 @@ import { ReportModule } from './report/report.module';
 import { SearchModule } from './search/search.module';
 import { FirebaseModule } from './firebase/firebase.module';
 import { DashboardModule } from './dashboard/dashboard.module';
+import { ReviewModule } from './review/review.module';
 
 @Module({
   imports: [
@@ -43,6 +44,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
     SearchModule,
     FirebaseModule,
     DashboardModule,
+    ReviewModule,
   ],
   // global interceptor for transforming response.
   providers: [
