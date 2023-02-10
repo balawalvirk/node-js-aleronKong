@@ -95,8 +95,14 @@ export class PostsController {
       isBlocked: false,
       status: PostStatus.ACTIVE,
       $or: user.isGuildMember
-        ? [{ privacy: PostPrivacy.PUBLIC }, { privacy: PostPrivacy.FOLLOWERS, creator: { $in: followings } }, { privacy: PostPrivacy.GUILD_MEMBERS }]
+        ? [
+            { creator: user._id },
+            { privacy: PostPrivacy.PUBLIC },
+            { privacy: PostPrivacy.FOLLOWERS, creator: { $in: followings } },
+            { privacy: PostPrivacy.GUILD_MEMBERS },
+          ]
         : [
+            { creator: user._id },
             { privacy: PostPrivacy.PUBLIC },
             { privacy: PostPrivacy.FOLLOWERS, creator: { $in: followings } },
             { $and: [{ privacy: PostPrivacy.GUILD_MEMBERS, creator: user._id }] },

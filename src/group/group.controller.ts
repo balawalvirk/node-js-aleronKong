@@ -226,19 +226,24 @@ export class GroupController {
   async findAllGroups(@Query('type') type: string, @Query('query', new DefaultValuePipe('')) query: string, @GetUser() user: UserDocument) {
     let groups;
     if (type === 'forYou') {
-      groups = await this.groupService.findAllRecords({ name: { $regex: query, $options: 'i' }, 'members.member': user._id });
+      groups = await this.groupService.findAllRecords({ name: { $regex: query, $options: 'i' }, 'members.member': user._id }, { createdAt: -1 });
     } else if (type === 'yourGroups') {
-      groups = await this.groupService.findAllRecords({
-        $and: [{ name: { $regex: query, $options: 'i' } }, { creator: user._id }],
-      });
+      groups = await this.groupService.findAllRecords(
+        {
+          $and: [{ name: { $regex: query, $options: 'i' } }, { creator: user._id }],
+        },
+        { createdAt: -1 }
+      );
     } else if (type === 'discover') {
-      groups = await this.groupService.findAllRecords({
-        $and: [{ name: { $regex: query, $options: 'i' } }, { 'members.member': { $ne: user._id }, creator: { $ne: user._id } }],
-      });
+      groups = await this.groupService.findAllRecords(
+        {
+          $and: [{ name: { $regex: query, $options: 'i' } }, { 'members.member': { $ne: user._id }, creator: { $ne: user._id } }],
+        },
+        { createdAt: -1 }
+      );
     } else {
       groups = await this.groupService.findAllRecords();
     }
-
     return groups;
   }
 
