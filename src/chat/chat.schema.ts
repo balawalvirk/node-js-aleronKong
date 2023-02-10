@@ -37,7 +37,7 @@ export class Chat {
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Message' })
   lastMessage: Message;
 
-  @Prop({ messages: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Message' }] })
+  @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Message' }] })
   messages: Message[];
 }
 

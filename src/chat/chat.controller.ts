@@ -46,14 +46,11 @@ export class ChatController {
     const chatFound = await this.chatService.findOneRecord({ _id: createMessageDto.chat });
     //find receiver from chat object
     const receiver = chatFound.members.find((member) => member.toString() != user._id);
-
     const message = await this.messageService.createRecord({ ...createMessageDto, sender: user._id, receiver });
-
     const chat = await this.chatService.findOneRecordAndUpdate(
       { _id: createMessageDto.chat },
       { lastMessage: message._id, $push: { messages: message._id } }
     );
-
     //send socket message to members of chat
     this.socketService.triggerMessage(createMessageDto.chat, message);
     this.socketService.triggerMessage('new-message', { chat: createMessageDto.chat, lastMessage: message });
