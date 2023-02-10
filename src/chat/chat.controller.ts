@@ -57,7 +57,7 @@ export class ChatController {
 
     //create notification obj in database
     await this.notificationService.createRecord({
-      message: 'User has send you message.',
+      message: 'has send you message.',
       sender: user._id,
       receiver: receiver,
       type: NotificationType.NEW_MESSAGE,
