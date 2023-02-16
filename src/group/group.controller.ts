@@ -100,7 +100,7 @@ export class GroupController {
     const condition = {
       'members.member': user._id,
     };
-    const total = await this.groupService.countRecords({});
+    const total = await this.groupService.countRecords(condition);
     const groups = await this.groupService.feed(condition, options);
     let posts = [];
     groups.forEach((group) => {
@@ -127,6 +127,8 @@ export class GroupController {
   async update(@Param('id', ParseObjectId) id: string, @Body() updateGroupDto: UpdateGroupDto) {
     const group = await this.groupService.findOneRecord({ _id: id });
     if (!group) throw new HttpException('Group not found.', HttpStatus.BAD_REQUEST);
+    console.log({ id });
+
     return await this.groupService.findOneRecordAndUpdate({ _id: id }, updateGroupDto);
   }
 
@@ -204,6 +206,7 @@ export class GroupController {
   @Get('all-requests/:id')
   async findAllRequests(@Param('id', ParseObjectId) id: string) {
     const group = await this.groupService.findAllRequests({ _id: id });
+    if (!group.requests) return [];
     return group.requests;
   }
 

@@ -22,9 +22,6 @@ export class CreateFudraisingDto {
   category: string;
 
   @IsString()
-  subCategory: string;
-
-  @IsString()
   location: string;
 
   @IsDateString()
