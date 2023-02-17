@@ -10,18 +10,11 @@ export class LocalStrategy extends PassportStrategy(Strategy) {
     super({ usernameField: 'email' });
   }
 
-  async validate(email: string, password: string): Promise<any> {
+  async validate(email: string, password: string) {
     const user = await this.authService.validateUser(email, password);
-    if (!user) {
-      throw new UnauthorizedException('Invalid email/password.');
-    }
-    // check if user is blocked or not.
+    if (!user) throw new UnauthorizedException('Invalid email/password.');
     if (user.status === UserStatus.BLOCKED)
-      throw new HttpException(
-        'You are blocked kindly contact with administration support.',
-        HttpStatus.FORBIDDEN
-      );
-
+      throw new HttpException('You are blocked kindly contact with administration support.', HttpStatus.FORBIDDEN);
     return user;
   }
 }

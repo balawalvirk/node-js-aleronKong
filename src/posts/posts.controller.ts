@@ -123,7 +123,7 @@ export class PostsController {
   @Post('like/:id')
   async addLike(@Param('id', ParseObjectId) id: string, @GetUser() user: UserDocument) {
     const postExists = await this.postsService.findOneRecord({ _id: id, likes: { $in: [user._id] } });
-    if (postExists) throw new HttpException('You already liked this post.', HttpStatus.BAD_REQUEST);
+    if (postExists) return await this.postsService.update({ _id: id }, { $pull: { likes: user._id } });
     const post = await this.postsService.update({ _id: id }, { $push: { likes: user._id } });
     await this.notificationService.createRecord({
       post: post._id,
