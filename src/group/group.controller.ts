@@ -152,8 +152,9 @@ export class GroupController {
           //@ts-ignore
           receiver: group.creator._id,
         });
+        // check if user does not mute the group and have fcm Token then send a fcm  message.
         //@ts-ignore
-        if (!this.groupService.isGroupMuted(group.mutes, group.creator._id)) {
+        if (!this.groupService.isGroupMuted(group.mutes, group.creator._id) && group.creator.fcmToken) {
           await this.firebaseService.sendNotification({
             token: group.creator.fcmToken,
             notification: { title: `User has send a join request for ${group.name} group` },
@@ -171,16 +172,18 @@ export class GroupController {
         //@ts-ignore
         receiver: group.creator._id,
       });
+
+      // check if user does not mute the group and have fcm Token then send a fcm  message.
       //@ts-ignore
-      if (!this.groupService.isGroupMuted(group.mutes, group.creator._id)) {
+      if (!this.groupService.isGroupMuted(group.mutes, group.creator._id) && group.creator.fcmToken) {
+        const updatedGroup = await this.groupService.findOneRecordAndUpdate({ _id: id }, { $push: { members: { member: user._id } } });
         await this.firebaseService.sendNotification({
           token: group.creator.fcmToken,
           notification: { title: `User has joined your ${group.name} group` },
           data: { group: group._id.toString() },
         });
+        return updatedGroup;
       }
-
-      return await this.groupService.findOneRecordAndUpdate({ _id: id }, { $push: { members: { member: user._id } } });
     } else throw new HttpException('Group does not exists.', HttpStatus.BAD_REQUEST);
   }
 

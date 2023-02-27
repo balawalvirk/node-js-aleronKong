@@ -12,10 +12,7 @@ export class PaymentMethodController {
   constructor(private readonly stripeService: StripeService, private readonly userService: UsersService) {}
 
   @Post('create')
-  async createPaymentMethord(
-    @Body() { number, expiryMonth, expiryYear, name, cvc }: CreatePaymentMethordDto,
-    @GetUser() user: UserDocument
-  ) {
+  async createPaymentMethord(@Body() { number, expiryMonth, expiryYear, name, cvc }: CreatePaymentMethordDto, @GetUser() user: UserDocument) {
     const paymentMethod = await this.stripeService.createPaymentMethod({
       type: 'card',
       card: {
@@ -35,10 +32,7 @@ export class PaymentMethodController {
   }
 
   @Patch(':id/update')
-  async updatePaymentMethord(
-    @Param('id') id: string,
-    @Body() { name, expiryMonth, expiryYear }: UpdatePaymentMethordDto
-  ) {
+  async updatePaymentMethord(@Param('id') id: string, @Body() { name, expiryMonth, expiryYear }: UpdatePaymentMethordDto) {
     return await this.stripeService.updatePaymentMethord(id, {
       billing_details: {
         name: name,
@@ -66,9 +60,12 @@ export class PaymentMethodController {
 
   @Get('find-all')
   async findAllPaymentMethords(@GetUser() user: UserDocument) {
-    const paymentMethods = await this.stripeService.findAllPaymentMethords(user.customerId, {
-      type: 'card',
-    });
+    const paymentMethods = await this.stripeService.findAllPaymentMethords(user.customerId, { type: 'card' });
     return paymentMethods.data;
+  }
+
+  @Get(':id/find-one')
+  async findOnePaymentMethord(@Param('id') id: string) {
+    return await this.stripeService.findOnePaymentMethod(id);
   }
 }

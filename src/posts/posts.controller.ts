@@ -1,19 +1,4 @@
-import {
-  Body,
-  Controller,
-  Delete,
-  Get,
-  HttpException,
-  HttpStatus,
-  Param,
-  Post,
-  Put,
-  Query,
-  UseGuards,
-  ValidationPipe,
-  UsePipes,
-  ParseBoolPipe,
-} from '@nestjs/common';
+import { Body, Controller, Delete, Get, Param, Post, Put, Query, UseGuards, ValidationPipe, UsePipes, ParseBoolPipe } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/role.guard';
 import { FirebaseService } from 'src/firebase/firebase.service';
@@ -50,7 +35,7 @@ export class PostsController {
     const options = { limit: $q.limit, skip: $q.skip, sort: $q.sort };
     const rjx = { $regex: query, $options: 'i' };
     const condition = { content: rjx };
-    const posts = await this.postsService.findAllRecords(condition, options);
+    const posts = await this.postsService.findAllRecords(condition, options).populate('creator');
     const total = await this.postsService.countRecords(condition);
     const paginated = {
       total: total,
