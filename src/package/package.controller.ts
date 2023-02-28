@@ -5,7 +5,6 @@ import { UpdatePackageDto } from './dto/update-package.dto';
 import { GetUser, makeQuery, ParseObjectId, StripeService } from 'src/helpers';
 import { UserDocument } from 'src/users/users.schema';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
-import { PackageDocument } from './package.schema';
 import { UsersService } from 'src/users/users.service';
 import { UserRoles } from 'src/types';
 import { FindAllPackagesQueryDto } from './dto/find-all-query.dto';
