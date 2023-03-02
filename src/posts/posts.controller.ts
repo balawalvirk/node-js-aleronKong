@@ -118,11 +118,14 @@ export class PostsController {
       //@ts-ignore
       receiver: post.creator._id,
     });
-    await this.firebaseService.sendNotification({
-      token: post.creator.fcmToken,
-      notification: { title: 'Liked your post.' },
-      data: { post: post._id.toString(), type: NotificationType.POST },
-    });
+    if (post.creator.fcmToken) {
+      await this.firebaseService.sendNotification({
+        token: post.creator.fcmToken,
+        notification: { title: 'Liked your post.' },
+        data: { post: post._id.toString(), type: NotificationType.POST },
+      });
+    }
+
     return post;
   }
 
@@ -143,11 +146,14 @@ export class PostsController {
       //@ts-ignore
       receiver: post.creator._id,
     });
-    await this.firebaseService.sendNotification({
-      token: post.creator.fcmToken,
-      notification: { title: 'Your Post Commented' },
-      data: { post: post._id.toString(), type: NotificationType.POST },
-    });
+    // check if user has fcm token then send notification to that user.
+    if (post.creator.fcmToken) {
+      await this.firebaseService.sendNotification({
+        token: post.creator.fcmToken,
+        notification: { title: 'Your Post Commented' },
+        data: { post: post._id.toString(), type: NotificationType.POST },
+      });
+    }
     return post;
   }
 
