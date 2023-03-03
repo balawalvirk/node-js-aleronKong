@@ -26,9 +26,15 @@ export class PaymentMethodController {
       },
     });
 
-    return await this.stripeService.attachPaymentMethord(paymentMethod.id, {
+    const methodAttached = await this.stripeService.attachPaymentMethord(paymentMethod.id, {
       customer: user.customerId,
     });
+
+    if (!user.defaultPaymentMethod) {
+      await this.userService.findOneRecordAndUpdate({ _id: user._id }, { defaultPaymentMethod: paymentMethod.id });
+    }
+
+    return methodAttached;
   }
 
   @Patch(':id/update')
