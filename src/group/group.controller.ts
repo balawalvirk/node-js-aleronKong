@@ -69,11 +69,13 @@ export class GroupController {
       });
       //@ts-ignore
       if (!this.groupService.isGroupMuted(group.mutes, group.creator._id)) {
-        await this.firebaseService.sendNotification({
-          token: group.creator.fcmToken,
-          notification: { title: `User has posted in your ${group.name} group` },
-          data: { group: group._id.toString() },
-        });
+        if (group.creator.fcmToken) {
+          await this.firebaseService.sendNotification({
+            token: group.creator.fcmToken,
+            notification: { title: `User has posted in your ${group.name} group` },
+            data: { group: group._id.toString() },
+          });
+        }
       }
     }
     return post;
@@ -135,56 +137,56 @@ export class GroupController {
   @Put('join/:id')
   async joinGroup(@GetUser() user: UserDocument, @Param('id') id: string) {
     const group = await this.groupService.findOneRecord({ _id: id }).populate({ path: 'creator', select: 'fcmToken' });
-    if (group) {
-      //check if user is already a member of this group
-      const memberFound = group.members.filter((member) => member.member === user._id);
-      if (memberFound.length > 0) throw new HttpException('You are already a member of this group.', HttpStatus.BAD_REQUEST);
-      //check if group is private
-      if (group.privacy === GroupPrivacy.PRIVATE) {
-        //check if user request is already in request array  of this group
-        const requestFound = group.requests.filter((request) => request === user._id);
-        if (requestFound.length > 0) throw new HttpException('Your request to join group is pending.', HttpStatus.BAD_REQUEST);
-        await this.notificationService.createRecord({
-          type: NotificationType.GROUP_JOIN_REQUEST,
-          group: group._id,
-          message: `User has send a join request for ${group.name} group`,
-          sender: user._id,
-          //@ts-ignore
-          receiver: group.creator._id,
-        });
-        // check if user does not mute the group and have fcm Token then send a fcm  message.
-        //@ts-ignore
-        if (!this.groupService.isGroupMuted(group.mutes, group.creator._id) && group.creator.fcmToken) {
-          await this.firebaseService.sendNotification({
-            token: group.creator.fcmToken,
-            notification: { title: `User has send a join request for ${group.name} group` },
-            data: { group: group._id.toString() },
-          });
-        }
+    if (!group) throw new HttpException('Group does not exists.', HttpStatus.BAD_REQUEST);
 
-        return await this.groupService.findOneRecordAndUpdate({ _id: id }, { $push: { requests: user._id } });
-      }
+    //check if user is already a member of this group
+    const memberFound = group.members.filter((member) => member.member === user._id);
+    if (memberFound.length > 0) throw new HttpException('You are already a member of this group.', HttpStatus.BAD_REQUEST);
+    //check if group is private
+    if (group.privacy === GroupPrivacy.PRIVATE) {
+      //check if user request is already in request array  of this group
+      const requestFound = group.requests.filter((request) => request === user._id);
+      if (requestFound.length > 0) throw new HttpException('Your request to join group is pending.', HttpStatus.BAD_REQUEST);
       await this.notificationService.createRecord({
-        type: NotificationType.GROUP_JOINED,
+        type: NotificationType.GROUP_JOIN_REQUEST,
         group: group._id,
-        message: `User has joined your ${group.name} group`,
+        message: `User has send a join request for ${group.name} group`,
         sender: user._id,
         //@ts-ignore
         receiver: group.creator._id,
       });
-
       // check if user does not mute the group and have fcm Token then send a fcm  message.
       //@ts-ignore
       if (!this.groupService.isGroupMuted(group.mutes, group.creator._id) && group.creator.fcmToken) {
-        const updatedGroup = await this.groupService.findOneRecordAndUpdate({ _id: id }, { $push: { members: { member: user._id } } });
         await this.firebaseService.sendNotification({
           token: group.creator.fcmToken,
-          notification: { title: `User has joined your ${group.name} group` },
+          notification: { title: `User has send a join request for ${group.name} group` },
           data: { group: group._id.toString() },
         });
-        return updatedGroup;
       }
-    } else throw new HttpException('Group does not exists.', HttpStatus.BAD_REQUEST);
+      return await this.groupService.findOneRecordAndUpdate({ _id: id }, { $push: { requests: user._id } });
+    }
+    await this.notificationService.createRecord({
+      type: NotificationType.GROUP_JOINED,
+      group: group._id,
+      message: `User has joined your ${group.name} group`,
+      sender: user._id,
+      //@ts-ignore
+      receiver: group.creator._id,
+    });
+
+    const updatedGroup = await this.groupService.findOneRecordAndUpdate({ _id: id }, { $push: { members: { member: user._id } } });
+
+    // check if user does not mute the group and have fcm Token then send a fcm  message.
+    //@ts-ignore
+    if (!this.groupService.isGroupMuted(group.mutes, group.creator._id) && group.creator.fcmToken) {
+      await this.firebaseService.sendNotification({
+        token: group.creator.fcmToken,
+        notification: { title: `User has joined your ${group.name} group` },
+        data: { group: group._id.toString() },
+      });
+    }
+    return updatedGroup;
   }
 
   @Put('leave/:id')
