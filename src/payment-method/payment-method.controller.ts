@@ -60,8 +60,11 @@ export class PaymentMethodController {
   }
 
   @Delete(':id/delete')
-  async deletePaymentMethord(@Param('id') id: string) {
-    return await this.stripeService.deAttachPaymentMethord(id);
+  async deletePaymentMethord(@Param('id') id: string, @GetUser() user: UserDocument) {
+    const paymentMethod = await this.stripeService.deAttachPaymentMethord(id);
+    const paymentMethods = await this.stripeService.findAllPaymentMethords(user.customerId, { type: 'card' });
+    if (paymentMethods.data.length === 0) await this.userService.findOneRecordAndUpdate({ _id: user._id }, { $unset: { defaultPaymentMethod: 1 } });
+    return paymentMethod;
   }
 
   @Get('find-all')

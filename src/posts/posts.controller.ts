@@ -110,20 +110,24 @@ export class PostsController {
     const postExists = await this.postsService.findOneRecord({ _id: id, likes: { $in: [user._id] } });
     if (postExists) return await this.postsService.update({ _id: id }, { $pull: { likes: user._id } });
     const post = await this.postsService.update({ _id: id }, { $push: { likes: user._id } });
-    await this.notificationService.createRecord({
-      post: post._id,
-      message: 'Liked your post.',
-      type: NotificationType.POST,
-      sender: user._id,
-      //@ts-ignore
-      receiver: post.creator._id,
-    });
-    if (post.creator.fcmToken) {
-      await this.firebaseService.sendNotification({
-        token: post.creator.fcmToken,
-        notification: { title: 'Liked your post.' },
-        data: { post: post._id.toString(), type: NotificationType.POST },
+
+    //@ts-ignore
+    if (user._id != post.creator._id.toString()) {
+      await this.notificationService.createRecord({
+        post: post._id,
+        message: 'Your post liked.',
+        type: NotificationType.POST_LIKED,
+        sender: user._id,
+        //@ts-ignore
+        receiver: post.creator._id,
       });
+      if (post.creator.fcmToken) {
+        await this.firebaseService.sendNotification({
+          token: post.creator.fcmToken,
+          notification: { title: 'Liked your post.' },
+          data: { post: post._id.toString(), type: NotificationType.POST_LIKED },
+        });
+      }
     }
 
     return post;
@@ -138,22 +142,27 @@ export class PostsController {
   async createComment(@Param('id') id: string, @GetUser() user: UserDocument, @Body() body: CreateCommentDto) {
     const comment = await this.commentService.createRecord({ content: body.content, creator: user._id, post: id });
     const post = await this.postsService.update({ _id: id }, { $push: { comments: comment._id } });
-    await this.notificationService.createRecord({
-      post: post._id,
-      message: 'Your Post Commented',
-      type: NotificationType.POST,
-      sender: user._id,
-      //@ts-ignore
-      receiver: post.creator._id,
-    });
-    // check if user has fcm token then send notification to that user.
-    if (post.creator.fcmToken) {
-      await this.firebaseService.sendNotification({
-        token: post.creator.fcmToken,
-        notification: { title: 'Your Post Commented' },
-        data: { post: post._id.toString(), type: NotificationType.POST },
+
+    //@ts-ignore
+    if (user._id != post.creator._id.toString()) {
+      await this.notificationService.createRecord({
+        post: post._id,
+        message: 'Your Post Commented',
+        type: NotificationType.POST_COMMENTED,
+        sender: user._id,
+        //@ts-ignore
+        receiver: post.creator._id,
       });
+      // check if user has fcm token then send notification to that user.
+      if (post.creator.fcmToken) {
+        await this.firebaseService.sendNotification({
+          token: post.creator.fcmToken,
+          notification: { title: 'Your Post Commented' },
+          data: { post: post._id.toString(), type: NotificationType.POST_COMMENTED },
+        });
+      }
     }
+
     return post;
   }
 

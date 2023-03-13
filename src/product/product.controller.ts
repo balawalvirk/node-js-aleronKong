@@ -182,15 +182,15 @@ export class ProductController {
         sender: user._id,
         //@ts-ignore
         receiver: item.creator._id,
-        message: 'User has placed an order',
-        type: NotificationType.ORDER,
+        message: 'has placed an order',
+        type: NotificationType.ORDER_PLACED,
       });
       await this.firebaseService.sendNotification({
         token: item.creator.fcmToken,
         notification: {
-          title: 'User has placed an order',
+          title: 'has placed an order',
         },
-        data: { order: order._id.toString(), type: NotificationType.ORDER },
+        data: { order: order._id.toString(), type: NotificationType.ORDER_PLACED },
       });
     }
 
@@ -230,15 +230,15 @@ export class ProductController {
       sender: user._id,
       //@ts-ignore
       receiver: product.creator._id,
-      type: NotificationType.BOUGHT,
-      message: 'User has bought your product.',
+      type: NotificationType.PRODUCT_BOUGHT,
+      message: 'has bought your product.',
     });
     await this.firebaseService.sendNotification({
       token: product.creator.fcmToken,
       notification: {
-        title: 'User has bought your product.',
+        title: 'has bought your product.',
       },
-      data: { product: product._id.toString(), type: NotificationType.BOUGHT },
+      data: { product: product._id.toString(), type: NotificationType.PRODUCT_BOUGHT },
     });
     await this.userService.findOneRecordAndUpdate({ _id: user._id }, { $push: { boughtDigitalProducts: product._id } });
     return { message: 'Thanks for purchasing the product.' };
