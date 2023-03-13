@@ -98,11 +98,7 @@ export class AuthController {
 
   @Post('social-login')
   async socialLogin(@Body() socialLoginDto: SocialLoginDto, @Ip() ip: string) {
-    const userFound = await this.userService.findOneRecord({
-      email: socialLoginDto.email,
-      authType: socialLoginDto.authType,
-    });
-
+    const userFound = await this.userService.findOneRecord({ email: socialLoginDto.email });
     if (!userFound) {
       const sellerAccount = await this.authService.createSellerAccount(socialLoginDto, ip);
       const customerAccount = await this.authService.createCustomerAccount(
@@ -124,6 +120,7 @@ export class AuthController {
         newUser: true,
       };
     } else {
+      if (userFound.authType !== socialLoginDto.authType) throw new HttpException('User already exists with this email.', HttpStatus.BAD_REQUEST);
       let paymentMethod = null;
       const { access_token } = await this.authService.login(userFound.userName, userFound._id);
       const { unReadMessages, unReadNotifications } = await this.authService.findNotifications(userFound._id);
