@@ -108,3 +108,12 @@ export enum SearchSort {
   RATING = 'rating',
   DEFAULT = 'default',
 }
+
+export enum Reactions {
+  THUMBS_UP = 'thumbsUp',
+  LOVE = 'love',
+  LAUGH = 'laugh',
+  SHOCK = 'shock',
+  SAD = 'sad',
+  CLAP = 'clap',
+}

@@ -8,11 +8,13 @@ import { Message, MessageSchema } from './messages.schema';
 import { MessageService } from './message.service';
 import { NotificationModule } from 'src/notification/notification.module';
 import { FirebaseModule } from 'src/firebase/firebase.module';
+import { Reaction, ReactionSchema } from './reaction.schema';
 
 @Module({
   imports: [
     MongooseModule.forFeature([{ name: Chat.name, schema: ChatSchema }]),
     MongooseModule.forFeature([{ name: Message.name, schema: MessageSchema }]),
+    MongooseModule.forFeature([{ name: Reaction.name, schema: ReactionSchema }]),
     NotificationModule,
     FirebaseModule,
   ],

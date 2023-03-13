@@ -82,7 +82,7 @@ export class User {
   boughtDigitalProducts: Product[];
 
   @Prop({ default: true })
-  notificationEnabled: boolean;
+  notificationsEnabled: boolean;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

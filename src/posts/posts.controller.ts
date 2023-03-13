@@ -115,7 +115,7 @@ export class PostsController {
     if (user._id != post.creator._id.toString()) {
       await this.notificationService.createRecord({
         post: post._id,
-        message: 'Your post liked.',
+        message: 'liked your post.',
         type: NotificationType.POST_LIKED,
         sender: user._id,
         //@ts-ignore
@@ -124,7 +124,7 @@ export class PostsController {
       if (post.creator.fcmToken) {
         await this.firebaseService.sendNotification({
           token: post.creator.fcmToken,
-          notification: { title: 'Liked your post.' },
+          notification: { title: 'liked your post.' },
           data: { post: post._id.toString(), type: NotificationType.POST_LIKED },
         });
       }
@@ -147,7 +147,7 @@ export class PostsController {
     if (user._id != post.creator._id.toString()) {
       await this.notificationService.createRecord({
         post: post._id,
-        message: 'Your Post Commented',
+        message: 'commented on your post.',
         type: NotificationType.POST_COMMENTED,
         sender: user._id,
         //@ts-ignore
@@ -157,7 +157,7 @@ export class PostsController {
       if (post.creator.fcmToken) {
         await this.firebaseService.sendNotification({
           token: post.creator.fcmToken,
-          notification: { title: 'Your Post Commented' },
+          notification: { title: 'commented on your post.' },
           data: { post: post._id.toString(), type: NotificationType.POST_COMMENTED },
         });
       }
