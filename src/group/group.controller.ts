@@ -267,7 +267,7 @@ export class GroupController {
   }
 
   @Put('mute')
-  async muteChat(@Body() muteGroupDto: MuteGroupDto, @GetUser() user: UserDocument) {
+  async muteGroup(@Body() muteGroupDto: MuteGroupDto, @GetUser() user: UserDocument) {
     const now = new Date();
     const date = new Date(now);
     let updatedObj: any = { user: user._id, interval: muteGroupDto.interval };
@@ -284,7 +284,6 @@ export class GroupController {
     else {
       updatedObj = { ...updatedObj, startTime: muteGroupDto.startTime, endTime: muteGroupDto.endTime };
     }
-
     await this.groupService.findOneRecordAndUpdate({ _id: muteGroupDto.group }, { $push: { mutes: { ...updatedObj } } });
     return { message: 'Group muted successfully.' };
   }

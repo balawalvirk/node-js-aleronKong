@@ -12,6 +12,7 @@ import { ChatService } from './chat.service';
 import { CreateMessageDto } from './dto/create-message.dto';
 import { MuteChatDto } from './dto/mute-chat.dto';
 import { MessageService } from './message.service';
+import { AddRemoveReactionsDto } from './dto/add-remove-reactions.dto';
 
 @Controller('chat')
 @UseGuards(JwtAuthGuard)
@@ -102,9 +103,19 @@ export class ChatController {
 
   @Get('/message/find-all/:chatId')
   async findAllMessage(@Param('chatId') chatId: string) {
-    const messages = await this.messageService.findAllRecords({ chat: chatId }).sort({ createdAt: 1 });
+    const messages = await this.messageService.findAll({ chat: chatId });
     await this.messageService.updateManyRecords({ chat: chatId, isRead: false }, { isRead: true });
     return messages;
+  }
+
+  @Post('/message/reaction/add-remove')
+  async addRemoveReactions(@Body() { reaction, message }: AddRemoveReactionsDto, @GetUser() user: UserDocument) {
+    const messageFound = await this.messageService.findOneRecord({ _id: message, reactions: { reaction, user: user._id } });
+    if (!messageFound) {
+      return await this.messageService.findOneRecordAndUpdate({ _id: message }, { $push: { reactions: { reaction: reaction, user: user._id } } });
+    } else {
+      return await this.messageService.findOneRecordAndUpdate({ _id: message }, { $pull: { reactions: { reaction: reaction, user: user._id } } });
+    }
   }
 
   @Delete('/delete/:id')
