@@ -81,13 +81,13 @@ export class FundraisingController {
       sender: user._id,
       //@ts-ignore
       receiver: post.creator._id,
-      message: `User has funded ${amount}$ for your project`,
-      type: NotificationType.PROJECT_FUNDED,
+      message: `has funded ${amount}$ for your project`,
+      type: NotificationType.FUNDRAISING_PROJECT_FUNDED,
     });
     await this.firebaseService.sendNotification({
       token: post.creator.fcmToken,
-      notification: { title: `User has funded ${amount}$ for your project` },
-      data: { post: post._id.toString(), type: NotificationType.PROJECT_FUNDED },
+      notification: { title: `has funded ${amount}$ for your project` },
+      data: { post: post._id.toString(), type: NotificationType.FUNDRAISING_PROJECT_FUNDED },
     });
 
     return post;

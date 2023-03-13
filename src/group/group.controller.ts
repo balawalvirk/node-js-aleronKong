@@ -59,22 +59,27 @@ export class GroupController {
         .findOneRecordAndUpdate({ _id: post.group }, { $push: { posts: post._id } })
         .populate({ path: 'creator', select: 'fcmToken' });
 
-      await this.notificationService.createRecord({
-        type: NotificationType.GROUP_POST,
-        group: group._id,
-        message: `User has posted in your ${group.name} group`,
-        sender: user._id,
-        //@ts-ignore
-        receiver: group.creator._id,
-      });
+      // check if user is posting in your own group then stop sending notification
       //@ts-ignore
-      if (!this.groupService.isGroupMuted(group.mutes, group.creator._id)) {
-        if (group.creator.fcmToken) {
-          await this.firebaseService.sendNotification({
-            token: group.creator.fcmToken,
-            notification: { title: `User has posted in your ${group.name} group` },
-            data: { group: group._id.toString() },
-          });
+      if (user._id != group.creator._id.toString()) {
+        await this.notificationService.createRecord({
+          type: NotificationType.NEW_GROUP_POST,
+          group: group._id,
+          message: `has posted in your ${group.name} group`,
+          sender: user._id,
+          //@ts-ignore
+          receiver: group.creator._id,
+        });
+
+        //@ts-ignore
+        if (!this.groupService.isGroupMuted(group.mutes, group.creator._id)) {
+          if (group.creator.fcmToken) {
+            await this.firebaseService.sendNotification({
+              token: group.creator.fcmToken,
+              notification: { title: `has posted in your ${group.name} group` },
+              data: { group: group._id.toString() },
+            });
+          }
         }
       }
     }
@@ -150,7 +155,7 @@ export class GroupController {
       await this.notificationService.createRecord({
         type: NotificationType.GROUP_JOIN_REQUEST,
         group: group._id,
-        message: `User has send a join request for ${group.name} group`,
+        message: `has send a join request for ${group.name} group`,
         sender: user._id,
         //@ts-ignore
         receiver: group.creator._id,
@@ -160,7 +165,7 @@ export class GroupController {
       if (!this.groupService.isGroupMuted(group.mutes, group.creator._id) && group.creator.fcmToken) {
         await this.firebaseService.sendNotification({
           token: group.creator.fcmToken,
-          notification: { title: `User has send a join request for ${group.name} group` },
+          notification: { title: `has send a join request for ${group.name} group` },
           data: { group: group._id.toString() },
         });
       }
@@ -169,7 +174,7 @@ export class GroupController {
     await this.notificationService.createRecord({
       type: NotificationType.GROUP_JOINED,
       group: group._id,
-      message: `User has joined your ${group.name} group`,
+      message: `has joined your ${group.name} group`,
       sender: user._id,
       //@ts-ignore
       receiver: group.creator._id,
@@ -182,7 +187,7 @@ export class GroupController {
     if (!this.groupService.isGroupMuted(group.mutes, group.creator._id) && group.creator.fcmToken) {
       await this.firebaseService.sendNotification({
         token: group.creator.fcmToken,
-        notification: { title: `User has joined your ${group.name} group` },
+        notification: { title: `has joined your ${group.name} group` },
         data: { group: group._id.toString() },
       });
     }

@@ -170,16 +170,18 @@ export class UserController {
     const updatedUser = await this.usersService.findOneRecordAndUpdate({ _id: user._id }, { $push: { friends: id } });
     await this.notificationService.createRecord({
       user: id,
-      message: 'User is following you.',
-      type: NotificationType.USER,
+      message: 'is following you.',
+      type: NotificationType.USER_FOLLOWING,
       sender: user._id,
       receiver: id,
     });
-    await this.firebaseService.sendNotification({
-      token: friend.fcmToken,
-      notification: { title: 'User is following you.' },
-      data: { user: id, type: NotificationType.USER },
-    });
+    if (friend.fcmToken) {
+      await this.firebaseService.sendNotification({
+        token: friend.fcmToken,
+        notification: { title: 'is following you.' },
+        data: { user: id, type: NotificationType.USER_FOLLOWING },
+      });
+    }
     return updatedUser;
   }
 
