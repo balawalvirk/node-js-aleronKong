@@ -1,11 +1,4 @@
-import {
-  Injectable,
-  NestInterceptor,
-  ExecutionContext,
-  CallHandler,
-  HttpException,
-  HttpStatus,
-} from '@nestjs/common';
+import { Injectable, NestInterceptor, ExecutionContext, CallHandler, HttpException, HttpStatus } from '@nestjs/common';
 import { Observable, map } from 'rxjs';
 
 export interface Response<T> {
@@ -22,7 +15,8 @@ export class TransformInterceptor<T> implements NestInterceptor<T, Response<T>> 
         if (!data) {
           throw new HttpException('Record does not exists.', HttpStatus.BAD_REQUEST);
         } else if (data.message && !data.data) {
-          return { statusCode: 200, message: data.message };
+          if (typeof data.message === 'string') return { statusCode: 200, message: data.message };
+          else return { data, statusCode: 200 };
         } else if (data.message && data.data) {
           return { data: data.data, statusCode: 200, message: data.message };
         } else {

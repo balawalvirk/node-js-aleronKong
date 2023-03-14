@@ -109,8 +109,8 @@ export enum SearchSort {
   DEFAULT = 'default',
 }
 
-export enum Reactions {
-  THUMBS_UP = 'thumbsUp',
+export enum Emoji {
+  like = 'like',
   LOVE = 'love',
   LAUGH = 'laugh',
   SHOCK = 'shock',
