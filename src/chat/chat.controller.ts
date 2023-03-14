@@ -12,7 +12,9 @@ import { ChatService } from './chat.service';
 import { CreateMessageDto } from './dto/create-message.dto';
 import { MuteChatDto } from './dto/mute-chat.dto';
 import { MessageService } from './message.service';
-import { AddRemoveReactionsDto } from './dto/add-remove-reactions.dto';
+import { AddReactionsDto } from './dto/add-reactions.dto';
+import { ReactionService } from './reaction.service';
+import { UpdateReactionsDto } from './dto/update-reaction.dto';
 
 @Controller('chat')
 @UseGuards(JwtAuthGuard)
@@ -22,7 +24,8 @@ export class ChatController {
     private readonly messageService: MessageService,
     private readonly socketService: SocketGateway,
     private readonly notificationService: NotificationService,
-    private readonly firebaseService: FirebaseService
+    private readonly firebaseService: FirebaseService,
+    private readonly reactionService: ReactionService
   ) {}
 
   @Post('/create')
@@ -103,19 +106,9 @@ export class ChatController {
 
   @Get('/message/find-all/:chatId')
   async findAllMessage(@Param('chatId') chatId: string) {
-    const messages = await this.messageService.findAll({ chat: chatId });
+    const messages = await this.messageService.find({ chat: chatId });
     await this.messageService.updateManyRecords({ chat: chatId, isRead: false }, { isRead: true });
     return messages;
-  }
-
-  @Post('/message/reaction/add-remove')
-  async addRemoveReactions(@Body() { reaction, message }: AddRemoveReactionsDto, @GetUser() user: UserDocument) {
-    const messageFound = await this.messageService.findOneRecord({ _id: message, reactions: { reaction, user: user._id } });
-    if (!messageFound) {
-      return await this.messageService.findOneRecordAndUpdate({ _id: message }, { $push: { reactions: { reaction: reaction, user: user._id } } });
-    } else {
-      return await this.messageService.findOneRecordAndUpdate({ _id: message }, { $pull: { reactions: { reaction: reaction, user: user._id } } });
-    }
   }
 
   @Delete('/delete/:id')
@@ -164,5 +157,25 @@ export class ChatController {
   async readMessages(@Param('id', ParseObjectId) id: string) {
     await this.messageService.updateManyRecords({ chat: id, isRead: false }, { isRead: true });
     return { message: 'Message read successfully.' };
+  }
+
+  @Post('/message/reaction/create')
+  async addReactions(@Body() addReactionsDto: AddReactionsDto, @GetUser() user: UserDocument) {
+    const message = await this.messageService.findOneRecord({ _id: addReactionsDto.message });
+    if (!message) throw new HttpException('Message does not exists', HttpStatus.BAD_REQUEST);
+    const reaction = await this.reactionService.createRecord({ user: user._id, emoji: addReactionsDto.emoji, message: message._id });
+    return await this.messageService.findOneAndUpdate({ _id: addReactionsDto.message }, { $push: { reactions: reaction._id } });
+  }
+
+  @Delete('message/reaction/:id/delete')
+  async deleteReaction(@Param('id', ParseObjectId) id: string) {
+    const reaction = await this.reactionService.deleteSingleRecord({ _id: id });
+    if (!reaction) throw new HttpException('Reaction does not exists', HttpStatus.BAD_REQUEST);
+    return await this.messageService.findOneAndUpdate({ _id: reaction.message }, { $pull: { reactions: reaction._id } });
+  }
+
+  @Put('message/reaction/:id/update')
+  async updateReaction(@Param('id', ParseObjectId) id: string, @Body() updateReactionsDto: UpdateReactionsDto) {
+    return await this.reactionService.findOneRecordAndUpdate({ _id: id }, { emoji: updateReactionsDto.emoji });
   }
 }

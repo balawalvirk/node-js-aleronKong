@@ -9,6 +9,7 @@ import { MessageService } from './message.service';
 import { NotificationModule } from 'src/notification/notification.module';
 import { FirebaseModule } from 'src/firebase/firebase.module';
 import { Reaction, ReactionSchema } from './reaction.schema';
+import { ReactionService } from './reaction.service';
 
 @Module({
   imports: [
@@ -18,7 +19,7 @@ import { Reaction, ReactionSchema } from './reaction.schema';
     NotificationModule,
     FirebaseModule,
   ],
-  providers: [ChatService, SocketGateway, MessageService],
+  providers: [ChatService, SocketGateway, MessageService, ReactionService],
   controllers: [ChatController],
   exports: [MessageService, ChatService],
 })
