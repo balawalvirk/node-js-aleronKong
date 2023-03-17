@@ -1,4 +1,20 @@
-import { Body, Controller, Delete, Get, Param, Post, Put, Query, UseGuards, ValidationPipe, UsePipes, ParseBoolPipe } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Put,
+  Query,
+  UseGuards,
+  ValidationPipe,
+  UsePipes,
+  ParseBoolPipe,
+  HttpException,
+  HttpStatus,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/role.guard';
 import { FirebaseService } from 'src/firebase/firebase.service';
@@ -167,13 +183,17 @@ export class PostsController {
   }
 
   @Put('comment/update')
-  async updateComment(@Body() { postId, commentId, content }: UpdateCommentDto) {
+  async updateComment(@Body() { postId, commentId, content }: UpdateCommentDto, @GetUser() user: UserDocument) {
+    const comment = await this.commentService.findOneRecord({ creator: user._id });
+    if (!comment) throw new UnauthorizedException();
     await this.commentService.findOneRecordAndUpdate({ _id: commentId }, { content });
     return await this.postsService.findOne({ _id: postId });
   }
 
   @Delete(':postId/comment/:id/delete')
-  async deleteComment(@Param('id', ParseObjectId) id: string) {
+  async deleteComment(@Param('id', ParseObjectId) id: string, @GetUser() user: UserDocument) {
+    const commentFound = await this.commentService.findOneRecord({ creator: user._id });
+    if (!commentFound) throw new UnauthorizedException();
     const comment = await this.commentService.deleteSingleRecord({ _id: id });
     await this.postsService.findOneRecordAndUpdate({ _id: comment.post }, { $pull: { comments: comment._id } });
     return { message: 'Comment deleted successfully.' };
@@ -185,7 +205,7 @@ export class PostsController {
   }
 
   @Put('mute')
-  async muteChat(@Body() mutePostDto: MutePostDto, @GetUser() user: UserDocument) {
+  async mutePost(@Body() mutePostDto: MutePostDto, @GetUser() user: UserDocument) {
     const now = new Date();
     const date = new Date(now);
     let updatedObj: any = { user: user._id, interval: mutePostDto.interval };
