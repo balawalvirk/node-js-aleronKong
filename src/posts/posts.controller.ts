@@ -13,7 +13,6 @@ import {
   ParseBoolPipe,
   HttpException,
   HttpStatus,
-  UnauthorizedException,
 } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/role.guard';
@@ -25,12 +24,15 @@ import { MuteInterval, NotificationType, PostPrivacy, PostStatus, UserRoles } fr
 import { UserDocument } from 'src/users/users.schema';
 import { UsersService } from 'src/users/users.service';
 import { CommentService } from './comment.service';
+import { AddReactionsDto } from './dtos/add-reactions.dto';
 import { CreateCommentDto } from './dtos/create-comment';
 import { FindAllPostQuery } from './dtos/find-all-post.query.dto';
 import { MutePostDto } from './dtos/mute-post.dto';
 import { UpdateCommentDto } from './dtos/update-comment.dto';
 import { UpdatePostDto } from './dtos/update-post.dto';
+import { UpdateReactionsDto } from './dtos/update-reaction.dto';
 import { PostsService } from './posts.service';
+import { ReactionService } from './reaction.service';
 
 @Controller('post')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -40,7 +42,8 @@ export class PostsController {
     private readonly userService: UsersService,
     private readonly commentService: CommentService,
     private readonly firebaseService: FirebaseService,
-    private readonly notificationService: NotificationService
+    private readonly notificationService: NotificationService,
+    private readonly reactionService: ReactionService
   ) {}
 
   @Roles(UserRoles.ADMIN)
@@ -183,17 +186,13 @@ export class PostsController {
   }
 
   @Put('comment/update')
-  async updateComment(@Body() { postId, commentId, content }: UpdateCommentDto, @GetUser() user: UserDocument) {
-    const comment = await this.commentService.findOneRecord({ creator: user._id });
-    if (!comment) throw new UnauthorizedException();
+  async updateComment(@Body() { postId, commentId, content }: UpdateCommentDto) {
     await this.commentService.findOneRecordAndUpdate({ _id: commentId }, { content });
     return await this.postsService.findOne({ _id: postId });
   }
 
   @Delete(':postId/comment/:id/delete')
   async deleteComment(@Param('id', ParseObjectId) id: string, @GetUser() user: UserDocument) {
-    const commentFound = await this.commentService.findOneRecord({ creator: user._id });
-    if (!commentFound) throw new UnauthorizedException();
     const comment = await this.commentService.deleteSingleRecord({ _id: id });
     await this.postsService.findOneRecordAndUpdate({ _id: comment.post }, { $pull: { comments: comment._id } });
     return { message: 'Comment deleted successfully.' };
@@ -251,5 +250,29 @@ export class PostsController {
   async featurePost(@Param('id', ParseObjectId) id: string, @Query('isFeatured', ParseBoolPipe) isFeatured: boolean) {
     await this.postsService.findOneRecordAndUpdate({ _id: id }, { isFeatured: isFeatured === true ? true : false });
     return { message: `Post ${isFeatured ? 'featured' : 'un featured'} successfully.` };
+  }
+
+  // ====================================================================reactions apis===================================================================
+
+  @Post('reaction/create')
+  async addReactions(@Body() addReactionsDto: AddReactionsDto, @GetUser() user: UserDocument) {
+    const post = await this.postsService.findOneRecord({ _id: addReactionsDto.post });
+    if (!post) throw new HttpException('Post does not exists', HttpStatus.BAD_REQUEST);
+    const reaction = await this.reactionService.createRecord({ user: user._id, emoji: addReactionsDto.emoji, post: post._id });
+    await this.postsService.findOneRecordAndUpdate({ _id: post._id }, { $push: { reactions: reaction._id } });
+    return reaction;
+  }
+
+  @Delete('reaction/:id/delete')
+  async deleteReaction(@Param('id', ParseObjectId) id: string) {
+    const reaction = await this.reactionService.deleteSingleRecord({ _id: id });
+    if (!reaction) throw new HttpException('Reaction does not exists', HttpStatus.BAD_REQUEST);
+    await this.postsService.findOneRecordAndUpdate({ _id: reaction.post }, { $pull: { reactions: reaction._id } });
+    return reaction;
+  }
+
+  @Put('reaction/:id/update')
+  async updateReaction(@Param('id', ParseObjectId) id: string, @Body() updateReactionsDto: UpdateReactionsDto) {
+    return await this.reactionService.findOneRecordAndUpdate({ _id: id }, { emoji: updateReactionsDto.emoji });
   }
 }

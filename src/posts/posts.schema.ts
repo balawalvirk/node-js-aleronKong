@@ -5,7 +5,8 @@ import { Fundraising } from 'src/fundraising/fundraising.schema';
 import { Group } from 'src/group/group.schema';
 import { PostPrivacy, PostStatus, PostType } from 'src/types';
 import { User } from 'src/users/users.schema';
-import { CommentSchema, Comment } from './comment.schema';
+import { Comment } from './comment.schema';
+import { Reaction } from './reaction.schema';
 
 export type PostDocument = Posts & mongoose.Document;
 @Schema({ timestamps: true })
@@ -51,6 +52,9 @@ export class Posts {
 
   @Prop({ type: MuteSchema })
   mutes: Mute[];
+
+  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Reaction' })
+  reactions: Reaction[];
 }
 
 export const PostSchema = SchemaFactory.createForClass(Posts);

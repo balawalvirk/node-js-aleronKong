@@ -30,6 +30,9 @@ import { NotificationService } from 'src/notification/notification.service';
 import { FirebaseService } from 'src/firebase/firebase.service';
 import { MuteGroupDto } from './dto/mute-group.dto';
 import { FindPostsOfGroupQueryDto } from './dto/findGroupPost.query.dto';
+import { CreateModeratorDto } from './dto/create-moderator.dto';
+import { ModeratorService } from './moderator.service';
+import { UpdateModeratorDto } from './dto/update-moderator.dto';
 
 @Controller('group')
 @UseGuards(JwtAuthGuard)
@@ -40,7 +43,8 @@ export class GroupController {
     private readonly fundraisingService: FundraisingService,
     private readonly fundService: FundService,
     private readonly notificationService: NotificationService,
-    private readonly firebaseService: FirebaseService
+    private readonly firebaseService: FirebaseService,
+    private readonly moderatorService: ModeratorService
   ) {}
 
   @Post('create')
@@ -201,8 +205,11 @@ export class GroupController {
   }
 
   @Delete('delete/:id')
-  async remove(@Param('id', ParseObjectId) id: string) {
-    const group: GroupDocument = await this.groupService.deleteSingleRecord({ _id: id });
+  async remove(@Param('id', ParseObjectId) id: string, @GetUser() user: UserDocument) {
+    const group = await this.groupService.findOneRecord({ _id: id });
+    if (!group) throw new HttpException('Group does not exist', HttpStatus.BAD_REQUEST);
+    if (group.creator.toString() != user._id) throw new HttpException('You cannot delete this group', HttpStatus.UNAUTHORIZED);
+    await this.groupService.deleteSingleRecord({ _id: group._id });
     await this.postService.deleteManyRecord({ group: group._id });
     return 'Group deleted successfully.';
   }
@@ -303,5 +310,41 @@ export class GroupController {
       data: posts,
     };
     return paginated;
+  }
+
+  // ======================================================= moderator apis ========================================================================
+
+  @Post('moderator/create')
+  async createModerator(@Body() createModeratorDto: CreateModeratorDto, @GetUser() user: UserDocument) {
+    const group = await this.groupService.findOneRecord({ _id: createModeratorDto.group });
+    if (!group) throw new HttpException('Group does not exist.', HttpStatus.BAD_REQUEST);
+    if (group.creator.toString() != user._id) throw new HttpException('You cannot create a moderator', HttpStatus.UNAUTHORIZED);
+    const moderator = await this.moderatorService.createRecord(createModeratorDto);
+    await this.groupService.findOneRecordAndUpdate({ _id: createModeratorDto.group }, { $push: { moderators: moderator._id } });
+    return moderator;
+  }
+
+  @Get(':id/moderator/find-all')
+  async findAllModerator(@Param('id', ParseObjectId) id: string) {
+    return await this.moderatorService.find({ group: id });
+  }
+
+  @Delete('moderator/:id/delete')
+  async deleteModerator(@Param('id', ParseObjectId) id: string, @GetUser() user: UserDocument) {
+    const moderatorFound = await this.moderatorService.findOneRecord({ _id: id });
+    if (!moderatorFound) throw new HttpException('Moderator does not exists', HttpStatus.BAD_REQUEST);
+    const group = await this.groupService.findOneRecord({ _id: moderatorFound.group });
+    if (group.creator.toString() != user._id) throw new HttpException('You cannot delete a moderator', HttpStatus.UNAUTHORIZED);
+    const moderator = await this.moderatorService.deleteSingleRecord({ _id: id });
+    await this.groupService.findOneRecordAndUpdate({ _id: moderator.group }, { $pull: { moderators: moderator._id } });
+    return moderator;
+  }
+
+  @Put('moderator/:id/update')
+  async updateModerator(@Param('id', ParseObjectId) id: string, @Body() updateModeratorDto: UpdateModeratorDto, @GetUser() user: UserDocument) {
+    const moderatorFound = await this.moderatorService.findOneRecord({ _id: id }).populate({ path: 'group', select: 'creator' });
+    if (!moderatorFound) throw new HttpException('Moderator does not exists', HttpStatus.BAD_REQUEST);
+    if (moderatorFound.group.creator.toString() != user._id) throw new HttpException('You cannot update a moderator', HttpStatus.UNAUTHORIZED);
+    return await this.moderatorService.findOneRecordAndUpdate({ _id: id }, updateModeratorDto);
   }
 }
