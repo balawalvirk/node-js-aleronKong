@@ -5,6 +5,7 @@ import { Posts } from 'src/posts/posts.schema';
 import { GroupPrivacy } from 'src/types';
 import { User } from 'src/users/users.schema';
 import { Member, MemberSchema } from './member.schema';
+import { Moderator } from './moderator.schema';
 import { Report, ReportSchema } from './report.schema';
 
 export type GroupDocument = Group & mongoose.Document;
@@ -42,6 +43,9 @@ export class Group {
 
   @Prop({ type: MuteSchema })
   mutes: Mute[];
+
+  @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Moderator' }], required: true })
+  moderators: Moderator[];
 }
 
 export const GroupSchema = SchemaFactory.createForClass(Group);

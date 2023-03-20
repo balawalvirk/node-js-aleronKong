@@ -6,5 +6,5 @@ export class AddReactionsDto {
   emoji: string;
 
   @IsMongoId()
-  message: string;
+  post: string;
 }

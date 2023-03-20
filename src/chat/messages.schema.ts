@@ -2,7 +2,6 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
 import { User } from 'src/users/users.schema';
 import { Chat } from './chat.schema';
-import { Reaction } from './reaction.schema';
 
 export type MessageDocument = Message & mongoose.Document;
 
@@ -31,9 +30,6 @@ export class Message {
 
   @Prop({ default: false })
   isRead: boolean;
-
-  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Reaction' })
-  reactions: Reaction[];
 }
 
 export const MessageSchema = SchemaFactory.createForClass(Message);

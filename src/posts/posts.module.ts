@@ -8,6 +8,8 @@ import { CommentService } from './comment.service';
 import { PostsController } from './posts.controller';
 import { PostSchema, Posts } from './posts.schema';
 import { PostsService } from './posts.service';
+import { Reaction, ReactionSchema } from './reaction.schema';
+import { ReactionService } from './reaction.service';
 
 @Module({
   imports: [
@@ -16,9 +18,10 @@ import { PostsService } from './posts.service';
     UsersModule,
     NotificationModule,
     FirebaseModule,
+    MongooseModule.forFeature([{ name: Reaction.name, schema: ReactionSchema }]),
   ],
   controllers: [PostsController],
-  providers: [PostsService, CommentService],
+  providers: [PostsService, CommentService, ReactionService],
   exports: [PostsService],
 })
 export class PostsModule {}

@@ -149,6 +149,8 @@ export class ProductController {
       },
     });
 
+    await this.cartService.deleteSingleRecord({ creator: user._id });
+
     for (const { item, quantity } of cart.items) {
       await this.saleService.createRecord({
         //@ts-ignore
@@ -185,16 +187,17 @@ export class ProductController {
         message: 'has placed an order',
         type: NotificationType.ORDER_PLACED,
       });
-      await this.firebaseService.sendNotification({
-        token: item.creator.fcmToken,
-        notification: {
-          title: 'has placed an order',
-        },
-        data: { order: order._id.toString(), type: NotificationType.ORDER_PLACED },
-      });
+      if (item.creator.fcmToken) {
+        await this.firebaseService.sendNotification({
+          token: item.creator.fcmToken,
+          notification: {
+            title: 'has placed an order',
+          },
+          data: { order: order._id.toString(), type: NotificationType.ORDER_PLACED },
+        });
+      }
     }
 
-    await this.cartService.deleteSingleRecord({ creator: user._id });
     return { message: 'Order placed successfully.' };
   }
 

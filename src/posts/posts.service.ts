@@ -25,6 +25,7 @@ export class PostsService extends BaseService<PostDocument> {
       { path: 'creator', select: 'firstName lastName avatar userName isGuildMember sellerId fcmToken' },
       { path: 'group', select: 'name' },
       { path: 'fundraising', populate: [{ path: 'category' }, { path: 'subCategory' }] },
+      { path: 'reactions', populate: { path: 'user', select: 'firstName lastName avatar' } },
     ];
   }
 
@@ -33,10 +34,7 @@ export class PostsService extends BaseService<PostDocument> {
   }
 
   async update(query: FilterQuery<PostDocument>, updateQuery: UpdateQuery<PostDocument>) {
-    return await this.postModel
-      .findOneAndUpdate(query, updateQuery, { new: true })
-      .populate(this.getPopulateFields())
-      .lean();
+    return await this.postModel.findOneAndUpdate(query, updateQuery, { new: true }).populate(this.getPopulateFields()).lean();
   }
 
   async createPost(query: FilterQuery<PostDocument>) {

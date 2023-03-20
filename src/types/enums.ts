@@ -116,4 +116,5 @@ export enum Emoji {
   WOW = 'wow',
   SAD = 'sad',
   CLAP = 'clap',
+  THUMBS_DOWN = 'thumbsDown',
 }
