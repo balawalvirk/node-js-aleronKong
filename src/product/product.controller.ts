@@ -236,14 +236,18 @@ export class ProductController {
       type: NotificationType.PRODUCT_BOUGHT,
       message: 'has bought your product.',
     });
-    await this.firebaseService.sendNotification({
-      token: product.creator.fcmToken,
-      notification: {
-        title: 'has bought your product.',
-      },
-      data: { product: product._id.toString(), type: NotificationType.PRODUCT_BOUGHT },
-    });
+
     await this.userService.findOneRecordAndUpdate({ _id: user._id }, { $push: { boughtDigitalProducts: product._id } });
+    if (product.creator.fcmToken) {
+      await this.firebaseService.sendNotification({
+        token: product.creator.fcmToken,
+        notification: {
+          title: 'has bought your product.',
+        },
+        data: { product: product._id.toString(), type: NotificationType.PRODUCT_BOUGHT },
+      });
+    }
+
     return { message: 'Thanks for purchasing the product.' };
   }
 
