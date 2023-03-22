@@ -22,8 +22,9 @@ export class SocketGateway implements OnGatewayInit, OnGatewayConnection, OnGate
   private readonly logger = new Logger(SocketGateway.name);
 
   handleDisconnect(socket: Socket) {
-    this.logger.log(`client disconnected ${socket.id}`);
+    this.logger.log(`client disconnected: ${socket.id}`);
     this.onlineUsers = this.onlineUsers.filter((user) => user.socketId !== socket.id);
+    this.wss.emit('check-status', this.onlineUsers);
   }
 
   afterInit(wss: Server) {
@@ -34,15 +35,25 @@ export class SocketGateway implements OnGatewayInit, OnGatewayConnection, OnGate
     this.logger.log(`client connected: ${socket.id}`);
   }
 
-  @SubscribeMessage('login')
-  loginUser(@MessageBody() userId: string, @ConnectedSocket() socket: Socket) {
-    if (!this.onlineUsers.some((user) => user.userId === userId)) this.onlineUsers.push({ userId, socketId: socket.id });
+  @SubscribeMessage('check-status')
+  checkStatus() {
+    this.wss.emit('check-status', this.onlineUsers);
   }
 
-  @SubscribeMessage('check-status')
-  checkStatus(@MessageBody() userId: string) {
-    if (!this.onlineUsers.some((user) => user.userId === userId)) this.wss.emit('check-status', { online: true });
-    else this.wss.emit('check-status', { online: false });
+  @SubscribeMessage('login')
+  login(@MessageBody('userId') userId: string, @ConnectedSocket() socket: Socket) {
+    const isOnline = this.onlineUsers.some((user) => user.userId === userId);
+    if (!isOnline) {
+      this.onlineUsers.push({ userId, socketId: socket.id });
+      this.wss.emit('check-status', this.onlineUsers);
+    }
+  }
+
+  @SubscribeMessage('logout')
+  logout(@ConnectedSocket() socket: Socket) {
+    this.logger.log(`client disconnected: ${socket.id}`);
+    this.onlineUsers = this.onlineUsers.filter((user) => user.socketId !== socket.id);
+    this.wss.emit('check-status', this.onlineUsers);
   }
 
   triggerMessage(event: string, payload: any) {
