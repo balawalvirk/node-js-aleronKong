@@ -82,7 +82,16 @@ export class User {
   boughtDigitalProducts: Product[];
 
   @Prop({ default: true })
-  notificationsEnabled: boolean;
+  enableNotifications: boolean;
+
+  @Prop({ default: true })
+  newReleaseNotifications: boolean;
+
+  @Prop({ default: true })
+  newPostsNotifications: boolean;
+
+  @Prop({ default: true })
+  appUpdatesNotifications: boolean;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

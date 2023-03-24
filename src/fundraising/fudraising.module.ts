@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { FundraisingController } from './fudraising.controller';
 import { PostsModule } from 'src/posts/posts.module';
 import { MongooseModule } from '@nestjs/mongoose';
@@ -16,7 +16,7 @@ import { FirebaseModule } from 'src/firebase/firebase.module';
 
 @Module({
   imports: [
-    PostsModule,
+    forwardRef(() => PostsModule),
     MongooseModule.forFeature([{ name: FundraisingCategory.name, schema: FundraisingCategorySchema }]),
     MongooseModule.forFeature([{ name: FundraisingSubcategory.name, schema: FundraisingSubcategorySchema }]),
     MongooseModule.forFeature([{ name: Fundraising.name, schema: FundraisingSchema }]),

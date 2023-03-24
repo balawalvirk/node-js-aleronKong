@@ -8,6 +8,7 @@ import { Message, MessageSchema } from './messages.schema';
 import { MessageService } from './message.service';
 import { NotificationModule } from 'src/notification/notification.module';
 import { FirebaseModule } from 'src/firebase/firebase.module';
+import { MuteModule } from 'src/mute/mute.module';
 
 @Module({
   imports: [
@@ -15,6 +16,7 @@ import { FirebaseModule } from 'src/firebase/firebase.module';
     MongooseModule.forFeature([{ name: Message.name, schema: MessageSchema }]),
     NotificationModule,
     FirebaseModule,
+    MuteModule,
   ],
   providers: [ChatService, SocketGateway, MessageService],
   controllers: [ChatController],

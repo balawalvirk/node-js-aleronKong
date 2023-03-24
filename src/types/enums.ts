@@ -79,6 +79,7 @@ export enum NotificationType {
   FUNDRAISING_PROJECT_APPROVED = 'fundraisingProjectApproved',
   FUNDRAISING_PROJECT_FUNDED = 'fundraisingProjectFunded',
   NEW_GROUP_POST = 'newGroupPost',
+  USER_TAGGED = 'userTagged',
 }
 
 export enum ReportType {
