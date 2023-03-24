@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { GroupService } from './group.service';
 import { GroupController } from './group.controller';
 import { MongooseModule } from '@nestjs/mongoose';
@@ -14,7 +14,7 @@ import { ModeratorService } from './moderator.service';
   imports: [
     MongooseModule.forFeature([{ name: Group.name, schema: GroupSchema }]),
     MongooseModule.forFeature([{ name: Moderator.name, schema: ModeratorSchema }]),
-    PostsModule,
+    forwardRef(() => PostsModule),
     FundraisingModule,
     NotificationModule,
     FirebaseModule,

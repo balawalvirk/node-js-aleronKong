@@ -21,7 +21,6 @@ import { UserDocument } from 'src/users/users.schema';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { PostsService } from 'src/posts/posts.service';
 import { CreatePostsDto } from 'src/posts/dtos/create-posts';
-import { GroupDocument } from './group.schema';
 import { GroupPrivacy, MuteInterval, NotificationType, PostType } from 'src/types';
 import { makeQuery, ParseObjectId } from 'src/helpers';
 import { FundService } from 'src/fundraising/fund.service';
@@ -54,10 +53,7 @@ export class GroupController {
 
   @Post('post/create')
   async createPost(@Body() createPostDto: CreatePostsDto, @GetUser() user: UserDocument) {
-    const post = await this.postService.createPost({
-      ...createPostDto,
-      creator: user._id,
-    });
+    const post = await this.postService.createPost({ ...createPostDto, creator: user._id });
     if (post.group) {
       const group = await this.groupService
         .findOneRecordAndUpdate({ _id: post.group }, { $push: { posts: post._id } })
@@ -81,12 +77,39 @@ export class GroupController {
             await this.firebaseService.sendNotification({
               token: group.creator.fcmToken,
               notification: { title: `has posted in your ${group.name} group` },
-              data: { group: group._id.toString() },
+              data: { group: group._id.toString(), type: NotificationType.NEW_GROUP_POST },
             });
           }
         }
       }
     }
+
+    // check if user tagged to any friend
+    if (post.tagged) {
+      for (const taggedUser of post.tagged) {
+        await this.notificationService.createRecord({
+          type: NotificationType.USER_TAGGED,
+          post: post._id,
+          message: `has tagged you in post.`,
+          sender: user._id,
+          //@ts-ignore
+          receiver: taggedUser._id,
+        });
+
+        // check if user has enabled notifications
+        if (taggedUser.enableNotifications) {
+          // check if user has firebase token
+          if (taggedUser.fcmToken) {
+            await this.firebaseService.sendNotification({
+              token: taggedUser.fcmToken,
+              notification: { title: `has tagged you in post.` },
+              data: { post: post._id.toString(), type: NotificationType.USER_TAGGED },
+            });
+          }
+        }
+      }
+    }
+
     return post;
   }
 
@@ -107,7 +130,7 @@ export class GroupController {
   @Get('feed')
   async feed(@GetUser() user: UserDocument, @Query('page') page: string, @Query('limit') limit: string) {
     const $q = makeQuery({ page, limit });
-    const options = { sort: $q.sort, limit: $q.limit, skip: $q.skip };
+    const options = { sort: { pin: true, ...$q.sort }, limit: $q.limit, skip: $q.skip };
     const condition = {
       'members.member': user._id,
     };
@@ -138,8 +161,6 @@ export class GroupController {
   async update(@Param('id', ParseObjectId) id: string, @Body() updateGroupDto: UpdateGroupDto) {
     const group = await this.groupService.findOneRecord({ _id: id });
     if (!group) throw new HttpException('Group not found.', HttpStatus.BAD_REQUEST);
-    console.log({ id });
-
     return await this.groupService.findOneRecordAndUpdate({ _id: id }, updateGroupDto);
   }
 
@@ -298,7 +319,7 @@ export class GroupController {
   @Get(':id/post/find-all')
   async findPostsOfGroups(@Param('id', ParseObjectId) id: string, @Query() { limit, page }: FindPostsOfGroupQueryDto) {
     const $q = makeQuery({ page, limit });
-    const options = { sort: $q.sort, limit: $q.limit, skip: $q.skip };
+    const options = { sort: { pin: true, ...$q.sort }, limit: $q.limit, skip: $q.skip };
     const condition = { group: id };
     const posts = await this.postService.find(condition, options);
     const total = await this.postService.countRecords(condition);
@@ -315,7 +336,7 @@ export class GroupController {
   // ======================================================= moderator apis ========================================================================
 
   @Post('moderator/create')
-  async createModerator(@Body() createModeratorDto: CreateModeratorDto, @GetUser() user: UserDocument) {
+  async createModerator(@Body() createModeratorDto: CreateModeratorDto) {
     const moderator = await this.moderatorService.createRecord(createModeratorDto);
     await this.groupService.findOneRecordAndUpdate({ _id: createModeratorDto.group }, { $push: { moderators: moderator._id } });
     return moderator;
@@ -327,14 +348,14 @@ export class GroupController {
   }
 
   @Delete('moderator/:id/delete')
-  async deleteModerator(@Param('id', ParseObjectId) id: string, @GetUser() user: UserDocument) {
+  async deleteModerator(@Param('id', ParseObjectId) id: string) {
     const moderator = await this.moderatorService.deleteSingleRecord({ _id: id });
     await this.groupService.findOneRecordAndUpdate({ _id: moderator.group }, { $pull: { moderators: moderator._id } });
     return moderator;
   }
 
   @Put('moderator/:id/update')
-  async updateModerator(@Param('id', ParseObjectId) id: string, @Body() updateModeratorDto: UpdateModeratorDto, @GetUser() user: UserDocument) {
+  async updateModerator(@Param('id', ParseObjectId) id: string, @Body() updateModeratorDto: UpdateModeratorDto) {
     return await this.moderatorService.findOneRecordAndUpdate({ _id: id }, updateModeratorDto);
   }
 }

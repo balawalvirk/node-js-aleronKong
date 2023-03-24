@@ -7,15 +7,15 @@ export class CreatePostsDto {
 
   @IsOptional()
   @IsString({ each: true })
-  images: string;
+  images?: string;
 
   @IsOptional()
   @IsString({ each: true })
-  videos: string;
+  videos?: string;
 
   @IsOptional()
   @IsString()
-  status: string;
+  status?: string;
 
   @IsEnum(PostPrivacy)
   privacy: string;
@@ -23,4 +23,8 @@ export class CreatePostsDto {
   @IsOptional()
   @IsMongoId()
   group?: string;
+
+  @IsOptional()
+  @IsMongoId({ each: true })
+  tagged?: string[];
 }

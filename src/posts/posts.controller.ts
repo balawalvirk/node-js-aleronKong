@@ -17,6 +17,7 @@ import {
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/role.guard';
 import { FirebaseService } from 'src/firebase/firebase.service';
+import { GroupService } from 'src/group/group.service';
 import { makeQuery, ParseObjectId, Roles } from 'src/helpers';
 import { GetUser } from 'src/helpers/decorators/user.decorator';
 import { NotificationService } from 'src/notification/notification.service';
@@ -28,6 +29,7 @@ import { AddReactionsDto } from './dtos/add-reactions.dto';
 import { CreateCommentDto } from './dtos/create-comment';
 import { FindAllPostQuery } from './dtos/find-all-post.query.dto';
 import { MutePostDto } from './dtos/mute-post.dto';
+import { PinUnpinDto } from './dtos/pin-unpin-post.dto';
 import { UpdateCommentDto } from './dtos/update-comment.dto';
 import { UpdatePostDto } from './dtos/update-post.dto';
 import { UpdateReactionsDto } from './dtos/update-reaction.dto';
@@ -43,7 +45,8 @@ export class PostsController {
     private readonly commentService: CommentService,
     private readonly firebaseService: FirebaseService,
     private readonly notificationService: NotificationService,
-    private readonly reactionService: ReactionService
+    private readonly reactionService: ReactionService,
+    private readonly groupService: GroupService
   ) {}
 
   @Roles(UserRoles.ADMIN)
@@ -92,27 +95,16 @@ export class PostsController {
   @Get('home')
   async findHomePosts(@Query('page') page: string, @Query('limit') limit: string, @GetUser() user: UserDocument) {
     const $q = makeQuery({ page, limit });
-    const options = { sort: $q.sort, limit: $q.limit, skip: $q.skip };
+    const options = { sort: { pin: -1, ...$q.sort }, limit: $q.limit, skip: $q.skip };
     const followings = (await this.userService.findAllRecords({ friends: { $in: [user._id] } }).select('_id')).map((user) => user._id);
+    const groups = (await this.groupService.findAllRecords({ 'members.member': user._id })).map((group) => group._id);
     const condition = {
       creator: { $nin: [user.blockedUsers] },
       isBlocked: false,
       status: PostStatus.ACTIVE,
-      $or: user.isGuildMember
-        ? [
-            { creator: user._id },
-            { privacy: PostPrivacy.PUBLIC },
-            { privacy: PostPrivacy.FOLLOWERS, creator: { $in: followings } },
-            { privacy: PostPrivacy.GUILD_MEMBERS },
-          ]
-        : [
-            { creator: user._id },
-            { privacy: PostPrivacy.PUBLIC },
-            { privacy: PostPrivacy.FOLLOWERS, creator: { $in: followings } },
-            { $and: [{ privacy: PostPrivacy.GUILD_MEMBERS, creator: user._id }] },
-          ],
+      $or: [{ creator: user._id }, { privacy: PostPrivacy.FOLLOWERS, creator: { $in: followings } }, { group: { $in: groups } }],
     };
-    const posts = await this.postsService.find(condition, options);
+    const posts = await this.postsService.findAllRecords(condition, options);
     const total = await this.postsService.countRecords(condition);
     const paginated = {
       total,
@@ -227,14 +219,32 @@ export class PostsController {
       };
     }
 
-    await this.postsService.findOneRecordAndUpdate(
-      { _id: mutePostDto.post },
-      {
-        $push: {
-          mutes: { ...updatedObj },
-        },
+    // check if user already mute this post
+    const post = await this.postsService.findOneRecord({ _id: mutePostDto.post, 'mutes.user': user._id });
+
+    // if post exists then update the mute obj
+    if (post) {
+      let updateObj: any;
+      if (mutePostDto.interval === MuteInterval.DAY || MuteInterval.WEEK) {
+        updateObj = {
+          'mutes.interval': updatedObj.interval,
+          'mutes.date': updatedObj.date,
+        };
+      } else {
+        updateObj = {
+          'mutes.interval': updatedObj.interval,
+          'mutes.date': updatedObj.date,
+          'mutes.startTime': updateObj.startTime,
+          'mutes.endTime': updateObj.endTime,
+        };
       }
-    );
+      await this.postsService.findOneRecordAndUpdate({ _id: mutePostDto.post, 'mutes.user': user._id }, { $set: updateObj });
+    }
+
+    // if post does not exists then push obj to mutes
+    else {
+      await this.postsService.findOneRecordAndUpdate({ _id: mutePostDto.post }, { $push: { mutes: { ...updatedObj } } });
+    }
     return { message: 'Post muted successfully.' };
   }
 
@@ -246,10 +256,10 @@ export class PostsController {
   }
 
   @Roles(UserRoles.ADMIN)
-  @Put(':id/feature-unfeature')
-  async featurePost(@Param('id', ParseObjectId) id: string, @Query('isFeatured', ParseBoolPipe) isFeatured: boolean) {
-    await this.postsService.findOneRecordAndUpdate({ _id: id }, { isFeatured: isFeatured === true ? true : false });
-    return { message: `Post ${isFeatured ? 'featured' : 'un featured'} successfully.` };
+  @Put(':id/pin-unpin')
+  async pinUnpinPost(@Param('id', ParseObjectId) id: string, @Body() pinUnpinDto: PinUnpinDto) {
+    await this.postsService.findOneRecordAndUpdate({ _id: id }, pinUnpinDto);
+    return { message: `Post ${pinUnpinDto.pin ? 'pin' : 'un pin'} successfully.` };
   }
 
   // ====================================================================reactions apis===================================================================
@@ -274,5 +284,10 @@ export class PostsController {
   @Put('reaction/:id/update')
   async updateReaction(@Param('id', ParseObjectId) id: string, @Body() updateReactionsDto: UpdateReactionsDto) {
     return await this.reactionService.findOneRecordAndUpdate({ _id: id }, { emoji: updateReactionsDto.emoji });
+  }
+
+  @Get('tagged/find-all')
+  async findTaggedPosts(@GetUser() user: UserDocument) {
+    return await this.postsService.find({ tagged: { $in: [user._id] } });
   }
 }

@@ -1,34 +1,16 @@
 import { Type } from 'class-transformer';
-import {
-  IsArray,
-  IsBoolean,
-  IsDateString,
-  IsEnum,
-  IsMongoId,
-  IsNotEmpty,
-  IsNumber,
-  IsOptional,
-  IsString,
-  ValidateNested,
-} from 'class-validator';
+import { IsArray, IsBoolean, IsDateString, IsEnum, IsMongoId, IsNotEmpty, IsNumber, IsOptional, IsString, ValidateNested } from 'class-validator';
 import { ProductStatus, ProductType } from 'src/types';
 
-class Detail {
+class File {
   @IsString()
-  value: string;
+  title: string;
+
+  @IsString()
+  file: string;
 
   @IsNumber()
-  quantity: string;
-}
-
-class Attribute {
-  @IsString()
-  name: string;
-
-  @IsArray()
-  @ValidateNested({ each: true })
-  @Type(() => Detail)
-  details: Detail[];
+  price: number;
 }
 
 export class CreateProductDto {
@@ -114,12 +96,16 @@ export class CreateProductDto {
   printLength?: number;
 
   @IsOptional()
+  @IsBoolean()
+  webSeries?: boolean;
+
+  @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => Attribute)
-  attributes?: Attribute[];
+  @Type(() => File)
+  files?: File[];
 
   @IsOptional()
   @IsString()
-  simultaneousDeviceUsage: string;
+  simultaneousDeviceUsage?: string;
 }

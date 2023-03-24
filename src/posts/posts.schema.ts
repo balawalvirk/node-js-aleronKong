@@ -1,8 +1,8 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
-import { Mute, MuteSchema } from 'src/chat/chat.schema';
 import { Fundraising } from 'src/fundraising/fundraising.schema';
 import { Group } from 'src/group/group.schema';
+import { Mute } from 'src/mute/mute.schema';
 import { PostPrivacy, PostStatus, PostType } from 'src/types';
 import { User } from 'src/users/users.schema';
 import { Comment } from './comment.schema';
@@ -48,13 +48,16 @@ export class Posts {
   fundraising: Fundraising;
 
   @Prop({ default: false })
-  isFeatured: boolean;
+  pin: boolean;
 
-  @Prop({ type: MuteSchema })
+  @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Mute' }] })
   mutes: Mute[];
 
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Reaction' })
   reactions: Reaction[];
+
+  @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }] })
+  tagged: User[];
 }
 
 export const PostSchema = SchemaFactory.createForClass(Posts);

@@ -6,6 +6,21 @@ import { ProductCategory } from './category.schema';
 import { Review } from '../review/review.schema';
 
 export type ProductDocument = Product & mongoose.Document;
+
+@Schema({ timestamps: false, versionKey: false, _id: false })
+class File {
+  @Prop({ required: true })
+  title: string;
+
+  @Prop({ required: true })
+  file: string;
+
+  @Prop({ required: true })
+  price: number;
+}
+
+export const FileSchema = SchemaFactory.createForClass(File);
+
 @Schema({ timestamps: true })
 export class Product {
   @Prop({ required: true })
@@ -94,6 +109,12 @@ export class Product {
 
   @Prop({ default: 0 })
   avgRating: number;
+
+  @Prop({ default: false })
+  webSeries: boolean;
+
+  @Prop({ type: [FileSchema] })
+  files: File[];
 }
 
 export const ProductSchema = SchemaFactory.createForClass(Product);
