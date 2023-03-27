@@ -130,7 +130,7 @@ export class GroupController {
   @Get('feed')
   async feed(@GetUser() user: UserDocument, @Query('page') page: string, @Query('limit') limit: string) {
     const $q = makeQuery({ page, limit });
-    const options = { sort: { pin: true, ...$q.sort }, limit: $q.limit, skip: $q.skip };
+    const options = { sort: { pin: -1, ...$q.sort }, limit: $q.limit, skip: $q.skip };
     const condition = {
       'members.member': user._id,
     };
@@ -319,7 +319,7 @@ export class GroupController {
   @Get(':id/post/find-all')
   async findPostsOfGroups(@Param('id', ParseObjectId) id: string, @Query() { limit, page }: FindPostsOfGroupQueryDto) {
     const $q = makeQuery({ page, limit });
-    const options = { sort: { pin: true, ...$q.sort }, limit: $q.limit, skip: $q.skip };
+    const options = { sort: { pin: -1, ...$q.sort }, limit: $q.limit, skip: $q.skip };
     const condition = { group: id };
     const posts = await this.postService.find(condition, options);
     const total = await this.postService.countRecords(condition);
