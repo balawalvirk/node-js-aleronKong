@@ -1,5 +1,6 @@
 import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
+import { Mute } from 'src/mute/mute.schema';
 import { Posts } from 'src/posts/posts.schema';
 import { GroupPrivacy } from 'src/types';
 import { User } from 'src/users/users.schema';
@@ -45,6 +46,9 @@ export class Group {
 
   @Prop()
   rules: string;
+
+  @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Mute' }], required: true })
+  mutes: Mute[];
 }
 
 export const GroupSchema = SchemaFactory.createForClass(Group);

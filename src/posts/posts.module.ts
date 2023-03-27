@@ -2,8 +2,6 @@ import { forwardRef, Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { FirebaseModule } from 'src/firebase/firebase.module';
 import { GroupModule } from 'src/group/group.module';
-import { GroupService } from 'src/group/group.service';
-import { MuteModule } from 'src/mute/mute.module';
 import { NotificationModule } from 'src/notification/notification.module';
 import { UsersModule } from 'src/users/users.module';
 import { CommentSchema, Comment } from './comment.schema';
@@ -22,7 +20,6 @@ import { ReactionService } from './reaction.service';
     UsersModule,
     NotificationModule,
     FirebaseModule,
-    MuteModule,
     forwardRef(() => GroupModule),
   ],
   controllers: [PostsController],

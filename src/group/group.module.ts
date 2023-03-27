@@ -9,6 +9,7 @@ import { NotificationModule } from 'src/notification/notification.module';
 import { FirebaseModule } from 'src/firebase/firebase.module';
 import { Moderator, ModeratorSchema } from './moderator.schema';
 import { ModeratorService } from './moderator.service';
+import { MuteModule } from 'src/mute/mute.module';
 
 @Module({
   imports: [
@@ -18,6 +19,7 @@ import { ModeratorService } from './moderator.service';
     FundraisingModule,
     NotificationModule,
     FirebaseModule,
+    MuteModule,
   ],
   controllers: [GroupController],
   providers: [GroupService, ModeratorService],

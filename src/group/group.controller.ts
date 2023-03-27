@@ -32,6 +32,7 @@ import { FindPostsOfGroupQueryDto } from './dto/findGroupPost.query.dto';
 import { CreateModeratorDto } from './dto/create-moderator.dto';
 import { ModeratorService } from './moderator.service';
 import { UpdateModeratorDto } from './dto/update-moderator.dto';
+import { MuteService } from 'src/mute/mute.service';
 
 @Controller('group')
 @UseGuards(JwtAuthGuard)
@@ -43,7 +44,8 @@ export class GroupController {
     private readonly fundService: FundService,
     private readonly notificationService: NotificationService,
     private readonly firebaseService: FirebaseService,
-    private readonly moderatorService: ModeratorService
+    private readonly moderatorService: ModeratorService,
+    private readonly muteService: MuteService
   ) {}
 
   @Post('create')
@@ -154,7 +156,7 @@ export class GroupController {
 
   @Get('find-one/:id')
   async findOne(@Param('id') id: string) {
-    return await this.groupService.findOneRecord({ _id: id });
+    return await this.groupService.findOneRecord({ _id: id }).populate('mutes');
   }
 
   @Put('update/:id')
@@ -298,9 +300,8 @@ export class GroupController {
   async muteGroup(@Body() muteGroupDto: MuteGroupDto, @GetUser() user: UserDocument) {
     const now = new Date();
     const date = new Date(now);
-    let updatedObj: any = { user: user._id, interval: muteGroupDto.interval };
+    let updatedObj: any = { user: user._id, interval: muteGroupDto.interval, group: muteGroupDto.group };
     if (muteGroupDto.interval === MuteInterval.DAY) {
-      //check if mute interval is one day then add 1 day in date
       date.setDate(now.getDate() + 1);
     } else if (muteGroupDto.interval === MuteInterval.WEEK) {
       //check if mute interval is one day then add 7 day in date
@@ -308,12 +309,25 @@ export class GroupController {
     }
     date.toLocaleDateString();
 
-    if (muteGroupDto.interval === MuteInterval.DAY || MuteInterval.WEEK) updatedObj = { ...updatedObj, date };
-    else {
-      updatedObj = { ...updatedObj, startTime: muteGroupDto.startTime, endTime: muteGroupDto.endTime };
+    const muteFound = await this.muteService.findOneRecord({ user: user._id, group: muteGroupDto.group });
+
+    //check if mute object already exists then update its interval only
+    if (muteFound) {
+      const { user, group, ...rest } = updatedObj;
+      await this.muteService.findOneRecordAndUpdate({ _id: muteFound._id }, rest);
+    } else {
+      const mute = await this.muteService.createRecord(updatedObj);
+      await this.groupService.findOneRecordAndUpdate({ _id: muteGroupDto.group }, { $push: { mutes: mute._id } });
     }
-    await this.groupService.findOneRecordAndUpdate({ _id: muteGroupDto.group }, { $push: { mutes: { ...updatedObj } } });
     return { message: 'Group muted successfully.' };
+  }
+
+  @Put(':id/un-mute')
+  async unMute(@Param('id', ParseObjectId) id: string) {
+    const mute = await this.muteService.deleteSingleRecord({ _id: id });
+    if (!mute) throw new HttpException('Mute does not exists.', HttpStatus.BAD_REQUEST);
+    await this.groupService.findOneRecordAndUpdate({ _id: mute.chat }, { $pull: { mutes: mute._id } });
+    return mute;
   }
 
   @Get(':id/post/find-all')

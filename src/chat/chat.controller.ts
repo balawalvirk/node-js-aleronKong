@@ -12,6 +12,7 @@ import { ChatService } from './chat.service';
 import { CreateMessageDto } from './dto/create-message.dto';
 import { MuteChatDto } from './dto/mute-chat.dto';
 import { MessageService } from './message.service';
+import { MuteService } from 'src/mute/mute.service';
 
 @Controller('chat')
 @UseGuards(JwtAuthGuard)
@@ -21,7 +22,8 @@ export class ChatController {
     private readonly messageService: MessageService,
     private readonly socketService: SocketGateway,
     private readonly notificationService: NotificationService,
-    private readonly firebaseService: FirebaseService
+    private readonly firebaseService: FirebaseService,
+    private readonly muteService: MuteService
   ) {}
 
   @Post('/create')
@@ -114,10 +116,10 @@ export class ChatController {
   }
 
   @Put('mute')
-  async muteChat(@Body() muteChatDto: MuteChatDto, @GetUser() user: UserDocument) {
+  async mute(@Body() muteChatDto: MuteChatDto, @GetUser() user: UserDocument) {
     const now = new Date();
     let date = new Date(now);
-    let updatedObj: any = { user: user._id, interval: muteChatDto.interval };
+    let updatedObj: any = { user: user._id, interval: muteChatDto.interval, chat: muteChatDto.chat };
     if (muteChatDto.interval === MuteInterval.DAY) {
       //check if mute interval is one day then add 1 day in date
       date.setDate(now.getDate() + 1);
@@ -130,22 +132,28 @@ export class ChatController {
     if (muteChatDto.interval === MuteInterval.DAY || MuteInterval.WEEK) {
       updatedObj = { ...updatedObj, date };
     } else {
-      updatedObj = {
-        ...updatedObj,
-        startTime: muteChatDto.startTime,
-        endTime: muteChatDto.endTime,
-      };
+      updatedObj = { ...updatedObj, startTime: muteChatDto.startTime, endTime: muteChatDto.endTime };
     }
 
-    await this.chatService.findOneRecordAndUpdate(
-      { _id: muteChatDto.chat },
-      {
-        $push: {
-          mutes: { ...updatedObj },
-        },
-      }
-    );
+    const muteFound = await this.muteService.findOneRecord({ user: user._id, chat: muteChatDto.chat });
+
+    //check if mute object already exists then update its interval only
+    if (muteFound) {
+      const { user, chat, ...rest } = updatedObj;
+      await this.muteService.findOneRecordAndUpdate({ _id: muteFound._id }, rest);
+    } else {
+      const mute = await this.muteService.createRecord(updatedObj);
+      await this.chatService.findOneRecordAndUpdate({ _id: muteChatDto.chat }, { $push: { mutes: mute._id } });
+    }
     return { message: 'Chat muted successfully.' };
+  }
+
+  @Put(':id/un-mute')
+  async unMute(@Param('id', ParseObjectId) id: string) {
+    const mute = await this.muteService.deleteSingleRecord({ _id: id });
+    if (!mute) throw new HttpException('Mute does not exists.', HttpStatus.BAD_REQUEST);
+    await this.chatService.findOneRecordAndUpdate({ _id: mute.chat }, { $pull: { mutes: mute._id } });
+    return mute;
   }
 
   @Put(':id/read-messages')
