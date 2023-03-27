@@ -103,7 +103,7 @@ export class PostsController {
       status: PostStatus.ACTIVE,
       $or: [{ creator: user._id }, { privacy: PostPrivacy.FOLLOWERS, creator: { $in: followings } }, { group: { $in: groups } }],
     };
-    const posts = await this.postsService.findAllRecords(condition, options).populate('reactions');
+    const posts = await this.postsService.find(condition, options);
     const total = await this.postsService.countRecords(condition);
     const paginated = {
       total,
