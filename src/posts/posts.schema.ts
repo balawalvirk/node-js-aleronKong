@@ -49,7 +49,7 @@ export class Posts {
   @Prop({ default: false })
   pin: boolean;
 
-  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Reaction' })
+  @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Reaction' }] })
   reactions: Reaction[];
 
   @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }] })
