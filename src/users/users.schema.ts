@@ -92,6 +92,12 @@ export class User {
 
   @Prop({ default: true })
   appUpdatesNotifications: boolean;
+
+  @Prop({ default: true })
+  receiveFriendCalls: boolean;
+
+  @Prop({ default: false })
+  doNotDisturbMode: boolean;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

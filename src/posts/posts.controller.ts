@@ -21,14 +21,13 @@ import { GroupService } from 'src/group/group.service';
 import { makeQuery, ParseObjectId, Roles } from 'src/helpers';
 import { GetUser } from 'src/helpers/decorators/user.decorator';
 import { NotificationService } from 'src/notification/notification.service';
-import { MuteInterval, NotificationType, PostPrivacy, PostStatus, UserRoles } from 'src/types';
+import { NotificationType, PostPrivacy, PostStatus, UserRoles } from 'src/types';
 import { UserDocument } from 'src/users/users.schema';
 import { UsersService } from 'src/users/users.service';
 import { CommentService } from './comment.service';
 import { AddReactionsDto } from './dtos/add-reactions.dto';
 import { CreateCommentDto } from './dtos/create-comment';
 import { FindAllPostQuery } from './dtos/find-all-post.query.dto';
-import { MutePostDto } from './dtos/mute-post.dto';
 import { PinUnpinDto } from './dtos/pin-unpin-post.dto';
 import { UpdateCommentDto } from './dtos/update-comment.dto';
 import { UpdatePostDto } from './dtos/update-post.dto';
@@ -104,7 +103,7 @@ export class PostsController {
       status: PostStatus.ACTIVE,
       $or: [{ creator: user._id }, { privacy: PostPrivacy.FOLLOWERS, creator: { $in: followings } }, { group: { $in: groups } }],
     };
-    const posts = await this.postsService.findAllRecords(condition, options);
+    const posts = await this.postsService.findAllRecords(condition, options).populate('reactions');
     const total = await this.postsService.countRecords(condition);
     const paginated = {
       total,
@@ -193,59 +192,6 @@ export class PostsController {
   @Put(':id/update')
   async update(@Body() updatePostDto: UpdatePostDto, @Param('id', ParseObjectId) id: string) {
     return await this.postsService.update({ _id: id }, updatePostDto);
-  }
-
-  @Put('mute')
-  async mutePost(@Body() mutePostDto: MutePostDto, @GetUser() user: UserDocument) {
-    const now = new Date();
-    const date = new Date(now);
-    let updatedObj: any = { user: user._id, interval: mutePostDto.interval };
-    if (mutePostDto.interval === MuteInterval.DAY) {
-      //check if mute interval is one day then add 1 day in date
-      date.setDate(now.getDate() + 1);
-    } else if (mutePostDto.interval === MuteInterval.WEEK) {
-      //check if mute interval is one day then add 7 day in date
-      date.setDate(now.getDate() + 7);
-    }
-    date.toLocaleDateString();
-
-    if (mutePostDto.interval === MuteInterval.DAY || MuteInterval.WEEK) {
-      updatedObj = { ...updatedObj, date };
-    } else {
-      updatedObj = {
-        ...updatedObj,
-        startTime: mutePostDto.startTime,
-        endTime: mutePostDto.endTime,
-      };
-    }
-
-    // check if user already mute this post
-    const post = await this.postsService.findOneRecord({ _id: mutePostDto.post, 'mutes.user': user._id });
-
-    // if post exists then update the mute obj
-    if (post) {
-      let updateObj: any;
-      if (mutePostDto.interval === MuteInterval.DAY || MuteInterval.WEEK) {
-        updateObj = {
-          'mutes.interval': updatedObj.interval,
-          'mutes.date': updatedObj.date,
-        };
-      } else {
-        updateObj = {
-          'mutes.interval': updatedObj.interval,
-          'mutes.date': updatedObj.date,
-          'mutes.startTime': updateObj.startTime,
-          'mutes.endTime': updateObj.endTime,
-        };
-      }
-      await this.postsService.findOneRecordAndUpdate({ _id: mutePostDto.post, 'mutes.user': user._id }, { $set: updateObj });
-    }
-
-    // if post does not exists then push obj to mutes
-    else {
-      await this.postsService.findOneRecordAndUpdate({ _id: mutePostDto.post }, { $push: { mutes: { ...updatedObj } } });
-    }
-    return { message: 'Post muted successfully.' };
   }
 
   @Roles(UserRoles.ADMIN)

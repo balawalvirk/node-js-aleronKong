@@ -114,8 +114,7 @@ export enum Emoji {
   like = 'like',
   LOVE = 'love',
   LAUGH = 'laugh',
+  DIS_LIKE = 'dislike',
   WOW = 'wow',
   SAD = 'sad',
-  CLAP = 'clap',
-  THUMBS_DOWN = 'thumbsDown',
 }

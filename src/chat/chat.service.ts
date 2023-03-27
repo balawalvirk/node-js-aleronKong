@@ -30,11 +30,7 @@ export class ChatService extends BaseService<ChatDocument> {
 
   async findOne(query: FilterQuery<ChatDocument>, userId: string) {
     return await this.ChatModel.findOne(query)
-      .populate({
-        path: 'members',
-        match: { _id: { $ne: userId } },
-        select: 'avatar firstName lastName',
-      })
+      .populate([{ path: 'members', match: { _id: { $ne: userId } }, select: 'avatar firstName lastName' }, { path: 'mutes' }])
       .lean();
   }
 }

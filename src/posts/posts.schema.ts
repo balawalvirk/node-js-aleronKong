@@ -2,7 +2,6 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
 import { Fundraising } from 'src/fundraising/fundraising.schema';
 import { Group } from 'src/group/group.schema';
-import { Mute } from 'src/mute/mute.schema';
 import { PostPrivacy, PostStatus, PostType } from 'src/types';
 import { User } from 'src/users/users.schema';
 import { Comment } from './comment.schema';
@@ -49,9 +48,6 @@ export class Posts {
 
   @Prop({ default: false })
   pin: boolean;
-
-  @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Mute' }] })
-  mutes: Mute[];
 
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Reaction' })
   reactions: Reaction[];
