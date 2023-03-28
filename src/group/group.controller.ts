@@ -12,6 +12,8 @@ import {
   Put,
   HttpException,
   HttpStatus,
+  UsePipes,
+  ValidationPipe,
 } from '@nestjs/common';
 import { GroupService } from './group.service';
 import { CreateGroupDto } from './dto/create-group.dto';
@@ -33,6 +35,8 @@ import { CreateModeratorDto } from './dto/create-moderator.dto';
 import { ModeratorService } from './moderator.service';
 import { UpdateModeratorDto } from './dto/update-moderator.dto';
 import { MuteService } from 'src/mute/mute.service';
+import { FindAllQueryDto } from './dto/find-all.query.dto';
+import { GroupDocument } from './group.schema';
 
 @Controller('group')
 @UseGuards(JwtAuthGuard)
@@ -156,7 +160,7 @@ export class GroupController {
 
   @Get('find-one/:id')
   async findOne(@Param('id') id: string) {
-    return await this.groupService.findOneRecord({ _id: id }).populate('mutes');
+    return await this.groupService.findOneRecord({ _id: id }).populate([{ path: 'mutes' }, { path: 'moderators' }]);
   }
 
   @Put('update/:id')
@@ -266,7 +270,8 @@ export class GroupController {
   }
 
   @Get('find-all')
-  async findAllGroups(@Query('type') type: string, @Query('query', new DefaultValuePipe('')) query: string, @GetUser() user: UserDocument) {
+  @UsePipes(new ValidationPipe({ transform: true }))
+  async findAllGroups(@Query() { type, query, showModeratorGroups }: FindAllQueryDto, @GetUser() user: UserDocument) {
     let groups;
     if (type === 'forYou') {
       groups = await this.groupService.findAllRecords({ name: { $regex: query, $options: 'i' }, 'members.member': user._id }, { createdAt: -1 });
@@ -284,6 +289,11 @@ export class GroupController {
         },
         { createdAt: -1 }
       );
+    }
+    // if moderator group is true then show all groups where user added as moderator
+    else if (showModeratorGroups) {
+      const groupIds = (await this.moderatorService.findAllRecords({ user: user._id })).map((moderator) => moderator.group);
+      groups = await this.groupService.findAllRecords({ _id: { $in: groupIds } });
     } else {
       groups = await this.groupService.findAllRecords();
     }
@@ -356,6 +366,7 @@ export class GroupController {
     return moderator;
   }
 
+  // find all moderators of specfic group
   @Get(':id/moderator/find-all')
   async findAllModerator(@Param('id', ParseObjectId) id: string) {
     return await this.moderatorService.find({ group: id });
