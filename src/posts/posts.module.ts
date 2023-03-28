@@ -2,6 +2,7 @@ import { forwardRef, Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { FirebaseModule } from 'src/firebase/firebase.module';
 import { GroupModule } from 'src/group/group.module';
+import { ModeratorService } from 'src/group/moderator.service';
 import { NotificationModule } from 'src/notification/notification.module';
 import { UsersModule } from 'src/users/users.module';
 import { CommentSchema, Comment } from './comment.schema';

@@ -12,6 +12,7 @@ import {
   Query,
   UseGuards,
   UsePipes,
+  Ip,
 } from '@nestjs/common';
 import { compare, hash } from 'bcrypt';
 import { ChangePasswordDto } from 'src/auth/dtos/change-pass.dto';
@@ -22,10 +23,12 @@ import { FirebaseService } from 'src/firebase/firebase.service';
 import { makeQuery, ParseObjectId, Roles, StripeService } from 'src/helpers';
 import { GetUser } from 'src/helpers/decorators/user.decorator';
 import { NotificationService } from 'src/notification/notification.service';
-import { NotificationType, UserRoles, UserStatus } from 'src/types';
+import { NotificationType, SellerRequest, UserRoles, UserStatus } from 'src/types';
 import { UserDocument } from 'src/users/users.schema';
+import { ApproveRejectSellerDto } from './dtos/approve-reject-seller.dto';
 import { CreateBankAccountDto } from './dtos/create-bank-account.dto';
 import { CreatePayoutDto } from './dtos/create-payout.dto';
+import { CreateSellerDto } from './dtos/create-seller.dto';
 import { FindAllUsersQueryDto } from './dtos/find-all-users.query.dto';
 import { UpdateBankAccountDto } from './dtos/update-bank-account.dto';
 import { UpdateUserDto } from './dtos/update-user';
@@ -205,5 +208,62 @@ export class UserController {
   async findUnreadNotifications(@GetUser() user: UserDocument) {
     const notifications = await this.notificationService.countRecords({ receiver: user._id, isRead: false });
     return { notifications };
+  }
+
+  //api to create a seller request to admin
+  @Put('seller/create')
+  async createSeller(@Body() createSellerDto: CreateSellerDto, @GetUser() user: UserDocument, @Ip() ip: string) {
+    await this.usersService.findOneRecordAndUpdate({ _id: user._id }, { ...createSellerDto, ip });
+    const admin = await this.usersService.findOneRecord({ role: { $in: [UserRoles.ADMIN] } });
+
+    await this.notificationService.createRecord({
+      type: NotificationType.SELLER_REQUEST,
+      message: 'A new request for seller approval.',
+      sender: user._id,
+      user: user._id,
+      receiver: admin._id,
+    });
+    if (admin.fcmToken) {
+      await this.firebaseService.sendNotification({
+        token: admin.fcmToken,
+        notification: { title: 'A new request for seller approval.' },
+        data: { user: user._id, type: NotificationType.SELLER_REQUEST },
+      });
+    }
+    return 'Your request for seller is under consideration.';
+  }
+
+  @Roles(UserRoles.ADMIN)
+  @Put('seller/approve-reject')
+  async approveRejectSeller(@Body() approveRejectSellerDto: ApproveRejectSellerDto) {
+    const user = await this.usersService.findOneRecordAndUpdate(
+      { _id: approveRejectSellerDto.user },
+      { sellerRequest: approveRejectSellerDto.sellerRequest }
+    );
+
+    if (user.sellerRequest === SellerRequest.APPROVED) {
+      await this.usersService.createSellerAccount(user);
+    }
+
+    await this.notificationService.createRecord({
+      type: NotificationType.SELLER_REQUEST_APPROVED_REJECTED,
+      message: `Your seller request has been ${user.sellerRequest}`,
+      receiver: user._id,
+    });
+
+    if (user.fcmToken) {
+      await this.firebaseService.sendNotification({
+        token: user.fcmToken,
+        notification: { title: `Your seller request has been ${user.sellerRequest}` },
+        data: { user: user._id, type: NotificationType.SELLER_REQUEST_APPROVED_REJECTED },
+      });
+    }
+
+    return 'Request approved successfully.';
+  }
+
+  @Get('earnings')
+  async findEarnings(@GetUser() user: UserDocument) {
+    return await this.stripeService.findConnectedAccountTransactions(user.sellerId);
   }
 }

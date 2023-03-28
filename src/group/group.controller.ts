@@ -7,13 +7,13 @@ import {
   Delete,
   UseGuards,
   Query,
-  DefaultValuePipe,
   ParseBoolPipe,
   Put,
   HttpException,
   HttpStatus,
   UsePipes,
   ValidationPipe,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { GroupService } from './group.service';
 import { CreateGroupDto } from './dto/create-group.dto';
@@ -119,15 +119,37 @@ export class GroupController {
     return post;
   }
 
+  async isGroupModerator(postId: string, userId: string) {
+    const post = await this.postService.findOneRecord({ _id: postId });
+    // check if post is not group post then throw exception
+    if (!post.group) return false;
+    const moderator = await this.moderatorService.findOneRecord({ group: post.group, user: userId });
+    //check if user is moderator
+    if (!moderator) return false;
+    return true;
+  }
+
   @Delete('post/:id/delete')
-  async deletePost(@Param('id', ParseObjectId) id: string) {
-    const post = await this.postService.deleteSingleRecord({ _id: id });
-    // check if post is in group then remove post from group also
-    if (post.group) await this.groupService.findOneRecordAndUpdate({ _id: post.group }, { $pull: { posts: post._id } });
-    // check if post is fundraising then also remove fundraising project
-    if (post.type === PostType.FUNDRAISING) {
-      await this.fundraisingService.deleteSingleRecord({ _id: post.fundraising });
-      await this.fundService.deleteManyRecord({ project: post.fundraising });
+  async deletePost(@Param('id', ParseObjectId) id: string, @GetUser() user: UserDocument) {
+    const post = await this.postService.findOneRecord({ _id: id });
+
+    if (!post) throw new HttpException('Post does not exists.', HttpStatus.BAD_REQUEST);
+    if (post.creator.toString() == user._id) {
+      const deletedPost = await this.postService.deleteSingleRecord({ _id: id });
+      if (deletedPost.group) await this.groupService.findOneRecordAndUpdate({ _id: deletedPost.group }, { $pull: { posts: deletedPost._id } });
+      if (deletedPost.type === PostType.FUNDRAISING) {
+        await this.fundraisingService.deleteSingleRecord({ _id: deletedPost.fundraising });
+        await this.fundService.deleteManyRecord({ project: deletedPost.fundraising });
+      }
+    } else {
+      const isGroupModerator = await this.isGroupModerator(post._id, user._id);
+      if (!isGroupModerator) throw new UnauthorizedException();
+      const deletedPost = await this.postService.deleteSingleRecord({ _id: id });
+      if (deletedPost.group) await this.groupService.findOneRecordAndUpdate({ _id: deletedPost.group }, { $pull: { posts: deletedPost._id } });
+      if (deletedPost.type === PostType.FUNDRAISING) {
+        await this.fundraisingService.deleteSingleRecord({ _id: deletedPost.fundraising });
+        await this.fundService.deleteManyRecord({ project: deletedPost.fundraising });
+      }
     }
     return { message: 'Post deleted successfully.' };
   }
@@ -258,14 +280,31 @@ export class GroupController {
   async approveRejectRequest(
     @Query('isApproved', new ParseBoolPipe()) isApproved: boolean,
     @Param('id', ParseObjectId) id: string,
-    @Param('userId', ParseObjectId) userId: string
+    @Param('userId', ParseObjectId) userId: string,
+    @GetUser() user: UserDocument
   ) {
-    if (isApproved) {
-      await this.groupService.findOneRecordAndUpdate({ _id: id }, { $pull: { requests: userId }, $push: { members: { member: userId } } });
-      return 'Request approved successfully.';
+    const group = await this.groupService.findOneRecord({ _id: id });
+    if (!group) throw new HttpException('Group does not exist.', HttpStatus.BAD_REQUEST);
+
+    if (group.creator.toString() == user._id) {
+      if (isApproved) {
+        await this.groupService.findOneRecordAndUpdate({ _id: id }, { $pull: { requests: userId }, $push: { members: { member: userId } } });
+        return 'Request approved successfully.';
+      } else {
+        await this.groupService.findOneRecordAndUpdate({ _id: id }, { $pull: { requests: userId } });
+        return 'Request rejected successfully.';
+      }
     } else {
-      await this.groupService.findOneRecordAndUpdate({ _id: id }, { $pull: { requests: userId } });
-      return 'Request rejected successfully.';
+      const moderator = await this.moderatorService.findOneRecord({ group: id, user: user._id });
+      if (!moderator) throw new UnauthorizedException();
+
+      if (isApproved) {
+        await this.groupService.findOneRecordAndUpdate({ _id: id }, { $pull: { requests: userId }, $push: { members: { member: userId } } });
+        return 'Request approved successfully.';
+      } else {
+        await this.groupService.findOneRecordAndUpdate({ _id: id }, { $pull: { requests: userId } });
+        return 'Request rejected successfully.';
+      }
     }
   }
 
@@ -360,7 +399,10 @@ export class GroupController {
   // ======================================================= moderator apis ========================================================================
 
   @Post('moderator/create')
-  async createModerator(@Body() createModeratorDto: CreateModeratorDto) {
+  async createModerator(@Body() createModeratorDto: CreateModeratorDto, @GetUser() user: UserDocument) {
+    const group = await this.groupService.findOneRecord({ _id: createModeratorDto.group });
+    if (!group) throw new HttpException('Group does not exists.', HttpStatus.BAD_REQUEST);
+    if (group.creator.toString() != user._id) throw new UnauthorizedException();
     const moderator = await this.moderatorService.createRecord(createModeratorDto);
     await this.groupService.findOneRecordAndUpdate({ _id: createModeratorDto.group }, { $push: { moderators: moderator._id } });
     return moderator;
@@ -373,14 +415,20 @@ export class GroupController {
   }
 
   @Delete('moderator/:id/delete')
-  async deleteModerator(@Param('id', ParseObjectId) id: string) {
-    const moderator = await this.moderatorService.deleteSingleRecord({ _id: id });
+  async deleteModerator(@Param('id', ParseObjectId) id: string, @GetUser() user: UserDocument) {
+    const moderator = await this.moderatorService.findOneRecord({ _id: id }).populate('group');
+    if (!moderator) throw new HttpException('Moderator does not exists.', HttpStatus.BAD_REQUEST);
+    if (moderator.user.toString() != user._id || moderator.group.creator.toString() != user._id) throw new UnauthorizedException();
+    await this.moderatorService.deleteSingleRecord({ _id: id });
     await this.groupService.findOneRecordAndUpdate({ _id: moderator.group }, { $pull: { moderators: moderator._id } });
     return moderator;
   }
 
   @Put('moderator/:id/update')
-  async updateModerator(@Param('id', ParseObjectId) id: string, @Body() updateModeratorDto: UpdateModeratorDto) {
+  async updateModerator(@Param('id', ParseObjectId) id: string, @Body() updateModeratorDto: UpdateModeratorDto, @GetUser() user: UserDocument) {
+    const moderator = await this.moderatorService.findOneRecord({ _id: id }).populate('group');
+    if (!moderator) throw new HttpException('Moderator does not exists.', HttpStatus.BAD_REQUEST);
+    if (moderator.user.toString() != user._id || moderator.group.creator.toString() != user._id) throw new UnauthorizedException();
     return await this.moderatorService.findOneRecordAndUpdate({ _id: id }, updateModeratorDto);
   }
 }

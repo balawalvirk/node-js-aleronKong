@@ -143,4 +143,13 @@ export class StripeService {
   async createPayout(params: Stripe.PayoutCreateParams, options?: Stripe.RequestOptions) {
     return await this.stripe.payouts.create(params, options);
   }
+
+  async findConnectedAccountBalance(account: string) {
+    return await this.stripe.balance.retrieve({ stripeAccount: account });
+  }
+
+  async findConnectedAccountTransactions(account: string) {
+    //@ts-ignore
+    return await this.stripe.balanceTransactions.list({ stripeAccount: account, type: 'payment' });
+  }
 }

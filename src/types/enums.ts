@@ -80,6 +80,8 @@ export enum NotificationType {
   FUNDRAISING_PROJECT_FUNDED = 'fundraisingProjectFunded',
   NEW_GROUP_POST = 'newGroupPost',
   USER_TAGGED = 'userTagged',
+  SELLER_REQUEST = 'sellerRequest',
+  SELLER_REQUEST_APPROVED_REJECTED = 'sellerRequestApproveRejected',
 }
 
 export enum ReportType {
@@ -117,4 +119,10 @@ export enum Emoji {
   DIS_LIKE = 'dislike',
   WOW = 'wow',
   SAD = 'sad',
+}
+
+export enum SellerRequest {
+  PENDING = 'pending',
+  APPROVED = 'approved',
+  REJECTED = 'rejected',
 }

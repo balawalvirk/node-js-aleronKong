@@ -23,6 +23,6 @@ import { MuteModule } from 'src/mute/mute.module';
   ],
   controllers: [GroupController],
   providers: [GroupService, ModeratorService],
-  exports: [GroupService],
+  exports: [GroupService, ModeratorService],
 })
 export class GroupModule {}
