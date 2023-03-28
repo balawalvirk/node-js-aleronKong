@@ -11,13 +11,13 @@ export type NotificationDocument = Notification & mongoose.Document;
 
 @Schema({ timestamps: true })
 export class Notification {
-  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true })
+  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User' })
   sender: User;
 
-  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true })
+  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User' })
   receiver: User;
 
-  @Prop({ enum: NotificationType, required: true })
+  @Prop({ enum: NotificationType })
   type: string;
 
   @Prop({ required: true })

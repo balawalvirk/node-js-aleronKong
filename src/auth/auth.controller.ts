@@ -65,14 +65,11 @@ export class AuthController {
       const key = await this.fileService.upload(avatar);
       body.avatar = `${this.configService.get('S3_URL')}${key}`;
     }
-    // first create stripe connect (custom) account and customer account of newly register user.
-    const sellerAccount = await this.authService.createSellerAccount(body, ip);
     const customerAccount = await this.authService.createCustomerAccount(body.email, `${body.firstName} ${body.lastName}`);
     const user: UserDocument = await this.userService.createRecord({
       ...body,
       password: await hash(body.password, 10),
       customerId: customerAccount.id,
-      sellerId: sellerAccount.id,
     });
     const { access_token } = await this.authService.login(user.userName, user._id);
     return {
@@ -100,7 +97,6 @@ export class AuthController {
   async socialLogin(@Body() socialLoginDto: SocialLoginDto, @Ip() ip: string) {
     const userFound = await this.userService.findOneRecord({ email: socialLoginDto.email });
     if (!userFound) {
-      const sellerAccount = await this.authService.createSellerAccount(socialLoginDto, ip);
       const customerAccount = await this.authService.createCustomerAccount(
         socialLoginDto.email,
         `${socialLoginDto.firstName} ${socialLoginDto.lastName}`
@@ -109,7 +105,6 @@ export class AuthController {
         email: socialLoginDto.email,
         password: await hash(`${new Date().getTime()}`, 10),
         authType: socialLoginDto.authType,
-        sellerId: sellerAccount.id,
         customerId: customerAccount.id,
         ...socialLoginDto,
       });

@@ -13,11 +13,13 @@ import {
   ParseBoolPipe,
   HttpException,
   HttpStatus,
+  UnauthorizedException,
 } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/role.guard';
 import { FirebaseService } from 'src/firebase/firebase.service';
 import { GroupService } from 'src/group/group.service';
+import { ModeratorService } from 'src/group/moderator.service';
 import { makeQuery, ParseObjectId, Roles } from 'src/helpers';
 import { GetUser } from 'src/helpers/decorators/user.decorator';
 import { NotificationService } from 'src/notification/notification.service';
@@ -45,7 +47,8 @@ export class PostsController {
     private readonly firebaseService: FirebaseService,
     private readonly notificationService: NotificationService,
     private readonly reactionService: ReactionService,
-    private readonly groupService: GroupService
+    private readonly groupService: GroupService,
+    private readonly moderatorService: ModeratorService
   ) {}
 
   @Roles(UserRoles.ADMIN)
@@ -183,11 +186,33 @@ export class PostsController {
     return await this.postsService.findOne({ _id: postId });
   }
 
+  async isGroupModerator(postId: string, userId: string) {
+    const post = await this.postsService.findOneRecord({ _id: postId });
+    // check if post is not group post then throw exception
+    if (!post.group) return false;
+    const moderator = await this.moderatorService.findOneRecord({ group: post.group, user: userId });
+    //check if user is moderator
+    if (!moderator) return false;
+    return true;
+  }
+
   @Delete(':postId/comment/:id/delete')
-  async deleteComment(@Param('id', ParseObjectId) id: string, @GetUser() user: UserDocument) {
-    const comment = await this.commentService.deleteSingleRecord({ _id: id });
-    await this.postsService.findOneRecordAndUpdate({ _id: comment.post }, { $pull: { comments: comment._id } });
-    return { message: 'Comment deleted successfully.' };
+  async deleteComment(@Param('id', ParseObjectId) id: string, @Param('postId', ParseObjectId) postId: string, @GetUser() user: UserDocument) {
+    const comment = await this.commentService.findOneRecord({ _id: id });
+
+    if (!comment) throw new HttpException('Comment does not exist.', HttpStatus.BAD_REQUEST);
+
+    if (comment.creator.toString() == user._id) {
+      const deletedComment = await this.commentService.deleteSingleRecord({ _id: id });
+      await this.postsService.findOneRecordAndUpdate({ _id: deletedComment.post }, { $pull: { comments: deletedComment._id } });
+      return { message: 'Comment deleted successfully.' };
+    } else {
+      const isGroupModerator = await this.isGroupModerator(postId, user._id);
+      if (!isGroupModerator) throw new UnauthorizedException();
+      const deletedComment = await this.commentService.deleteSingleRecord({ _id: id });
+      await this.postsService.findOneRecordAndUpdate({ _id: deletedComment.post }, { $pull: { comments: deletedComment._id } });
+      return { message: 'Comment deleted successfully.' };
+    }
   }
 
   @Put(':id/update')
@@ -202,10 +227,19 @@ export class PostsController {
     return { message: `Post ${block === true ? 'blocked' : 'unblock'} successfully.` };
   }
 
-  @Roles(UserRoles.ADMIN)
   @Put(':id/pin-unpin')
-  async pinUnpinPost(@Param('id', ParseObjectId) id: string, @Body() pinUnpinDto: PinUnpinDto) {
-    await this.postsService.findOneRecordAndUpdate({ _id: id }, pinUnpinDto);
+  async pinUnpinPost(@Param('id', ParseObjectId) id: string, @Body() pinUnpinDto: PinUnpinDto, @GetUser() user: UserDocument) {
+    const post = await this.postsService.findOne({ _id: id });
+
+    if (!post) throw new HttpException('Post does not exists.', HttpStatus.BAD_REQUEST);
+
+    if (post.creator.toString() == user._id || user.role.includes(UserRoles.ADMIN)) {
+      await this.postsService.findOneRecordAndUpdate({ _id: id }, pinUnpinDto);
+    } else {
+      const isGroupModerator = await this.isGroupModerator(id, user._id);
+      if (!isGroupModerator) throw new UnauthorizedException();
+      await this.postsService.findOneRecordAndUpdate({ _id: id }, pinUnpinDto);
+    }
     return { message: `Post ${pinUnpinDto.pin ? 'pin' : 'un pin'} successfully.` };
   }
 

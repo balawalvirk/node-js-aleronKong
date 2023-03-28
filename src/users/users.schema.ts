@@ -3,7 +3,7 @@ import mongoose, { Document } from 'mongoose';
 import { Address } from 'src/address/address.schema';
 import { Package } from 'src/package/package.schema';
 import { Product } from 'src/product/product.schema';
-import { AuthTypes, UserRoles, UserStatus } from 'src/types';
+import { AuthTypes, SellerRequest, UserRoles, UserStatus } from 'src/types';
 import { Report, ReportSchema } from './report.schema';
 
 export type UserDocument = User & Document;
@@ -97,7 +97,31 @@ export class User {
   receiveFriendCalls: boolean;
 
   @Prop({ default: false })
-  doNotDisturbMode: boolean;
+  doNotDisturb: boolean;
+
+  @Prop()
+  phoneNumber: string;
+
+  @Prop()
+  ssnLast4: string;
+
+  @Prop()
+  city: string;
+
+  @Prop()
+  line1: string;
+
+  @Prop()
+  postalCode: string;
+
+  @Prop()
+  state: string;
+
+  @Prop()
+  ip: string;
+
+  @Prop({ default: SellerRequest.PENDING, enum: SellerRequest })
+  sellerRequest: string;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
