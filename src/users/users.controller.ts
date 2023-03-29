@@ -242,7 +242,7 @@ export class UserController {
     );
 
     if (user.sellerRequest === SellerRequest.APPROVED) {
-      await this.usersService.createSellerAccount(user);
+      // await this.usersService.createSellerAccount(user);
       await this.usersService.findOneRecordAndUpdate({ _id: user }, { $push: { role: UserRoles.SELLER } });
     }
 
@@ -265,6 +265,6 @@ export class UserController {
 
   @Get('earnings')
   async findEarnings(@GetUser() user: UserDocument) {
-    return await this.stripeService.findConnectedAccountTransactions(user.sellerId);
+    return await this.stripeService.findConnectedAccountBalance(user.sellerId);
   }
 }
