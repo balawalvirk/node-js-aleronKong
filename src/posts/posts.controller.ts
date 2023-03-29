@@ -193,7 +193,7 @@ export class PostsController {
     const moderator = await this.moderatorService.findOneRecord({ group: post.group, user: userId });
     //check if user is moderator
     if (!moderator) return false;
-    return true;
+    else return moderator;
   }
 
   @Delete(':postId/comment/:id/delete')
@@ -207,8 +207,8 @@ export class PostsController {
       await this.postsService.findOneRecordAndUpdate({ _id: deletedComment.post }, { $pull: { comments: deletedComment._id } });
       return { message: 'Comment deleted successfully.' };
     } else {
-      const isGroupModerator = await this.isGroupModerator(postId, user._id);
-      if (!isGroupModerator) throw new UnauthorizedException();
+      const moderator = await this.isGroupModerator(postId, user._id);
+      if (!moderator || !moderator.deleteComments) throw new UnauthorizedException();
       const deletedComment = await this.commentService.deleteSingleRecord({ _id: id });
       await this.postsService.findOneRecordAndUpdate({ _id: deletedComment.post }, { $pull: { comments: deletedComment._id } });
       return { message: 'Comment deleted successfully.' };
@@ -236,8 +236,8 @@ export class PostsController {
     if (post.creator.toString() == user._id || user.role.includes(UserRoles.ADMIN)) {
       await this.postsService.findOneRecordAndUpdate({ _id: id }, pinUnpinDto);
     } else {
-      const isGroupModerator = await this.isGroupModerator(id, user._id);
-      if (!isGroupModerator) throw new UnauthorizedException();
+      const moderator = await this.isGroupModerator(id, user._id);
+      if (!moderator || !moderator.pinPosts) throw new UnauthorizedException();
       await this.postsService.findOneRecordAndUpdate({ _id: id }, pinUnpinDto);
     }
     return { message: `Post ${pinUnpinDto.pin ? 'pin' : 'un pin'} successfully.` };
