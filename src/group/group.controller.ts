@@ -290,7 +290,7 @@ export class GroupController {
     if (!group) throw new HttpException('Group does not exist.', HttpStatus.BAD_REQUEST);
     if (group.creator.toString() != user._id) {
       if (!group.moderators || group.moderators.length === 0 || !group.moderators[0].removeMembers)
-        throw new HttpException('Unauthorized', HttpStatus.UNAUTHORIZED);
+        throw new HttpException('You cannot remove a member.', HttpStatus.FORBIDDEN);
     }
     const updatedGroup = await this.groupService.findOneRecordAndUpdate(
       { _id: removeMemberDto.group },
@@ -307,7 +307,7 @@ export class GroupController {
     // check if user is creator of this group or moderator
     if (group.creator.toString() != user._id) {
       if (!group.moderators || group.moderators.length === 0 || !group.moderators[0].removeMembers)
-        throw new HttpException('Unauthorized', HttpStatus.UNAUTHORIZED);
+        throw new HttpException('You cannot ban a member.', HttpStatus.FORBIDDEN);
     }
     const updatedGroup = await this.groupService.findOneRecordAndUpdate(
       { _id: banMemberDto.group, 'members.member': banMemberDto.member },
