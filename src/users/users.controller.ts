@@ -243,6 +243,7 @@ export class UserController {
 
     if (user.sellerRequest === SellerRequest.APPROVED) {
       await this.usersService.createSellerAccount(user);
+      await this.usersService.findOneRecordAndUpdate({ _id: user }, { $push: { role: UserRoles.SELLER } });
     }
 
     await this.notificationService.createRecord({

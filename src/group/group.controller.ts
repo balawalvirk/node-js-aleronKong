@@ -36,7 +36,8 @@ import { ModeratorService } from './moderator.service';
 import { UpdateModeratorDto } from './dto/update-moderator.dto';
 import { MuteService } from 'src/mute/mute.service';
 import { FindAllQueryDto } from './dto/find-all.query.dto';
-import { GroupDocument } from './group.schema';
+import { RemoveMemberDto } from './dto/remove-member.dto';
+import { BanMemberDto } from './dto/ban-member.dto';
 
 @Controller('group')
 @UseGuards(JwtAuthGuard)
@@ -59,13 +60,22 @@ export class GroupController {
 
   @Post('post/create')
   async createPost(@Body() createPostDto: CreatePostsDto, @GetUser() user: UserDocument) {
-    const post = await this.postService.createPost({ ...createPostDto, creator: user._id });
-    if (post.group) {
-      const group = await this.groupService
+    if (createPostDto.group) {
+      const group = await this.groupService.findOneRecord({ _id: createPostDto.group });
+      if (!group) throw new HttpException('Group does not exists.', HttpStatus.BAD_REQUEST);
+
+      // check if current user is member of group.
+      const member = group.members.find((member) => member.member.toString() == user._id);
+
+      // check if member is banned or not
+      if (member.banned) throw new HttpException('You are not allowed to create post.', HttpStatus.FORBIDDEN);
+
+      const post = await this.postService.createPost({ ...createPostDto, creator: user._id });
+
+      await this.groupService
         .findOneRecordAndUpdate({ _id: post.group }, { $push: { posts: post._id } })
         .populate({ path: 'creator', select: 'fcmToken' });
 
-      // check if user is posting in your own group then stop sending notification
       //@ts-ignore
       if (user._id != group.creator._id.toString()) {
         await this.notificationService.createRecord({
@@ -78,7 +88,9 @@ export class GroupController {
         });
 
         //@ts-ignore
-        if (!this.groupService.isGroupMuted(group.mutes, group.creator._id)) {
+        const mute = await this.muteService.findOneRecord({ group: group._id, user: group.creator._id });
+
+        if (!this.groupService.isGroupMuted(mute)) {
           if (group.creator.fcmToken) {
             await this.firebaseService.sendNotification({
               token: group.creator.fcmToken,
@@ -88,35 +100,39 @@ export class GroupController {
           }
         }
       }
-    }
 
-    // check if user tagged to any friend
-    if (post.tagged) {
-      for (const taggedUser of post.tagged) {
-        await this.notificationService.createRecord({
-          type: NotificationType.USER_TAGGED,
-          post: post._id,
-          message: `has tagged you in post.`,
-          sender: user._id,
-          //@ts-ignore
-          receiver: taggedUser._id,
-        });
+      return post;
+    } else {
+      const post = await this.postService.createPost({ ...createPostDto, creator: user._id });
 
-        // check if user has enabled notifications
-        if (taggedUser.enableNotifications) {
-          // check if user has firebase token
-          if (taggedUser.fcmToken) {
-            await this.firebaseService.sendNotification({
-              token: taggedUser.fcmToken,
-              notification: { title: `has tagged you in post.` },
-              data: { post: post._id.toString(), type: NotificationType.USER_TAGGED },
-            });
+      // check if user tagged to any friend
+      if (post.tagged) {
+        for (const taggedUser of post.tagged) {
+          await this.notificationService.createRecord({
+            type: NotificationType.USER_TAGGED,
+            post: post._id,
+            message: `has tagged you in post.`,
+            sender: user._id,
+            //@ts-ignore
+            receiver: taggedUser._id,
+          });
+
+          // check if user has enabled notifications
+          if (taggedUser.enableNotifications) {
+            // check if user has firebase token
+            if (taggedUser.fcmToken) {
+              await this.firebaseService.sendNotification({
+                token: taggedUser.fcmToken,
+                notification: { title: `has tagged you in post.` },
+                data: { post: post._id.toString(), type: NotificationType.USER_TAGGED },
+              });
+            }
           }
         }
       }
-    }
 
-    return post;
+      return post;
+    }
   }
 
   async isGroupModerator(postId: string, userId: string) {
@@ -126,7 +142,7 @@ export class GroupController {
     const moderator = await this.moderatorService.findOneRecord({ group: post.group, user: userId });
     //check if user is moderator
     if (!moderator) return false;
-    return true;
+    else return moderator;
   }
 
   @Delete('post/:id/delete')
@@ -142,8 +158,8 @@ export class GroupController {
         await this.fundService.deleteManyRecord({ project: deletedPost.fundraising });
       }
     } else {
-      const isGroupModerator = await this.isGroupModerator(post._id, user._id);
-      if (!isGroupModerator) throw new UnauthorizedException();
+      const moderator = await this.isGroupModerator(post._id, user._id);
+      if (!moderator || !moderator.deletePosts) throw new UnauthorizedException();
       const deletedPost = await this.postService.deleteSingleRecord({ _id: id });
       if (deletedPost.group) await this.groupService.findOneRecordAndUpdate({ _id: deletedPost.group }, { $pull: { posts: deletedPost._id } });
       if (deletedPost.type === PostType.FUNDRAISING) {
@@ -200,6 +216,7 @@ export class GroupController {
     //check if user is already a member of this group
     const memberFound = group.members.filter((member) => member.member === user._id);
     if (memberFound.length > 0) throw new HttpException('You are already a member of this group.', HttpStatus.BAD_REQUEST);
+
     //check if group is private
     if (group.privacy === GroupPrivacy.PRIVATE) {
       //check if user request is already in request array  of this group
@@ -213,9 +230,8 @@ export class GroupController {
         //@ts-ignore
         receiver: group.creator._id,
       });
-      // check if user does not mute the group and have fcm Token then send a fcm  message.
       //@ts-ignore
-      if (!this.groupService.isGroupMuted(group.mutes, group.creator._id) && group.creator.fcmToken) {
+      if (group.creator.fcmToken) {
         await this.firebaseService.sendNotification({
           token: group.creator.fcmToken,
           notification: { title: `has send a join request for ${group.name} group` },
@@ -235,9 +251,8 @@ export class GroupController {
 
     const updatedGroup = await this.groupService.findOneRecordAndUpdate({ _id: id }, { $push: { members: { member: user._id } } });
 
-    // check if user does not mute the group and have fcm Token then send a fcm  message.
     //@ts-ignore
-    if (!this.groupService.isGroupMuted(group.mutes, group.creator._id) && group.creator.fcmToken) {
+    if (group.creator.fcmToken) {
       await this.firebaseService.sendNotification({
         token: group.creator.fcmToken,
         notification: { title: `has joined your ${group.name} group` },
@@ -269,6 +284,38 @@ export class GroupController {
     return group.members;
   }
 
+  @Put('remove-member')
+  async removeMember(@Body() removeMemberDto: RemoveMemberDto, @GetUser() user: UserDocument) {
+    const group = await this.groupService.findOneRecord({ _id: removeMemberDto.group }).populate({ path: 'moderators', match: { user: user._id } });
+    if (!group) throw new HttpException('Group does not exist.', HttpStatus.BAD_REQUEST);
+    if (group.creator.toString() != user._id) {
+      if (!group.moderators || group.moderators.length === 0 || !group.moderators[0].removeMembers)
+        throw new HttpException('Unauthorized', HttpStatus.UNAUTHORIZED);
+    }
+    const updatedGroup = await this.groupService.findOneRecordAndUpdate(
+      { _id: removeMemberDto.group },
+      { $pull: { members: { member: removeMemberDto.member } } }
+    );
+    return updatedGroup.members;
+  }
+
+  @Put('ban-member')
+  async banMember(@Body() banMemberDto: BanMemberDto, @GetUser() user: UserDocument) {
+    const group = await this.groupService.findOneRecord({ _id: banMemberDto.group }).populate({ path: 'moderators', match: { user: user._id } });
+    if (!group) throw new HttpException('Group does not exist.', HttpStatus.BAD_REQUEST);
+
+    // check if user is creator of this group or moderator
+    if (group.creator.toString() != user._id) {
+      if (!group.moderators || group.moderators.length === 0 || !group.moderators[0].removeMembers)
+        throw new HttpException('Unauthorized', HttpStatus.UNAUTHORIZED);
+    }
+    const updatedGroup = await this.groupService.findOneRecordAndUpdate(
+      { _id: banMemberDto.group, 'members.member': banMemberDto.member },
+      { $set: { 'members.$.banned': true } }
+    );
+    return updatedGroup.members;
+  }
+
   @Get('all-requests/:id')
   async findAllRequests(@Param('id', ParseObjectId) id: string) {
     const group = await this.groupService.findAllRequests({ _id: id });
@@ -296,7 +343,7 @@ export class GroupController {
       }
     } else {
       const moderator = await this.moderatorService.findOneRecord({ group: id, user: user._id });
-      if (!moderator) throw new UnauthorizedException();
+      if (!moderator || !moderator.acceptMemberRequests) throw new UnauthorizedException();
 
       if (isApproved) {
         await this.groupService.findOneRecordAndUpdate({ _id: id }, { $pull: { requests: userId }, $push: { members: { member: userId } } });

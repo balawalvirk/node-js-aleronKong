@@ -24,6 +24,7 @@ export class ChatService extends BaseService<ChatDocument> {
         { path: 'members', match: { _id: { $ne: userId } }, select: 'avatar firstName lastName' },
         { path: 'lastMessage' },
         { path: 'messages', match: { isRead: false, receiver: userId } },
+        { path: 'mutes' },
       ])
       .lean();
   }
