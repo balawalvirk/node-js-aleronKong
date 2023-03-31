@@ -68,7 +68,7 @@ export class GroupController {
       const member = group.members.find((member) => member.member.toString() == user._id);
 
       // check if member is banned or not
-      if (member.banned) throw new HttpException('You are not allowed to create post.', HttpStatus.FORBIDDEN);
+      if (member?.banned) throw new HttpException('You are not allowed to create post.', HttpStatus.FORBIDDEN);
 
       const post = await this.postService.createPost({ ...createPostDto, creator: user._id });
 
@@ -312,6 +312,19 @@ export class GroupController {
     const updatedGroup = await this.groupService.findOneRecordAndUpdate(
       { _id: banMemberDto.group, 'members.member': banMemberDto.member },
       { $set: { 'members.$.banned': true } }
+    );
+    return updatedGroup.members;
+  }
+
+  @Put('un-ban-member')
+  async unBanMember(@Body() unBanMemberDto: BanMemberDto, @GetUser() user: UserDocument) {
+    const group = await this.groupService.findOneRecord({ _id: unBanMemberDto.group });
+    if (!group) throw new HttpException('Group does not exist.', HttpStatus.BAD_REQUEST);
+    if (group.creator.toString() != user._id) throw new HttpException('You are not allowed to un ban a member.', HttpStatus.FORBIDDEN);
+
+    const updatedGroup = await this.groupService.findOneRecordAndUpdate(
+      { _id: unBanMemberDto.group, 'members.member': unBanMemberDto.member },
+      { $set: { 'members.$.banned': false } }
     );
     return updatedGroup.members;
   }
