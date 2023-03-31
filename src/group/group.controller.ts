@@ -306,7 +306,7 @@ export class GroupController {
 
     // check if user is creator of this group or moderator
     if (group.creator.toString() != user._id) {
-      if (!group.moderators || group.moderators.length === 0 || !group.moderators[0].removeMembers)
+      if (!group.moderators || group.moderators.length === 0 || !group.moderators[0].banMembers)
         throw new HttpException('You cannot ban a member.', HttpStatus.FORBIDDEN);
     }
     const updatedGroup = await this.groupService.findOneRecordAndUpdate(
@@ -318,9 +318,12 @@ export class GroupController {
 
   @Put('un-ban-member')
   async unBanMember(@Body() unBanMemberDto: BanMemberDto, @GetUser() user: UserDocument) {
-    const group = await this.groupService.findOneRecord({ _id: unBanMemberDto.group });
+    const group = await this.groupService.findOneRecord({ _id: unBanMemberDto.group }).populate({ path: 'moderators', match: { user: user._id } });
     if (!group) throw new HttpException('Group does not exist.', HttpStatus.BAD_REQUEST);
-    if (group.creator.toString() != user._id) throw new HttpException('You are not allowed to un ban a member.', HttpStatus.FORBIDDEN);
+    if (group.creator.toString() != user._id) {
+      if (!group.moderators || group.moderators.length === 0 || !group.moderators[0].banMembers)
+        throw new HttpException('You are not allowed to un ban a member.', HttpStatus.FORBIDDEN);
+    }
 
     const updatedGroup = await this.groupService.findOneRecordAndUpdate(
       { _id: unBanMemberDto.group, 'members.member': unBanMemberDto.member },
