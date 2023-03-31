@@ -155,7 +155,7 @@ export class PostsController {
   @Post('comment/:id')
   async createComment(@Param('id') id: string, @GetUser() user: UserDocument, @Body() body: CreateCommentDto) {
     const comment = await this.commentService.createRecord({ content: body.content, creator: user._id, post: id });
-    const post = await this.postsService.update({ _id: id }, { $push: { comments: comment._id } });
+    const post = await this.postsService.findOneRecordAndUpdate({ _id: id }, { $push: { comments: comment._id } });
 
     //@ts-ignore
     if (user._id != post.creator._id.toString()) {
@@ -177,13 +177,12 @@ export class PostsController {
       }
     }
 
-    return post;
+    return comment;
   }
 
   @Put('comment/update')
-  async updateComment(@Body() { postId, commentId, content }: UpdateCommentDto) {
-    await this.commentService.findOneRecordAndUpdate({ _id: commentId }, { content });
-    return await this.postsService.findOne({ _id: postId });
+  async updateComment(@Body() { commentId, content }: UpdateCommentDto) {
+    return await this.commentService.findOneRecordAndUpdate({ _id: commentId }, { content });
   }
 
   async isGroupModerator(postId: string, userId: string) {
@@ -199,9 +198,7 @@ export class PostsController {
   @Delete(':postId/comment/:id/delete')
   async deleteComment(@Param('id', ParseObjectId) id: string, @Param('postId', ParseObjectId) postId: string, @GetUser() user: UserDocument) {
     const comment = await this.commentService.findOneRecord({ _id: id });
-
     if (!comment) throw new HttpException('Comment does not exist.', HttpStatus.BAD_REQUEST);
-
     if (comment.creator.toString() == user._id) {
       const deletedComment = await this.commentService.deleteSingleRecord({ _id: id });
       await this.postsService.findOneRecordAndUpdate({ _id: deletedComment.post }, { $pull: { comments: deletedComment._id } });

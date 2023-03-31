@@ -28,8 +28,8 @@ export class ChatController {
 
   @Post('/create')
   async createChat(@Body('receiverId') receiverId: string, @GetUser() user: UserDocument) {
-    const chat = await this.chatService.findAllRecords({ members: { $in: [receiverId] } });
-    if (chat.length > 0) throw new HttpException('You already have chat with this member.', HttpStatus.BAD_REQUEST);
+    const chat = await this.chatService.findOneRecord({ members: { $all: [receiverId, user._id] } });
+    if (chat) throw new HttpException('You already have chat with this member.', HttpStatus.BAD_REQUEST);
     return await this.chatService.create([user._id, receiverId], user._id);
   }
 
@@ -140,12 +140,12 @@ export class ChatController {
     //check if mute object already exists then update its interval only
     if (muteFound) {
       const { user, chat, ...rest } = updatedObj;
-      await this.muteService.findOneRecordAndUpdate({ _id: muteFound._id }, rest);
+      return await this.muteService.findOneRecordAndUpdate({ _id: muteFound._id }, rest);
     } else {
       const mute = await this.muteService.createRecord(updatedObj);
       await this.chatService.findOneRecordAndUpdate({ _id: muteChatDto.chat }, { $push: { mutes: mute._id } });
+      return mute;
     }
-    return { message: 'Chat muted successfully.' };
   }
 
   @Put(':id/un-mute')

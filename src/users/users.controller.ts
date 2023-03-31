@@ -196,6 +196,20 @@ export class UserController {
     return await this.usersService.findOneRecordAndUpdate({ _id: user._id }, { $pull: { friends: id } });
   }
 
+  @Get('friend/find-all')
+  async findAllFriends(@GetUser() user: UserDocument) {
+    const userFound = await this.usersService.findOneRecord({ _id: user._id }).populate('friends');
+    return userFound.friends;
+  }
+
+  // find count of unread messages and unread notifications
+  @Get('home')
+  async home(@GetUser() user: UserDocument) {
+    const messages = await this.messageService.countRecords({ receiver: user._id, isRead: false });
+    const notifications = await this.notificationService.countRecords({ receiver: user._id, isRead: false });
+    return { messages, notifications };
+  }
+
   //get count of unread messages
   @Get('unread-messages')
   async findUnreadMessages(@GetUser() user: UserDocument) {
