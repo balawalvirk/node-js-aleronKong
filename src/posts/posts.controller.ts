@@ -154,7 +154,7 @@ export class PostsController {
 
   @Post('comment/:id')
   async createComment(@Param('id') id: string, @GetUser() user: UserDocument, @Body() body: CreateCommentDto) {
-    const comment = await this.commentService.createRecord({ content: body.content, creator: user._id, post: id });
+    const comment = await this.commentService.create({ content: body.content, creator: user._id, post: id });
     const post = await this.postsService.findOneRecordAndUpdate({ _id: id }, { $push: { comments: comment._id } });
 
     //@ts-ignore
@@ -182,7 +182,7 @@ export class PostsController {
 
   @Put('comment/update')
   async updateComment(@Body() { commentId, content }: UpdateCommentDto) {
-    return await this.commentService.findOneRecordAndUpdate({ _id: commentId }, { content });
+    return await this.commentService.update({ _id: commentId }, { content });
   }
 
   async isGroupModerator(postId: string, userId: string) {
