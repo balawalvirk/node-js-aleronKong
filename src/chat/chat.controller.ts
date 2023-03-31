@@ -102,9 +102,9 @@ export class ChatController {
   }
 
   @Get('/message/find-all/:chatId')
-  async findAllMessage(@Param('chatId') chatId: string) {
+  async findAllMessage(@Param('chatId') chatId: string, @GetUser() user: UserDocument) {
     const messages = await this.messageService.findAllRecords({ chat: chatId }).sort({ createdAt: 1 });
-    await this.messageService.updateManyRecords({ chat: chatId, isRead: false }, { isRead: true });
+    await this.messageService.updateManyRecords({ chat: chatId, isRead: false, receiver: user._id }, { isRead: true });
     return messages;
   }
 
