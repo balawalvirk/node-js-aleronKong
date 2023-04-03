@@ -7,8 +7,8 @@ import { Review } from '../review/review.schema';
 
 export type ProductDocument = Product & mongoose.Document;
 
-@Schema({ timestamps: false, versionKey: false, _id: false })
-class File {
+@Schema({ timestamps: true, versionKey: false })
+class Series {
   @Prop({ required: true })
   title: string;
 
@@ -19,7 +19,7 @@ class File {
   price: number;
 }
 
-export const FileSchema = SchemaFactory.createForClass(File);
+export const SeriesSchema = SchemaFactory.createForClass(Series);
 
 @Schema({ timestamps: true })
 export class Product {
@@ -113,8 +113,8 @@ export class Product {
   @Prop({ default: false })
   webSeries: boolean;
 
-  @Prop({ type: [FileSchema] })
-  files: File[];
+  @Prop({ type: [SeriesSchema] })
+  series: Series[];
 }
 
 export const ProductSchema = SchemaFactory.createForClass(Product);

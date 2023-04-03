@@ -24,6 +24,9 @@ export class Sale {
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true })
   seller: User;
 
+  @Prop([String])
+  series: string[];
+
   @Prop({ default: 1 })
   quantity: number;
 }

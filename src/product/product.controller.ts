@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   Body,
   Controller,
   Delete,
@@ -41,6 +42,7 @@ import { NotificationService } from 'src/notification/notification.service';
 import { FirebaseService } from 'src/firebase/firebase.service';
 import { FindAllCategoriesQueryDto } from './dtos/find-all-categories.query.dto';
 import { UpdateProductCategoryDto } from './dtos/update.category.dto';
+import { BuySeriesDto } from './dtos/buy-series.dto';
 
 @Controller('product')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -249,6 +251,65 @@ export class ProductController {
     }
 
     return { message: 'Thanks for purchasing the product.' };
+  }
+
+  @Post('buy-series')
+  async buySeries(@GetUser() user: UserDocument, @Body() buySeriesDto: BuySeriesDto) {
+    const product = await this.productService.findOneRecord({ _id: buySeriesDto.product }).populate({ path: 'creator', select: 'sellerId fcmToken' });
+    if (!product) throw new HttpException('Product does not exists.', HttpStatus.BAD_REQUEST);
+    //@ts-ignore
+    const series = product.series.filter((series) => buySeriesDto.series.includes(series._id.toString()));
+
+    // check if series does not found then throw exception
+    if (series.length === 0) throw new BadRequestException('Series does not exists.');
+    const subTotal = series.reduce((n, { price }) => n + price, 0);
+    const tax = Math.round((2 / 100) * subTotal);
+    const total = subTotal + tax;
+    //@ts-ignore
+    const allSeries = series.map((series) => series._id);
+
+    await this.stripeService.createPaymentIntent({
+      currency: 'usd',
+      payment_method: buySeriesDto.paymentMethod,
+      amount: Math.round(total * 100),
+      customer: user.customerId,
+      confirm: true,
+      transfer_data: { destination: product.creator.sellerId },
+      application_fee_amount: Math.round((2 / 100) * total),
+      description: `payment intent of episodes of product ${product.title}`,
+    });
+
+    // create sale of series
+    await this.saleService.createRecord({
+      productType: ProductType.DIGITAL,
+      customer: user._id,
+      //@ts-ignore
+      seller: product.creator._id,
+      price: total,
+      product: product._id,
+      series: allSeries,
+    });
+
+    await this.notificationService.createRecord({
+      productId: product._id,
+      sender: user._id,
+      //@ts-ignore
+      receiver: product.creator._id,
+      type: NotificationType.PRODUCT_BOUGHT,
+      message: 'has bought your product.',
+    });
+
+    if (product.creator.fcmToken) {
+      await this.firebaseService.sendNotification({
+        token: product.creator.fcmToken,
+        notification: {
+          title: 'has bought your product.',
+        },
+        data: { product: product._id.toString(), type: NotificationType.PRODUCT_BOUGHT },
+      });
+    }
+
+    return { message: 'Thanks for purchasing the products.' };
   }
 
   @Get('trending/find-all')
