@@ -81,6 +81,7 @@ export class User {
   @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Product' }] })
   boughtDigitalProducts: Product[];
 
+  // all ids of products whose web series are bought by me
   @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Product' }] })
   boughtWebSeries: Product[];
 
