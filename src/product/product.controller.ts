@@ -304,6 +304,10 @@ export class ProductController {
       series: allSeries,
     });
 
+    // push the product whose series are in bought web series attribute of user
+
+    await this.userService.findOneRecordAndUpdate({ _id: user._id }, { $push: { boughtWebSeries: product._id } });
+
     await this.notificationService.createRecord({
       productId: product._id,
       sender: user._id,
