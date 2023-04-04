@@ -81,6 +81,9 @@ export class User {
   @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Product' }] })
   boughtDigitalProducts: Product[];
 
+  @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Product' }] })
+  boughtWebSeries: Product[];
+
   @Prop({ default: true })
   enableNotifications: boolean;
 
@@ -93,11 +96,14 @@ export class User {
   @Prop({ default: true })
   appUpdatesNotifications: boolean;
 
-  @Prop({ default: true })
-  receiveFriendCalls: boolean;
-
   @Prop({ default: false })
-  doNotDisturb: boolean;
+  muteCall: boolean;
+
+  @Prop()
+  muteCallStartTime: Date;
+
+  @Prop()
+  muteCallEndTime: Date;
 
   @Prop()
   phoneNumber: string;
@@ -120,7 +126,7 @@ export class User {
   @Prop()
   ip: string;
 
-  @Prop({ default: SellerRequest.PENDING, enum: SellerRequest })
+  @Prop({ enum: SellerRequest })
   sellerRequest: string;
 }
 
