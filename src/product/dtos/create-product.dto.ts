@@ -2,7 +2,7 @@ import { Type } from 'class-transformer';
 import { IsArray, IsBoolean, IsDateString, IsEnum, IsMongoId, IsNotEmpty, IsNumber, IsOptional, IsString, ValidateNested } from 'class-validator';
 import { ProductStatus, ProductType } from 'src/types';
 
-class File {
+class Series {
   @IsString()
   title: string;
 
@@ -102,8 +102,8 @@ export class CreateProductDto {
   @IsOptional()
   @IsArray()
   @ValidateNested({ each: true })
-  @Type(() => File)
-  files?: File[];
+  @Type(() => Series)
+  series?: Series[];
 
   @IsOptional()
   @IsString()

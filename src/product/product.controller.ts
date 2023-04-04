@@ -62,8 +62,14 @@ export class ProductController {
   ) {}
 
   @Post('create')
-  async create(@Body() body: CreateProductDto, @GetUser() user: UserDocument) {
-    return await this.productService.create({ ...body, creator: user._id });
+  async create(@Body() createProductDto: CreateProductDto, @GetUser() user: UserDocument) {
+    if (createProductDto.webSeries) {
+      createProductDto.series = createProductDto.series.map((series) => (series.price === 0 ? { ...series, isFree: true } : series));
+    }
+
+    return await this.productService.create(
+      createProductDto.price === 0 ? { ...createProductDto, isFree: true, creator: user._id } : { ...createProductDto, creator: user._id }
+    );
   }
 
   @Delete(':id/delete')
@@ -107,8 +113,16 @@ export class ProductController {
   }
 
   @Get(':id/find-one')
-  async findOne(@Param('id') id: string) {
-    return await this.productService.findOneRecord({ _id: id });
+  async findOne(@Param('id') id: string, @GetUser() user: UserDocument) {
+    const product = await this.productService.findOneRecord({ _id: id });
+    if (!product) throw new BadRequestException('Product does not exists.');
+
+    //@ts-ignore
+    const webSeries = user?.boughtWebSeries?.includes(id);
+    if (webSeries) {
+      const sale = await this.saleService.findOneRecord({ customer: user._id, product: id });
+      return { ...product, boughtSeries: sale.series };
+    } else return product;
   }
 
   // find user store products and all store products
@@ -122,8 +136,8 @@ export class ProductController {
       return await this.productService.findStoreProducts(rest);
     } else {
       //@ts-ignore
-      const products = user.boughtDigitalProducts.map((product) => new ObjectId(product));
-      return await this.productService.findStoreProducts({ _id: { $in: products } });
+      const totalProducts = [...user.boughtDigitalProducts, ...user.boughtWebSeries].map((product) => new ObjectId(product));
+      return await this.productService.findStoreProducts({ _id: { $in: totalProducts } });
     }
   }
 

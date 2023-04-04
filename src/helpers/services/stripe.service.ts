@@ -116,6 +116,10 @@ export class StripeService {
     return await this.stripe.transfers.create(params, options);
   }
 
+  async findAllTransfers(params?: Stripe.TransferListParams, options?: Stripe.RequestOptions) {
+    return await this.stripe.transfers.list(params, options);
+  }
+
   async createBankAccount(id: string, params: Stripe.ExternalAccountCreateParams, options?: Stripe.RequestOptions) {
     return await this.stripe.accounts.createExternalAccount(id, params, options);
   }
@@ -150,6 +154,6 @@ export class StripeService {
 
   async findConnectedAccountTransactions(account: string) {
     //@ts-ignore
-    return await this.stripe.balanceTransactions.list({ stripeAccount: account, type: 'payment' });
+    return await this.stripe.balanceTransactions.list({ stripeAccount: account, limit: 3 });
   }
 }

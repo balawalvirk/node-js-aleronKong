@@ -17,6 +17,9 @@ class Series {
 
   @Prop({ required: true })
   price: number;
+
+  @Prop()
+  isFree: boolean;
 }
 
 export const SeriesSchema = SchemaFactory.createForClass(Series);
@@ -115,6 +118,9 @@ export class Product {
 
   @Prop({ type: [SeriesSchema] })
   series: Series[];
+
+  @Prop()
+  isFree: boolean;
 }
 
 export const ProductSchema = SchemaFactory.createForClass(Product);

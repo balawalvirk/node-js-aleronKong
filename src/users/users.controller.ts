@@ -1,19 +1,4 @@
-import {
-  Body,
-  Controller,
-  ValidationPipe,
-  Delete,
-  Get,
-  HttpException,
-  HttpStatus,
-  Param,
-  Post,
-  Put,
-  Query,
-  UseGuards,
-  UsePipes,
-  Ip,
-} from '@nestjs/common';
+import { Body, Controller, ValidationPipe, Delete, Get, Param, Post, Put, Query, UseGuards, UsePipes, Ip, BadRequestException } from '@nestjs/common';
 import { compare, hash } from 'bcrypt';
 import { ChangePasswordDto } from 'src/auth/dtos/change-pass.dto';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
@@ -85,9 +70,9 @@ export class UserController {
       await this.usersService.findOneRecordAndUpdate({ _id: id }, { status: UserStatus.BLOCKED });
       return { message: 'User blocked successfully.' };
     } else {
-      if (user._id == id) throw new HttpException('You cannot block yourself.', HttpStatus.BAD_REQUEST);
+      if (user._id == id) throw new BadRequestException('You cannot block yourself.');
       const userFound = await this.usersService.findOneRecord({ _id: user._id, blockedUsers: { $in: [id] } });
-      if (userFound) throw new HttpException('You already blocked this user.', HttpStatus.BAD_REQUEST);
+      if (userFound) throw new BadRequestException('You already blocked this user.');
       return await this.usersService.findOneRecordAndUpdate({ _id: user._id }, { $push: { blockedUsers: id } });
     }
   }
@@ -107,7 +92,7 @@ export class UserController {
   async changePassword(@Body() { newPassword, oldPassword }: ChangePasswordDto, @GetUser() user: UserDocument) {
     const userFound = await this.usersService.findOneRecord({ _id: user._id });
     const match = await compare(oldPassword, userFound.password);
-    if (!match) throw new HttpException('Invalid old password.', HttpStatus.BAD_REQUEST);
+    if (!match) throw new BadRequestException('Invalid old password.');
     await this.usersService.findOneRecordAndUpdate({ _id: user._id }, { password: await hash(newPassword, 10) });
     return { message: 'Password changed successfully.' };
   }
@@ -168,7 +153,7 @@ export class UserController {
   @Put('friend/:id/create')
   async addFriend(@Param('id', ParseObjectId) id: string, @GetUser() user: UserDocument) {
     const userFound = await this.usersService.findOneRecord({ _id: user._id, friends: { $in: [id] } });
-    if (userFound) throw new HttpException('User is already your friend.', HttpStatus.BAD_REQUEST);
+    if (userFound) throw new BadRequestException('User is already your friend.');
     const friend = await this.usersService.findOneRecord({ _id: id });
     const updatedUser = await this.usersService.findOneRecordAndUpdate({ _id: user._id }, { $push: { friends: id } });
     await this.notificationService.createRecord({
@@ -192,7 +177,7 @@ export class UserController {
   async removeFriend(@Param('id', ParseObjectId) id: string, @GetUser() user: UserDocument) {
     //@ts-ignore
     const isFriend = user.friends.find((friend) => friend == id);
-    if (!isFriend) throw new HttpException('User is not your friend.', HttpStatus.BAD_REQUEST);
+    if (!isFriend) throw new BadRequestException('User is not your friend.');
     return await this.usersService.findOneRecordAndUpdate({ _id: user._id }, { $pull: { friends: id } });
   }
 
@@ -227,9 +212,57 @@ export class UserController {
   //api to create a seller request to admin
   @Put('seller/create')
   async createSeller(@Body() createSellerDto: CreateSellerDto, @GetUser() user: UserDocument, @Ip() ip: string) {
-    await this.usersService.findOneRecordAndUpdate({ _id: user._id }, { ...createSellerDto, ip });
-    const admin = await this.usersService.findOneRecord({ role: { $in: [UserRoles.ADMIN] } });
+    const userFound = await this.usersService.findOneRecord({ _id: user._id });
+    if (!userFound) throw new BadRequestException('User does not exists.');
+    if (userFound.sellerRequest === SellerRequest.PENDING) throw new BadRequestException('Your seller request is already under consideration.');
 
+    const { city, line1, ssnLast4, state, postalCode, phoneNumber } = createSellerDto;
+    const { email, firstName, lastName, birthDate } = userFound;
+    const dob = new Date(birthDate);
+
+    // create stripe connect account
+    await this.stripeService.createAccount({
+      email: email,
+      type: 'custom',
+      business_type: 'individual',
+      business_profile: {
+        mcc: '5734',
+        product_description: 'aleron kong product description',
+      },
+      tos_acceptance: { date: Math.floor(Date.now() / 1000), ip },
+      country: 'US',
+      individual: {
+        first_name: firstName,
+        last_name: lastName,
+        email: email,
+        ssn_last_4: ssnLast4,
+        phone: phoneNumber,
+        dob: {
+          year: dob.getFullYear(),
+          day: dob.getDate(),
+          month: dob.getMonth() + 1,
+        },
+        address: {
+          city,
+          line1: line1,
+          postal_code: postalCode,
+          state,
+        },
+      },
+
+      capabilities: {
+        card_payments: {
+          requested: true,
+        },
+        transfers: {
+          requested: true,
+        },
+      },
+    });
+
+    await this.usersService.findOneRecordAndUpdate({ _id: user._id }, { ip, sellerRequest: SellerRequest.PENDING, ...createSellerDto });
+
+    const admin = await this.usersService.findOneRecord({ role: { $in: [UserRoles.ADMIN] } });
     await this.notificationService.createRecord({
       type: NotificationType.SELLER_REQUEST,
       message: 'A new request for seller approval.',
@@ -277,8 +310,23 @@ export class UserController {
     return 'Request approved successfully.';
   }
 
+  // api to find all seller request
+  @Roles(UserRoles.ADMIN)
+  @Get('seller/find-all')
+  async findAllSellerRequests() {
+    return await this.usersService.findAllRecords({ sellerRequest: SellerRequest.PENDING });
+  }
+
+  @Get('seller/check-status')
+  async checkSellerStatus(@GetUser() user: UserDocument) {
+    const userFound = await this.usersService.findOneRecord({ _id: user._id });
+    return { sellerRequest: userFound.sellerRequest };
+  }
+
   @Get('earnings')
   async findEarnings(@GetUser() user: UserDocument) {
-    return await this.stripeService.findConnectedAccountBalance(user.sellerId);
+    const balance = await this.stripeService.findConnectedAccountBalance(user.sellerId);
+    const transfers = await this.stripeService.findAllTransfers({ limit: 20, destination: user.sellerId });
+    return { balance, transfers };
   }
 }
