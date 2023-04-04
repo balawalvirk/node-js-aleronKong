@@ -121,7 +121,8 @@ export class ProductController {
     const webSeries = user?.boughtWebSeries?.includes(id);
     if (webSeries) {
       const sale = await this.saleService.findOneRecord({ customer: user._id, product: id });
-      return { ...product, boughtSeries: sale.series };
+      const result = { ...product, boughtSeries: sale.series };
+      return result;
     } else return product;
   }
 
