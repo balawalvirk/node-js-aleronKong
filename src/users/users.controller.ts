@@ -8,13 +8,14 @@ import { FirebaseService } from 'src/firebase/firebase.service';
 import { makeQuery, ParseObjectId, Roles, StripeService } from 'src/helpers';
 import { GetUser } from 'src/helpers/decorators/user.decorator';
 import { NotificationService } from 'src/notification/notification.service';
-import { NotificationType, SellerRequest, UserRoles, UserStatus } from 'src/types';
+import { NotificationType, SellerRequest, TransectionDuration, UserRoles, UserStatus } from 'src/types';
 import { UserDocument } from 'src/users/users.schema';
 import { ApproveRejectSellerDto } from './dtos/approve-reject-seller.dto';
 import { CreateBankAccountDto } from './dtos/create-bank-account.dto';
 import { CreatePayoutDto } from './dtos/create-payout.dto';
 import { CreateSellerDto } from './dtos/create-seller.dto';
 import { FindAllUsersQueryDto } from './dtos/find-all-users.query.dto';
+import { FindTransectionsDto } from './dtos/find-transections.dto';
 import { UpdateBankAccountDto } from './dtos/update-bank-account.dto';
 import { UpdateUserDto } from './dtos/update-user';
 import { UsersService } from './users.service';
@@ -325,8 +326,17 @@ export class UserController {
 
   @Get('earnings')
   async findEarnings(@GetUser() user: UserDocument) {
-    const balance = await this.stripeService.findConnectedAccountBalance(user.sellerId);
-    const transfers = await this.stripeService.findAllTransfers({ limit: 20, destination: user.sellerId });
-    return { balance, transfers };
+    return await this.stripeService.findConnectedAccountBalance(user.sellerId);
+  }
+
+  @Get('/seller/transection/find-all')
+  @UsePipes(new ValidationPipe({ transform: true }))
+  async findAllTransections(@GetUser() user: UserDocument, @Body() { limit, lastRecord, duration }: FindTransectionsDto) {
+    const now = new Date();
+    let date = new Date(now);
+    if (duration === TransectionDuration.WEEK) date.setDate(now.getDate() - 7);
+    else if (duration === TransectionDuration.MONTH) date.setDate(now.getDate() - 30);
+    // else if (duration === TransectionDuration.YEAR) date.setDate(now);
+    return await this.stripeService.findAllTransfers({ limit, destination: user.sellerId, starting_after: lastRecord });
   }
 }

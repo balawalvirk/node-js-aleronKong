@@ -126,3 +126,9 @@ export enum SellerRequest {
   APPROVED = 'approved',
   REJECTED = 'rejected',
 }
+
+export enum TransectionDuration {
+  MONTH = 'month',
+  WEEK = 'week',
+  YEAR = 'year',
+}
