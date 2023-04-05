@@ -119,8 +119,10 @@ export class ProductController {
     //@ts-ignore
     const webSeries = user?.boughtWebSeries?.find((series) => series.toString() == id);
     if (webSeries) {
-      const sale = await this.saleService.findOneRecord({ customer: user._id, product: id });
-      const result = { ...product, boughtSeries: sale.series };
+      const series: string[] = [];
+      const sales = await this.saleService.findAllRecords({ customer: user._id, product: id });
+      const boughtSeries = sales.map((sale) => [...series, ...sale.series]).flat();
+      const result = { ...product, boughtSeries };
       return result;
     } else return product;
   }
@@ -305,8 +307,8 @@ export class ProductController {
     });
 
     // push the product whose series are in bought web series attribute of user
-
-    await this.userService.findOneRecordAndUpdate({ _id: user._id }, { $push: { boughtWebSeries: product._id } });
+    const webSeriesExists = user.boughtWebSeries.find((series) => series.toString() == product._id);
+    if (!webSeriesExists) await this.userService.findOneRecordAndUpdate({ _id: user._id }, { $push: { boughtWebSeries: product._id } });
 
     await this.notificationService.createRecord({
       productId: product._id,
