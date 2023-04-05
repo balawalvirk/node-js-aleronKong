@@ -332,11 +332,17 @@ export class UserController {
   @Get('/seller/transection/find-all')
   @UsePipes(new ValidationPipe({ transform: true }))
   async findAllTransections(@GetUser() user: UserDocument, @Body() { limit, lastRecord, duration }: FindTransectionsDto) {
-    const now = new Date();
-    let date = new Date(now);
-    if (duration === TransectionDuration.WEEK) date.setDate(now.getDate() - 7);
-    else if (duration === TransectionDuration.MONTH) date.setDate(now.getDate() - 30);
-    // else if (duration === TransectionDuration.YEAR) date.setDate(now);
-    return await this.stripeService.findAllTransfers({ limit, destination: user.sellerId, starting_after: lastRecord });
+    const date = new Date();
+    let startDate: number;
+    if (duration === TransectionDuration.WEEK) startDate = Math.floor(new Date(date.setDate(date.getDate() - date.getDay())).getTime() / 1000);
+    else if (duration === TransectionDuration.MONTH) startDate = Math.floor(new Date(date.getFullYear(), date.getMonth(), 1).getTime() / 1000);
+    else if (duration === TransectionDuration.YEAR) startDate = Math.floor(new Date(date.getFullYear(), 0, 1).getTime() / 1000);
+    const transfers = await this.stripeService.findAllTransfers({
+      limit: limit,
+      destination: user.sellerId,
+      starting_after: lastRecord,
+      created: { gt: startDate },
+    });
+    return transfers.data;
   }
 }
