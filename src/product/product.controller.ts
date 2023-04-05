@@ -114,11 +114,10 @@ export class ProductController {
 
   @Get(':id/find-one')
   async findOne(@Param('id') id: string, @GetUser() user: UserDocument) {
-    const product = await this.productService.findOneRecord({ _id: id });
+    const product = await this.productService.findOneRecord({ _id: id }).populate('category');
     if (!product) throw new BadRequestException('Product does not exists.');
-
     //@ts-ignore
-    const webSeries = user?.boughtWebSeries?.includes(id);
+    const webSeries = user?.boughtWebSeries?.find((series) => series.toString() == id);
     if (webSeries) {
       const sale = await this.saleService.findOneRecord({ customer: user._id, product: id });
       const result = { ...product, boughtSeries: sale.series };
