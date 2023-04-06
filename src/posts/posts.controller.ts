@@ -23,7 +23,7 @@ import { ModeratorService } from 'src/group/moderator.service';
 import { makeQuery, ParseObjectId, Roles } from 'src/helpers';
 import { GetUser } from 'src/helpers/decorators/user.decorator';
 import { NotificationService } from 'src/notification/notification.service';
-import { NotificationType, PostPrivacy, PostStatus, UserRoles } from 'src/types';
+import { NotificationType, PostPrivacy, PostStatus, PostType, UserRoles } from 'src/types';
 import { UserDocument } from 'src/users/users.schema';
 import { UsersService } from 'src/users/users.service';
 import { CommentService } from './comment.service';
@@ -105,7 +105,12 @@ export class PostsController {
       creator: { $nin: [user.blockedUsers] },
       isBlocked: false,
       status: PostStatus.ACTIVE,
-      $or: [{ creator: user._id }, { privacy: PostPrivacy.FOLLOWERS, creator: { $in: followings } }, { group: { $in: groups } }],
+      $or: [
+        { creator: user._id },
+        { privacy: PostPrivacy.FOLLOWERS, creator: { $in: followings } },
+        { group: { $in: groups } },
+        { type: PostType.FUNDRAISING, creator: { $in: followings } },
+      ],
     };
     const posts = await this.postsService.find(condition, options);
     const total = await this.postsService.countRecords(condition);

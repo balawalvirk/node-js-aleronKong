@@ -222,7 +222,7 @@ export class UserController {
     const dob = new Date(birthDate);
 
     // create stripe connect account
-    await this.stripeService.createAccount({
+    const seller = await this.stripeService.createAccount({
       email: email,
       type: 'custom',
       business_type: 'individual',
@@ -253,15 +253,18 @@ export class UserController {
 
       capabilities: {
         card_payments: {
-          requested: true,
+          requested: false,
         },
         transfers: {
-          requested: true,
+          requested: false,
         },
       },
     });
 
-    await this.usersService.findOneRecordAndUpdate({ _id: user._id }, { ip, sellerRequest: SellerRequest.PENDING, ...createSellerDto });
+    await this.usersService.findOneRecordAndUpdate(
+      { _id: user._id },
+      { ip, sellerRequest: SellerRequest.PENDING, sellerId: seller.id, ...createSellerDto }
+    );
 
     const admin = await this.usersService.findOneRecord({ role: { $in: [UserRoles.ADMIN] } });
     await this.notificationService.createRecord({
@@ -283,28 +286,34 @@ export class UserController {
 
   @Roles(UserRoles.ADMIN)
   @Put('seller/approve-reject')
-  async approveRejectSeller(@Body() approveRejectSellerDto: ApproveRejectSellerDto) {
-    const user = await this.usersService.findOneRecordAndUpdate(
-      { _id: approveRejectSellerDto.user },
-      { sellerRequest: approveRejectSellerDto.sellerRequest }
-    );
+  async approveRejectSeller(@Body() { sellerRequest, user }: ApproveRejectSellerDto) {
+    const { fcmToken, sellerId, _id } = await this.usersService.findOneRecord({ _id: user });
+    if (_id) throw new BadRequestException('User does not exists.');
 
-    if (user.sellerRequest === SellerRequest.APPROVED) {
-      // await this.usersService.createSellerAccount(user);
-      await this.usersService.findOneRecordAndUpdate({ _id: user }, { $push: { role: UserRoles.SELLER } });
+    if (sellerRequest === SellerRequest.APPROVED) {
+      // seller reequest is approved make capabilites enabled
+      await this.stripeService.updateAccount(sellerId, { capabilities: { transfers: { requested: true }, card_payments: { requested: true } } });
+      await this.usersService.findOneRecordAndUpdate(
+        { _id },
+        { role: [UserRoles.SELLER, UserRoles.CUSTOMER], sellerRequest: SellerRequest.APPROVED }
+      );
+    } else if (sellerRequest === SellerRequest.REJECTED) {
+      // seller reequest is rejected delete account
+      await this.stripeService.deleteAccount(sellerId);
+      await this.usersService.findOneRecordAndUpdate({ _id: user }, { sellerRequest: SellerRequest.REJECTED, $unset: { sellerId: 1 } });
     }
 
     await this.notificationService.createRecord({
       type: NotificationType.SELLER_REQUEST_APPROVED_REJECTED,
-      message: `Your seller request has been ${user.sellerRequest}`,
-      receiver: user._id,
+      message: `Your seller request has been ${sellerRequest}`,
+      receiver: _id,
     });
 
-    if (user.fcmToken) {
+    if (fcmToken) {
       await this.firebaseService.sendNotification({
-        token: user.fcmToken,
-        notification: { title: `Your seller request has been ${user.sellerRequest}` },
-        data: { user: user._id, type: NotificationType.SELLER_REQUEST_APPROVED_REJECTED },
+        token: fcmToken,
+        notification: { title: `Your seller request has been ${sellerRequest}` },
+        data: { user: _id, type: NotificationType.SELLER_REQUEST_APPROVED_REJECTED },
       });
     }
 
