@@ -1,8 +1,10 @@
+import { Transform } from 'class-transformer';
 import { IsEnum, IsNumber, IsOptional, IsString } from 'class-validator';
 import { TransectionDuration } from 'src/types';
 
-export class FindTransectionsDto {
-  @IsNumber()
+export class FindTransectionsQueryDto {
+  @IsOptional()
+  @Transform(({ value }) => parseInt(value))
   limit: number = 10;
 
   @IsOptional()
