@@ -104,8 +104,16 @@ export class StripeService {
     return await this.stripe.accounts.create(params, options);
   }
 
+  async findOneAccount(id: string, params?: Stripe.AccountRetrieveParams, options?: Stripe.RequestOptions) {
+    return await this.stripe.accounts.retrieve(id);
+  }
+
   async updateAccount(id: string, params?: Stripe.AccountUpdateParams, options?: Stripe.RequestOptions) {
     return await this.stripe.accounts.update(id, params, options);
+  }
+
+  async findAllAccounts(params?: Stripe.AccountListParams, options?: Stripe.RequestOptions) {
+    return await this.stripe.accounts.list(params, options);
   }
 
   async deleteAccount(id: string, params?: Stripe.AccountDeleteParams, options?: Stripe.RequestOptions) {
@@ -116,9 +124,7 @@ export class StripeService {
     return await this.stripe.transfers.create(params, options);
   }
 
-  async findAllTransfers(params?: Stripe.TransferListParams, options?: Stripe.RequestOptions) {
-    return await this.stripe.transfers.list(params, options);
-  }
+  findAllTransfers = (params?: Stripe.TransferListParams, options?: Stripe.RequestOptions) => this.stripe.transfers.list(params, options);
 
   async createBankAccount(id: string, params: Stripe.ExternalAccountCreateParams, options?: Stripe.RequestOptions) {
     return await this.stripe.accounts.createExternalAccount(id, params, options);
@@ -144,16 +150,11 @@ export class StripeService {
     return await this.stripe.refunds.create(params, options);
   }
 
-  async createPayout(params: Stripe.PayoutCreateParams, options?: Stripe.RequestOptions) {
+  async createConnectedAccountPayout(params: Stripe.PayoutCreateParams, options?: Stripe.RequestOptions) {
     return await this.stripe.payouts.create(params, options);
   }
 
   async findConnectedAccountBalance(account: string) {
     return await this.stripe.balance.retrieve({ stripeAccount: account });
-  }
-
-  async findConnectedAccountTransactions(account: string) {
-    //@ts-ignore
-    return await this.stripe.balanceTransactions.list({ stripeAccount: account, limit: 3 });
   }
 }

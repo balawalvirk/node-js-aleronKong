@@ -145,8 +145,8 @@ export class UserController {
   }
 
   @Post('payout/create')
-  async createPayout(@Body() { amount }: CreatePayoutDto) {
-    await this.stripeService.createPayout({ currency: 'usd', amount: amount * 100 });
+  async createPayout(@Body() { amount }: CreatePayoutDto, @GetUser() user: UserDocument) {
+    await this.stripeService.createConnectedAccountPayout({ currency: 'usd', amount: amount * 100 }, { stripeAccount: user.sellerId });
     return { message: 'Amount withdraw successfully.' };
   }
 
@@ -250,14 +250,6 @@ export class UserController {
           state,
         },
       },
-      settings: {
-        payouts: {
-          schedule: {
-            interval: 'manual',
-            delay_days: 16,
-          },
-        },
-      },
 
       capabilities: {
         card_payments: {
@@ -300,7 +292,17 @@ export class UserController {
 
     if (sellerRequest === SellerRequest.APPROVED) {
       // seller reequest is approved make capabilites enabled
-      await this.stripeService.updateAccount(sellerId, { capabilities: { transfers: { requested: true }, card_payments: { requested: true } } });
+      await this.stripeService.updateAccount(sellerId, {
+        capabilities: { transfers: { requested: true }, card_payments: { requested: true } },
+        settings: {
+          payouts: {
+            schedule: {
+              interval: 'manual',
+              delay_days: 16,
+            },
+          },
+        },
+      });
       await this.usersService.findOneRecordAndUpdate(
         { _id },
         { role: [UserRoles.SELLER, UserRoles.CUSTOMER], sellerRequest: SellerRequest.APPROVED }
@@ -343,7 +345,19 @@ export class UserController {
 
   @Get('earnings')
   async findEarnings(@GetUser() user: UserDocument) {
-    return await this.stripeService.findConnectedAccountBalance(user.sellerId);
+    let totalVolume = 0;
+    let transfers = await this.stripeService.findAllTransfers({ limit: 100, destination: user.sellerId });
+    totalVolume += transfers.data.reduce((n, { amount }) => amount + n, 0);
+    while (transfers.has_more) {
+      transfers = await this.stripeService.findAllTransfers({
+        limit: 100,
+        destination: user.sellerId,
+        starting_after: transfers.data[transfers.data.length - 1].id,
+      });
+      totalVolume += transfers.data.reduce((n, { amount }) => amount + n, 0);
+    }
+    const balance = await this.stripeService.findConnectedAccountBalance(user.sellerId);
+    return { ...balance, totalVolume };
   }
 
   @Get('/seller/transection/find-all')

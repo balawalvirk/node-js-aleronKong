@@ -43,6 +43,7 @@ import { FirebaseService } from 'src/firebase/firebase.service';
 import { FindAllCategoriesQueryDto } from './dtos/find-all-categories.query.dto';
 import { UpdateProductCategoryDto } from './dtos/update.category.dto';
 import { BuySeriesDto } from './dtos/buy-series.dto';
+import Shopify from 'shopify-api-node';
 
 @Controller('product')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -478,5 +479,11 @@ export class ProductController {
   @Get(':id/review/find-all')
   async findAllReviews(@Param('id', ParseObjectId) id: string) {
     return await this.reviewService.find({ product: id }, { sort: { createdAt: -1 } });
+  }
+
+  // -------------------------------------------------------------------------------- shopify apis------------------------------------------------------
+  async findAllShopifyProducts(@GetUser() user: UserDocument) {
+    const shopify = new Shopify({ shopName: user.shopifyShopName, password: user.shopifyApiPassword, apiKey: user.shopifyApiKey });
+    return await shopify.product.list();
   }
 }
