@@ -98,13 +98,16 @@ export class User {
   appUpdatesNotifications: boolean;
 
   @Prop({ default: false })
-  muteCall: boolean;
+  receiveCalls: boolean;
+
+  @Prop({ default: false })
+  doNotDisturb: boolean;
 
   @Prop()
-  muteCallStartTime: Date;
+  doNotDisturbStartTime: Date;
 
   @Prop()
-  muteCallEndTime: Date;
+  doNotDisturbEndTime: Date;
 
   @Prop()
   phoneNumber: string;
@@ -129,6 +132,15 @@ export class User {
 
   @Prop({ enum: SellerRequest })
   sellerRequest: string;
+
+  @Prop()
+  shopifyShopName: string;
+
+  @Prop()
+  shopifyApiKey: string;
+
+  @Prop()
+  shopifyApiPassword: string;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
