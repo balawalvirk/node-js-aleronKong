@@ -15,7 +15,7 @@ import { CreateBankAccountDto } from './dtos/create-bank-account.dto';
 import { CreatePayoutDto } from './dtos/create-payout.dto';
 import { CreateSellerDto } from './dtos/create-seller.dto';
 import { FindAllUsersQueryDto } from './dtos/find-all-users.query.dto';
-import { FindTransectionsDto } from './dtos/find-transections.dto';
+import { FindTransectionsQueryDto } from './dtos/find-transections.query.dto';
 import { UpdateBankAccountDto } from './dtos/update-bank-account.dto';
 import { UpdateUserDto } from './dtos/update-user';
 import { UsersService } from './users.service';
@@ -250,6 +250,14 @@ export class UserController {
           state,
         },
       },
+      settings: {
+        payouts: {
+          schedule: {
+            interval: 'manual',
+            delay_days: 16,
+          },
+        },
+      },
 
       capabilities: {
         card_payments: {
@@ -340,7 +348,7 @@ export class UserController {
 
   @Get('/seller/transection/find-all')
   @UsePipes(new ValidationPipe({ transform: true }))
-  async findAllTransections(@GetUser() user: UserDocument, @Body() { limit, lastRecord, duration }: FindTransectionsDto) {
+  async findAllTransections(@GetUser() user: UserDocument, @Query() { limit, lastRecord, duration }: FindTransectionsQueryDto) {
     const date = new Date();
     let startDate: number;
     if (duration === TransectionDuration.WEEK) startDate = Math.floor(new Date(date.setDate(date.getDate() - date.getDay())).getTime() / 1000);
