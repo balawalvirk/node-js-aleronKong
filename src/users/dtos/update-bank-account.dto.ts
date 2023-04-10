@@ -1,6 +1,11 @@
-import { IsString } from 'class-validator';
+import { IsBoolean, IsString, IsOptional } from 'class-validator';
 
 export class UpdateBankAccountDto {
+  @IsOptional()
   @IsString()
-  accountHolderName: string;
+  account_holder_name: string;
+
+  @IsOptional()
+  @IsBoolean()
+  default_for_currency: boolean;
 }
