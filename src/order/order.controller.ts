@@ -1,11 +1,11 @@
 import { Controller, Get, Post, Body, Param, UseGuards, Put, HttpException, HttpStatus, Query, Delete } from '@nestjs/common';
 import { OrderService } from './order.service';
 import { UpdateOrderDto } from './dto/update-order.dto';
-import { GetUser, ParseObjectId, StripeService } from 'src/helpers';
+import { GetUser, makeQuery, ParseObjectId, StripeService } from 'src/helpers';
 import { UserDocument } from 'src/users/users.schema';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { OrderStatus } from 'src/types';
-import { FindAllQueryDto } from './dto/find-all-query.dto';
+import { FindAllOrderQueryDto } from './dto/find-all-query.dto';
 import { ReviewService } from 'src/review/review.service';
 
 @Controller('order')
@@ -18,8 +18,19 @@ export class OrderController {
   ) {}
 
   @Get('find-all')
-  async findAll(@Query() findAllQueryDto: FindAllQueryDto) {
-    return await this.orderService.find(findAllQueryDto);
+  async findAll(@Query() { page, limit, ...rest }: FindAllOrderQueryDto) {
+    const $q = makeQuery({ page, limit });
+    const options = { limit: $q.limit, skip: $q.skip, sort: $q.sort };
+    const orders = await this.orderService.find(rest, options);
+    const total = await this.orderService.countRecords(rest);
+    const paginated = {
+      total: total,
+      pages: Math.ceil(total / $q.limit),
+      page: $q.page,
+      limit: $q.limit,
+      data: orders,
+    };
+    return paginated;
   }
 
   @Get(':id/find-one')

@@ -96,13 +96,11 @@ export class ProductController {
 
   @Get('find-all')
   @UsePipes(new ValidationPipe({ transform: true }))
-  async findAllProducts(@Query() { page, limit, query, ...rest }: FindAllProductsQuery) {
+  async findAllProducts(@Query() { page, limit, ...rest }: FindAllProductsQuery) {
     const $q = makeQuery({ page, limit });
     const options = { limit: $q.limit, skip: $q.skip, sort: $q.sort };
-    const rjx = { $regex: query, $options: 'i' };
-    const condition = { ...rest, title: rjx };
-    const total = await this.productService.countRecords(condition);
-    const products = await this.productService.find(condition, options);
+    const products = await this.productService.find(rest, options);
+    const total = await this.productService.countRecords(rest);
     const paginated = {
       total: total,
       pages: Math.ceil(total / $q.limit),
@@ -482,7 +480,10 @@ export class ProductController {
   }
 
   // -------------------------------------------------------------------------------- shopify apis------------------------------------------------------
+  @Get('shopify/find-all')
   async findAllShopifyProducts(@GetUser() user: UserDocument) {
+    const { shopifyApiKey, shopifyShopName, shopifyApiPassword } = user;
+    if (!shopifyApiKey || !shopifyShopName || !shopifyApiPassword) throw new BadRequestException('User does not have required shopify credientals.');
     const shopify = new Shopify({ shopName: user.shopifyShopName, password: user.shopifyApiPassword, apiKey: user.shopifyApiKey });
     return await shopify.product.list();
   }

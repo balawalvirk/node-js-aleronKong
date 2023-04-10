@@ -14,6 +14,7 @@ import {
   HttpException,
   HttpStatus,
   UnauthorizedException,
+  BadRequestException,
 } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/role.guard';
@@ -29,6 +30,7 @@ import { UsersService } from 'src/users/users.service';
 import { CommentService } from './comment.service';
 import { AddReactionsDto } from './dtos/add-reactions.dto';
 import { CreateCommentDto } from './dtos/create-comment';
+import { FeatureUnFeatureDto } from './dtos/feature-unfeature.dto';
 import { FindAllPostQuery } from './dtos/find-all-post.query.dto';
 import { PinUnpinDto } from './dtos/pin-unpin-post.dto';
 import { UpdateCommentDto } from './dtos/update-comment.dto';
@@ -97,7 +99,7 @@ export class PostsController {
   @Get('home')
   async findHomePosts(@Query('page') page: string, @Query('limit') limit: string, @GetUser() user: UserDocument) {
     const $q = makeQuery({ page, limit });
-    const options = { sort: { pin: -1, ...$q.sort }, limit: $q.limit, skip: $q.skip };
+    const options = { sort: { feature: -1, pin: -1, ...$q.sort }, limit: $q.limit, skip: $q.skip };
     const followings = (await this.userService.findAllRecords({ friends: { $in: [user._id] } }).select('_id')).map((user) => user._id);
     // find all groups that user has joined
     const groups = (await this.groupService.findAllRecords({ 'members.member': user._id })).map((group) => group._id);
@@ -243,6 +245,14 @@ export class PostsController {
       await this.postsService.findOneRecordAndUpdate({ _id: id }, pinUnpinDto);
     }
     return { message: `Post ${pinUnpinDto.pin ? 'pin' : 'un pin'} successfully.` };
+  }
+
+  @Roles(UserRoles.ADMIN)
+  @Put(':id/feature-unfeature')
+  async featureUnFeature(@Param('id', ParseObjectId) id: string, @Body() featureUnFeatureDto: FeatureUnFeatureDto) {
+    const post = await this.postsService.findOne({ _id: id });
+    if (!post) throw new BadRequestException('Post does not exists.');
+    return await this.postsService.findOneRecordAndUpdate({ _id: id }, featureUnFeatureDto);
   }
 
   // ====================================================================reactions apis===================================================================
