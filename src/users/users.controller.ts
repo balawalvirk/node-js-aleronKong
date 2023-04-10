@@ -114,7 +114,6 @@ export class UserController {
         account_number: accountNumber,
       },
     });
-    await this.stripeService.updateAccount(user.sellerId, { settings: { payouts: { schedule: { interval: 'manual' } } } });
     if (!user.defaultWithDrawAccountId) {
       await this.usersService.findOneRecordAndUpdate({ _id: user._id }, { defaultWithDrawAccountId: bankAccount.id });
     }
@@ -137,11 +136,12 @@ export class UserController {
   async updateBankAccount(
     @Param('bankAccount') bankAccount: string,
     @GetUser() user: UserDocument,
-    @Body() { accountHolderName }: UpdateBankAccountDto
+    @Body() updateBankAccountDto: UpdateBankAccountDto
   ) {
-    return await this.stripeService.updateBankAccount(user.sellerId, bankAccount, {
-      account_holder_name: accountHolderName,
-    });
+    const account = await this.stripeService.updateBankAccount(user.sellerId, bankAccount, updateBankAccountDto);
+    if (updateBankAccountDto.default_for_currency)
+      await this.usersService.findOneRecordAndUpdate({ _id: user._id }, { defaultWithDrawAccountId: account.id });
+    return account;
   }
 
   @Post('payout/create')
