@@ -49,6 +49,9 @@ export class Posts {
   @Prop({ default: false })
   pin: boolean;
 
+  @Prop({ default: false })
+  featured: boolean;
+
   @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Reaction' }] })
   reactions: Reaction[];
 

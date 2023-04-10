@@ -1,7 +1,7 @@
 import { IsEnum, IsMongoId, IsOptional } from 'class-validator';
 import { OrderStatus } from 'src/types';
 
-export class FindAllQueryDto {
+export class FindAllOrderQueryDto {
   @IsOptional()
   @IsEnum(OrderStatus, { each: true })
   status: string;
@@ -13,4 +13,10 @@ export class FindAllQueryDto {
   @IsOptional()
   @IsMongoId()
   customer: string;
+
+  @IsOptional()
+  limit: string;
+
+  @IsOptional()
+  page: string;
 }

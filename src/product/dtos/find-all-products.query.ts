@@ -1,4 +1,5 @@
-import { IsMongoId, IsOptional } from 'class-validator';
+import { IsEnum, IsMongoId, IsOptional } from 'class-validator';
+import { ProductStatus } from 'src/types';
 
 export class FindAllProductsQuery {
   @IsOptional()
@@ -16,5 +17,6 @@ export class FindAllProductsQuery {
   page: string;
 
   @IsOptional()
-  query: string = '';
+  @IsEnum(ProductStatus, { each: true })
+  status: string;
 }
