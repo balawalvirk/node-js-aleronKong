@@ -51,10 +51,11 @@ export class OrderController {
     if (order.status === OrderStatus.COMPLETED) {
       const subTotal = order.product.price * order.quantity;
       const tax = Math.round((2 / 100) * subTotal);
-      const total = subTotal + tax;
-      const amount = Math.round((2 / 100) * total);
+      const total = Math.round((subTotal + tax) * 100);
+      const applicationFeeAmount = Math.round((order.product.category.commission / 100) * total);
+      const amount = total - applicationFeeAmount;
       await this.stripeService.createTransfer({
-        amount: Math.round(amount * 100),
+        amount,
         currency: 'usd',
         destination: order.product.creator.sellerId,
         transfer_group: order._id,
