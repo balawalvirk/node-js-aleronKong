@@ -19,11 +19,20 @@ export class ProductService extends BaseService<ProductDocument> {
   }
 
   async findOne(query: FilterQuery<ProductDocument>) {
-    return await this.productModel.findOne(query).populate('category');
+    return await this.productModel.findOne(query).populate('category creator');
   }
 
   async update(query: FilterQuery<ProductDocument>, updateQuery: UpdateQuery<ProductDocument>) {
     return await this.productModel.findOneAndUpdate(query, updateQuery, { new: true }).populate('category creator');
+  }
+
+  calculateTax(price: number, commission: number) {
+    const subTotal = price;
+    const tax = Math.round((2 / 100) * subTotal);
+    const total = Math.round((subTotal + tax) * 100);
+    // make commission of admin dynamically by using commission of category of product
+    const applicationFeeAmount = Math.round((commission / 100) * total);
+    return { subTotal, tax, total, applicationFeeAmount };
   }
 
   async findStoreProducts(query: FilterQuery<ProductDocument>, options?: QueryOptions<ProductDocument>) {

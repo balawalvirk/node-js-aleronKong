@@ -43,7 +43,7 @@ export class OrderService extends BaseService<OrderDocument> {
         {
           path: 'product',
           select: 'media title creator price',
-          populate: { path: 'creator', select: 'sellerId' },
+          populate: [{ path: 'creator', select: 'sellerId' }, { path: 'category' }],
         },
         { path: 'address' },
       ])

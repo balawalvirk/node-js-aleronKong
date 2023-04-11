@@ -220,22 +220,18 @@ export class ProductController {
 
   @Post('buy')
   async buyProduct(@GetUser() user: UserDocument, @Body() buyProductDto: BuyProductDto) {
-    const product = await this.productService
-      .findOneRecord({ _id: buyProductDto.product })
-      .populate({ path: 'creator', select: 'sellerId fcmToken' });
+    const product = await this.productService.findOne({ _id: buyProductDto.product });
     if (!product) throw new HttpException('Product does not exists.', HttpStatus.BAD_REQUEST);
-    const subTotal = product.price;
-    const tax = Math.round((2 / 100) * subTotal);
-    const total = subTotal + tax;
+    const { total, applicationFeeAmount } = this.productService.calculateTax(product.price, product.category.commission);
     await this.stripeService.createPaymentIntent({
       currency: 'usd',
       payment_method: buyProductDto.paymentMethod,
-      amount: Math.round(total * 100),
+      amount: total,
       customer: user.customerId,
       confirm: true,
       transfer_data: { destination: product.creator.sellerId },
-      application_fee_amount: Math.round((2 / 100) * total),
-      description: `payment intent of product ${product.title}`,
+      application_fee_amount: applicationFeeAmount,
+      description: `Payment of product ${product.title}`,
     });
     await this.saleService.createRecord({
       productType: ProductType.DIGITAL,
@@ -270,7 +266,7 @@ export class ProductController {
 
   @Post('buy-series')
   async buySeries(@GetUser() user: UserDocument, @Body() buySeriesDto: BuySeriesDto) {
-    const product = await this.productService.findOneRecord({ _id: buySeriesDto.product }).populate({ path: 'creator', select: 'sellerId fcmToken' });
+    const product = await this.productService.findOne({ _id: buySeriesDto.product });
     if (!product) throw new HttpException('Product does not exists.', HttpStatus.BAD_REQUEST);
     //@ts-ignore
     const series = product.series.filter((series) => buySeriesDto.series.includes(series._id.toString()));
@@ -278,19 +274,18 @@ export class ProductController {
     // check if series does not found then throw exception
     if (series.length === 0) throw new BadRequestException('Series does not exists.');
     const subTotal = series.reduce((n, { price }) => n + price, 0);
-    const tax = Math.round((2 / 100) * subTotal);
-    const total = subTotal + tax;
+    const { total, applicationFeeAmount } = this.productService.calculateTax(subTotal, product.category.commission);
     //@ts-ignore
     const allSeries = series.map((series) => series._id);
 
     await this.stripeService.createPaymentIntent({
       currency: 'usd',
       payment_method: buySeriesDto.paymentMethod,
-      amount: Math.round(total * 100),
+      amount: total,
       customer: user.customerId,
       confirm: true,
       transfer_data: { destination: product.creator.sellerId },
-      application_fee_amount: Math.round((2 / 100) * total),
+      application_fee_amount: applicationFeeAmount,
       description: `payment intent of episodes of product ${product.title}`,
     });
 
