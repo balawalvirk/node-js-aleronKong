@@ -174,7 +174,7 @@ export class GroupController {
   @Get('feed')
   async feed(@GetUser() user: UserDocument, @Query('page') page: string, @Query('limit') limit: string) {
     const $q = makeQuery({ page, limit });
-    const options = { sort: { feature: -1, pin: -1, ...$q.sort }, limit: $q.limit, skip: $q.skip };
+    const options = { sort: { pin: -1, ...$q.sort }, limit: $q.limit, skip: $q.skip };
     const condition = {
       'members.member': user._id,
     };
