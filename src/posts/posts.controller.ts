@@ -99,7 +99,7 @@ export class PostsController {
   @Get('home')
   async findHomePosts(@Query('page') page: string, @Query('limit') limit: string, @GetUser() user: UserDocument) {
     const $q = makeQuery({ page, limit });
-    const options = { sort: { feature: -1, pin: -1, ...$q.sort }, limit: $q.limit, skip: $q.skip };
+    const options = { sort: { featured: -1, pin: -1, ...$q.sort }, limit: $q.limit, skip: $q.skip };
     const followings = (await this.userService.findAllRecords({ friends: { $in: [user._id] } }).select('_id')).map((user) => user._id);
     // find all groups that user has joined
     const groups = (await this.groupService.findAllRecords({ 'members.member': user._id })).map((group) => group._id);
