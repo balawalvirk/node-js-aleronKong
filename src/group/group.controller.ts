@@ -148,7 +148,6 @@ export class GroupController {
   @Delete('post/:id/delete')
   async deletePost(@Param('id', ParseObjectId) id: string, @GetUser() user: UserDocument) {
     const post = await this.postService.findOneRecord({ _id: id });
-
     if (!post) throw new HttpException('Post does not exists.', HttpStatus.BAD_REQUEST);
     if (post.creator.toString() == user._id) {
       const deletedPost = await this.postService.deleteSingleRecord({ _id: id });

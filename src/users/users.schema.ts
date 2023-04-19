@@ -134,13 +134,13 @@ export class User {
   sellerRequest: string;
 
   @Prop()
-  shopifyShopName: string;
+  shopifyStoreName: string;
 
   @Prop()
-  shopifyApiKey: string;
+  shopifyAccessToken: string;
 
   @Prop()
-  shopifyApiPassword: string;
+  goLive: boolean;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);

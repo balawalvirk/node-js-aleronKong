@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { FilterQuery, LeanDocument, Model } from 'mongoose';
+import { FilterQuery, Model } from 'mongoose';
 import { StripeService } from 'src/helpers';
 import { BaseService } from 'src/helpers/services/base.service';
 import { User, UserDocument } from 'src/users/users.schema';
@@ -16,5 +16,9 @@ export class UsersService extends BaseService<UserDocument> {
       .findOne(query)
       .populate([{ path: 'defaultAddress' }, { path: 'supportingPackages' }])
       .lean();
+  }
+
+  async createCustomerAccount(email: string, name: string) {
+    return await this.stripeService.createCustomer({ email, name });
   }
 }

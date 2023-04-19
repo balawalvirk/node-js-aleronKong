@@ -57,20 +57,29 @@ export class AuthController {
 
   @Post('register')
   @UseInterceptors(FileInterceptor('avatar'))
-  async register(@Body() body: RegisterDto, @Ip() ip: string, @UploadedFile() avatar: Express.Multer.File) {
-    const emailExists = await this.userService.findOneRecord({ email: body.email });
+  async register(@Body() registerDto: RegisterDto, @Ip() ip: string, @UploadedFile() avatar: Express.Multer.File) {
+    const emailExists = await this.userService.findOneRecord({ email: registerDto.email });
     if (emailExists) throw new HttpException('User already exists with this email.', HttpStatus.BAD_REQUEST);
+    let user: UserDocument;
     // check if avatar is coming from client side
     if (avatar) {
       const key = await this.fileService.upload(avatar);
-      body.avatar = `${this.configService.get('S3_URL')}${key}`;
+      registerDto.avatar = `${this.configService.get('S3_URL')}${key}`;
     }
-    const customerAccount = await this.authService.createCustomerAccount(body.email, `${body.firstName} ${body.lastName}`);
-    const user: UserDocument = await this.userService.createRecord({
-      ...body,
-      password: await hash(body.password, 10),
-      customerId: customerAccount.id,
-    });
+
+    if (registerDto.firstName && registerDto.lastName && registerDto.email) {
+      const customerAccount = await this.userService.createCustomerAccount(registerDto.email, `${registerDto.firstName} ${registerDto.lastName}`);
+      user = await this.userService.createRecord({
+        ...registerDto,
+        password: await hash(registerDto.password, 10),
+        customerId: customerAccount.id,
+      });
+    } else {
+      user = await this.userService.createRecord({
+        ...registerDto,
+        password: await hash(registerDto.password, 10),
+      });
+    }
     const { access_token } = await this.authService.login(user.userName, user._id);
     return {
       message: 'User registered successfully.',
@@ -97,7 +106,7 @@ export class AuthController {
   async socialLogin(@Body() socialLoginDto: SocialLoginDto, @Ip() ip: string) {
     const userFound = await this.userService.findOneRecord({ email: socialLoginDto.email });
     if (!userFound) {
-      const customerAccount = await this.authService.createCustomerAccount(
+      const customerAccount = await this.userService.createCustomerAccount(
         socialLoginDto.email,
         `${socialLoginDto.firstName} ${socialLoginDto.lastName}`
       );

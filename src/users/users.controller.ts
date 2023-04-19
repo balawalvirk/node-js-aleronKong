@@ -11,6 +11,7 @@ import { NotificationService } from 'src/notification/notification.service';
 import { NotificationType, SellerRequest, TransectionDuration, UserRoles, UserStatus } from 'src/types';
 import { UserDocument } from 'src/users/users.schema';
 import { ApproveRejectSellerDto } from './dtos/approve-reject-seller.dto';
+import { CompleteProfileDto } from './dtos/complete-profile.dto';
 import { CreateBankAccountDto } from './dtos/create-bank-account.dto';
 import { CreatePayoutDto } from './dtos/create-payout.dto';
 import { CreateSellerDto } from './dtos/create-seller.dto';
@@ -32,8 +33,16 @@ export class UserController {
   ) {}
 
   @Put('update')
-  async setupProfile(@Body() body: UpdateUserDto, @GetUser() user: UserDocument) {
-    return await this.usersService.findOneRecordAndUpdate({ _id: user._id }, body);
+  async setupProfile(@Body() updateUserDto: UpdateUserDto, @GetUser() user: UserDocument) {
+    return await this.usersService.findOneRecordAndUpdate({ _id: user._id }, updateUserDto);
+  }
+
+  @Put('/complete-profile')
+  async completeProfile(@Body() completeProfileDto: CompleteProfileDto, @GetUser() user: UserDocument) {
+    const userFound = await this.usersService.findOneRecord({ _id: user._id });
+    if (!userFound) throw new BadRequestException('User does not exists.');
+    const customer = await this.usersService.createCustomerAccount(userFound.email, `${completeProfileDto.firstName} ${completeProfileDto.lastName}`);
+    return await this.usersService.findOneRecordAndUpdate({ _id: user._id }, { ...completeProfileDto, customerId: customer.id });
   }
 
   @Get('find-one/:id')
@@ -251,6 +260,16 @@ export class UserController {
         },
       },
 
+      // capabilities: {
+      //   card_payments: {
+      //     requested: false,
+      //   },
+      //   transfers: {
+      //     requested: false,
+      //   },
+
+      // need to change this dynamically
+
       capabilities: {
         card_payments: {
           requested: false,
@@ -261,9 +280,15 @@ export class UserController {
       },
     });
 
+    // await this.usersService.findOneRecordAndUpdate(
+    //   { _id: user._id },
+    //   { ip, sellerRequest: SellerRequest.PENDING, sellerId: seller.id, ...createSellerDto }
+    // );
+
+    // need to change this dynamically
     await this.usersService.findOneRecordAndUpdate(
       { _id: user._id },
-      { ip, sellerRequest: SellerRequest.PENDING, sellerId: seller.id, ...createSellerDto }
+      { ip, sellerRequest: SellerRequest.APPROVED, sellerId: seller.id, ...createSellerDto }
     );
 
     const admin = await this.usersService.findOneRecord({ role: { $in: [UserRoles.ADMIN] } });
