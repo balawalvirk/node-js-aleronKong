@@ -23,6 +23,7 @@ import { FirebaseModule } from './firebase/firebase.module';
 import { DashboardModule } from './dashboard/dashboard.module';
 import { ReviewModule } from './review/review.module';
 import { MuteModule } from './mute/mute.module';
+import { BroadcastModule } from './broadcast/broadcast.module';
 
 @Module({
   imports: [
@@ -47,6 +48,7 @@ import { MuteModule } from './mute/mute.module';
     DashboardModule,
     ReviewModule,
     MuteModule,
+    BroadcastModule,
   ],
   // global interceptor for transforming response.
   providers: [

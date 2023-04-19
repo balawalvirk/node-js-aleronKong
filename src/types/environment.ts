@@ -10,4 +10,6 @@ export interface IEnvironmentVariables {
   AWS_REGION: string;
   S3_URL: string;
   STRIPE_ACCOUNT_ID: string;
+  AGORA_APP_ID: string;
+  AGORA_APP_CERTIFICATE: string;
 }

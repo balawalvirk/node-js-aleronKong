@@ -39,14 +39,6 @@ export class FundraisingController {
       creator: user._id,
     });
     return { message: 'Your project has been submitted for review.' };
-    // const post = await this.postService.createPost({
-    //   fundraising: fundraising._id,
-    //   creator: user._id,
-    //   type: PostType.FUNDRAISING,
-    //   status: PostStatus.INACTIVE,
-    //   privacy: PostPrivacy.PUBLIC,
-    // });
-    // return post;
   }
 
   @Post('fund')

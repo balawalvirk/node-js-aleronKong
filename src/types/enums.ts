@@ -132,3 +132,8 @@ export enum TransectionDuration {
   WEEK = 'week',
   YEAR = 'year',
 }
+
+export enum AGORA_RTC_ROLE {
+  PUBLISHER = 'publisher',
+  AUDIENCE = 'audience',
+}

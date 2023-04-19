@@ -43,7 +43,7 @@ import { FirebaseService } from 'src/firebase/firebase.service';
 import { FindAllCategoriesQueryDto } from './dtos/find-all-categories.query.dto';
 import { UpdateProductCategoryDto } from './dtos/update.category.dto';
 import { BuySeriesDto } from './dtos/buy-series.dto';
-import Shopify from 'shopify-api-node';
+import * as Shopify from 'shopify-api-node';
 
 @Controller('product')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -477,9 +477,9 @@ export class ProductController {
   // -------------------------------------------------------------------------------- shopify apis------------------------------------------------------
   @Get('shopify/find-all')
   async findAllShopifyProducts(@GetUser() user: UserDocument) {
-    const { shopifyApiKey, shopifyShopName, shopifyApiPassword } = user;
-    if (!shopifyApiKey || !shopifyShopName || !shopifyApiPassword) throw new BadRequestException('User does not have required shopify credientals.');
-    const shopify = new Shopify({ shopName: user.shopifyShopName, password: user.shopifyApiPassword, apiKey: user.shopifyApiKey });
+    const { shopifyAccessToken, shopifyStoreName } = user;
+    if (!shopifyAccessToken || !shopifyStoreName) throw new BadRequestException('User does not have required shopify credientals.');
+    const shopify = new Shopify({ shopName: shopifyStoreName, accessToken: shopifyAccessToken });
     return await shopify.product.list();
   }
 }

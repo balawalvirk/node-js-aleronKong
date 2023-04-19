@@ -20,4 +20,16 @@ export class UpdateUserDto {
   @IsOptional()
   @IsBoolean()
   enableNotifications: string;
+
+  @IsOptional()
+  @IsString()
+  shopifyStoreName: string;
+
+  @IsOptional()
+  @IsString()
+  shopifyAccessToken: string;
+
+  @IsOptional()
+  @IsString()
+  goLive: boolean;
 }
