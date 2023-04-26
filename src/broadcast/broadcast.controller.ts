@@ -7,6 +7,7 @@ import { CreateBroadcastDto } from './dto/create-broadcast.dto';
 import { RtcRole, RtcTokenBuilder } from 'agora-token';
 import { AGORA_RTC_ROLE, IEnvironmentVariables } from 'src/types';
 import { ConfigService } from '@nestjs/config';
+import { randomBytes } from 'crypto';
 
 @Controller('broadcast')
 @UseGuards(JwtAuthGuard)
@@ -18,7 +19,7 @@ export class BroadcastController {
   @Header('Expires', '-1')
   @Header('Pragma', 'no-cache')
   async create(@Body() { role }: CreateBroadcastDto, @GetUser() user: UserDocument) {
-    const channel = 'main';
+    const channel = randomBytes(20).toString('hex');
     const uid = '';
     const currentTimestamp = Math.floor(Date.now() / 1000);
     const expirationTime = 3600;
@@ -34,12 +35,12 @@ export class BroadcastController {
       privilegeExpiredTs
     );
 
-    return await this.broadcastService.createRecord({ token, channel, user: user._id });
+    return (await this.broadcastService.createRecord({ token, channel, user: user._id })).populate('user');
   }
 
   @Get('find-all')
   async findAll() {
-    return await this.broadcastService.findAllRecords().sort({ createdAt: -1 });
+    return await this.broadcastService.findAllRecords().sort({ createdAt: -1 }).populate('user');
   }
 
   @Delete(':id')
