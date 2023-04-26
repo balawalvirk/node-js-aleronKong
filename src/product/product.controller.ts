@@ -335,8 +335,9 @@ export class ProductController {
   @Roles(UserRoles.ADMIN)
   @Post('category/create')
   async createCategory(@Body() createProductCategoryDto: CreateProductCategoryDto) {
-    const { value, ...rest } = createProductCategoryDto;
-    return await this.categoryService.createRecord(rest);
+    const category = await this.categoryService.findOneRecord({ title: createProductCategoryDto.title });
+    if (category) throw new BadRequestException('Category with this title already exists.');
+    return await this.categoryService.createRecord(createProductCategoryDto);
   }
 
   @Get('category/find-all')
