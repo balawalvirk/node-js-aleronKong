@@ -94,7 +94,7 @@ export class GroupController {
           if (group.creator.fcmToken) {
             await this.firebaseService.sendNotification({
               token: group.creator.fcmToken,
-              notification: { title: `has posted in your ${group.name} group` },
+              notification: { title: `${user.firstName} ${user.lastName} has posted in your ${group.name} group` },
               data: { group: group._id.toString(), type: NotificationType.NEW_GROUP_POST },
             });
           }
@@ -123,7 +123,7 @@ export class GroupController {
             if (taggedUser.fcmToken) {
               await this.firebaseService.sendNotification({
                 token: taggedUser.fcmToken,
-                notification: { title: `has tagged you in post.` },
+                notification: { title: `${user.firstName} ${user.lastName} has tagged you in post.` },
                 data: { post: post._id.toString(), type: NotificationType.USER_TAGGED },
               });
             }
@@ -233,7 +233,7 @@ export class GroupController {
       if (group.creator.fcmToken) {
         await this.firebaseService.sendNotification({
           token: group.creator.fcmToken,
-          notification: { title: `has send a join request for ${group.name} group` },
+          notification: { title: `${user.firstName} ${user.lastName} has send a join request for ${group.name} group` },
           data: { group: group._id.toString() },
         });
       }
@@ -254,7 +254,7 @@ export class GroupController {
     if (group.creator.fcmToken) {
       await this.firebaseService.sendNotification({
         token: group.creator.fcmToken,
-        notification: { title: `has joined your ${group.name} group` },
+        notification: { title: `${user.firstName} ${user.lastName} has joined your ${group.name} group` },
         data: { group: group._id.toString() },
       });
     }

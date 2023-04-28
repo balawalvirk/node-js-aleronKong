@@ -176,7 +176,7 @@ export class UserController {
     if (friend.fcmToken) {
       await this.firebaseService.sendNotification({
         token: friend.fcmToken,
-        notification: { title: 'started following you.' },
+        notification: { title: `${user.firstName} ${user.lastName} started following you.` },
         data: { user: id, type: NotificationType.USER_FOLLOWING },
       });
     }
@@ -272,10 +272,10 @@ export class UserController {
 
       capabilities: {
         card_payments: {
-          requested: false,
+          requested: true,
         },
         transfers: {
-          requested: false,
+          requested: true,
         },
       },
     });
@@ -288,7 +288,13 @@ export class UserController {
     // need to change this dynamically
     await this.usersService.findOneRecordAndUpdate(
       { _id: user._id },
-      { ip, sellerRequest: SellerRequest.APPROVED, sellerId: seller.id, ...createSellerDto }
+      {
+        ip,
+        sellerRequest: SellerRequest.APPROVED,
+        sellerId: seller.id,
+        role: [UserRoles.SELLER, UserRoles.CUSTOMER],
+        ...createSellerDto,
+      }
     );
 
     const admin = await this.usersService.findOneRecord({ role: { $in: [UserRoles.ADMIN] } });

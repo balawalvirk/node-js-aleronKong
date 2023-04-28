@@ -208,7 +208,7 @@ export class ProductController {
         await this.firebaseService.sendNotification({
           token: item.creator.fcmToken,
           notification: {
-            title: 'has placed an order',
+            title: `${user.firstName} ${user.lastName} has placed an order`,
           },
           data: { order: order._id.toString(), type: NotificationType.ORDER_PLACED },
         });
@@ -255,7 +255,7 @@ export class ProductController {
       await this.firebaseService.sendNotification({
         token: product.creator.fcmToken,
         notification: {
-          title: 'has bought your product.',
+          title: `${user.firstName} ${user.lastName} has bought your product.`,
         },
         data: { product: product._id.toString(), type: NotificationType.PRODUCT_BOUGHT },
       });
@@ -317,7 +317,7 @@ export class ProductController {
       await this.firebaseService.sendNotification({
         token: product.creator.fcmToken,
         notification: {
-          title: 'has bought your product.',
+          title: `${user.firstName} ${user.lastName} has bought your product.`,
         },
         data: { product: product._id.toString(), type: NotificationType.PRODUCT_BOUGHT },
       });
