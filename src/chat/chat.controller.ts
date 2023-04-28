@@ -63,6 +63,7 @@ export class ChatController {
       sender: user._id,
       receiver: receiver,
       type: NotificationType.NEW_MESSAGE,
+      user: user._id,
     });
 
     if (chat.mutes) {
