@@ -261,7 +261,7 @@ export class PostsController {
   async addReactions(@Body() addReactionsDto: AddReactionsDto, @GetUser() user: UserDocument) {
     const post = await this.postsService.findOneRecord({ _id: addReactionsDto.post });
     if (!post) throw new HttpException('Post does not exists', HttpStatus.BAD_REQUEST);
-    const reaction = await this.reactionService.createRecord({ user: user._id, emoji: addReactionsDto.emoji, post: post._id });
+    const reaction = await this.reactionService.create({ user: user._id, emoji: addReactionsDto.emoji, post: post._id });
     await this.postsService.findOneRecordAndUpdate({ _id: post._id }, { $push: { reactions: reaction._id } });
     return reaction;
   }
@@ -276,7 +276,7 @@ export class PostsController {
 
   @Put('reaction/:id/update')
   async updateReaction(@Param('id', ParseObjectId) id: string, @Body() updateReactionsDto: UpdateReactionsDto) {
-    return await this.reactionService.findOneRecordAndUpdate({ _id: id }, { emoji: updateReactionsDto.emoji });
+    return await this.reactionService.update({ _id: id }, { emoji: updateReactionsDto.emoji });
   }
 
   @Get('tagged/find-all')
