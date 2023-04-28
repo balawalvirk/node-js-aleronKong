@@ -82,6 +82,7 @@ export enum NotificationType {
   USER_TAGGED = 'userTagged',
   SELLER_REQUEST = 'sellerRequest',
   SELLER_REQUEST_APPROVED_REJECTED = 'sellerRequestApproveRejected',
+  POST_REACTED = 'postReacted',
 }
 
 export enum ReportType {
