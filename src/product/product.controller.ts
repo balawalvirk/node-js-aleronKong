@@ -242,7 +242,7 @@ export class ProductController {
       product: product._id,
     });
     await this.notificationService.createRecord({
-      productId: product._id,
+      product: product._id,
       sender: user._id,
       //@ts-ignore
       receiver: product.creator._id,
@@ -305,7 +305,7 @@ export class ProductController {
     if (!webSeriesExists) await this.userService.findOneRecordAndUpdate({ _id: user._id }, { $push: { boughtWebSeries: product._id } });
 
     await this.notificationService.createRecord({
-      productId: product._id,
+      product: product._id,
       sender: user._id,
       //@ts-ignore
       receiver: product.creator._id,

@@ -234,7 +234,7 @@ export class GroupController {
         await this.firebaseService.sendNotification({
           token: group.creator.fcmToken,
           notification: { title: `${user.firstName} ${user.lastName} has send a join request for ${group.name} group` },
-          data: { group: group._id.toString() },
+          data: { group: group._id.toString(), type: NotificationType.GROUP_JOIN_REQUEST },
         });
       }
       return await this.groupService.findOneRecordAndUpdate({ _id: id }, { $push: { requests: user._id } });
@@ -255,7 +255,7 @@ export class GroupController {
       await this.firebaseService.sendNotification({
         token: group.creator.fcmToken,
         notification: { title: `${user.firstName} ${user.lastName} has joined your ${group.name} group` },
-        data: { group: group._id.toString() },
+        data: { group: group._id.toString(), type: NotificationType.GROUP_JOINED },
       });
     }
     return updatedGroup;
