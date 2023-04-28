@@ -145,7 +145,7 @@ export class PostsController {
       if (post.creator.fcmToken) {
         await this.firebaseService.sendNotification({
           token: post.creator.fcmToken,
-          notification: { title: 'liked your post.' },
+          notification: { title: `${user.firstName} ${user.lastName} liked your post.` },
           data: { post: post._id.toString(), type: NotificationType.POST_LIKED },
         });
       }
@@ -178,7 +178,7 @@ export class PostsController {
       if (post.creator.fcmToken) {
         await this.firebaseService.sendNotification({
           token: post.creator.fcmToken,
-          notification: { title: 'commented on your post.' },
+          notification: { title: `${user.firstName} ${user.lastName} commented on your post.` },
           data: { post: post._id.toString(), type: NotificationType.POST_COMMENTED },
         });
       }
