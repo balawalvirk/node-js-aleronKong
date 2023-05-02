@@ -37,7 +37,20 @@ export class SearchController {
     const rjx = { $regex: query, $options: 'i' };
     if (filter === 'all') {
       users = await this.userService.findAllRecords(
-        { $or: [{ firstName: rjx }, { lastName: rjx }], _id: { $ne: user._id } },
+        {
+          $or: [
+            {
+              $expr: {
+                $regexMatch: {
+                  input: { $concat: ['$firstName', ' ', '$lastName'] },
+                  regex: query,
+                  options: 'i',
+                },
+              },
+            },
+          ],
+          _id: { $ne: user._id },
+        },
         { sort: sort === 'name' ? { firstName: -1, lastName: -1 } : { createdAt: -1 }, limit: 3 }
       );
       const totalUsers = await this.userService.countRecords({
@@ -67,19 +80,24 @@ export class SearchController {
     } else if (filter === 'people') {
       users = await this.userService.findAllRecords(
         {
-          $or: [{ firstName: rjx }, { lastName: rjx }],
+          $or: [
+            {
+              $expr: {
+                $regexMatch: {
+                  input: { $concat: ['$firstName', ' ', '$lastName'] },
+                  regex: query,
+                  options: 'i',
+                },
+              },
+            },
+          ],
           _id: { $ne: user._id },
         },
         { sort: sort === 'name' ? { firstName: -1, lastName: -1 } : { createdAt: -1 } }
       );
       return { users, groups, products, total: users.length };
     } else if (filter === 'groups') {
-      groups = await this.groupService.findAllRecords(
-        {
-          name: rjx,
-        },
-        { sort: sort === 'name' ? { name: -1 } : { createdAt: -1 } }
-      );
+      groups = await this.groupService.findAllRecords({ name: rjx }, { sort: sort === 'name' ? { name: -1 } : { createdAt: -1 } });
       return { users, groups, products, total: groups.length };
     } else {
       if (category) {

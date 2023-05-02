@@ -7,11 +7,11 @@ export class CreateReportDto {
 
   @IsOptional()
   @IsMongoId()
-  reportedUser?: string;
+  user?: string;
 
   @IsOptional()
   @IsMongoId()
-  reportedGroup?: string;
+  group?: string;
 
   @IsString()
   reason: string;

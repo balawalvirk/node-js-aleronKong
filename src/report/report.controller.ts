@@ -15,11 +15,7 @@ export class ReportController {
 
   @Post('create')
   async create(@Body() createReportDto: CreateReportDto, @GetUser() user: UserDocument) {
-    const report: ReportDocument = await this.reportService.createRecord({
-      ...createReportDto,
-      reporter: user._id,
-    });
-    return { message: `${report.reportedGroup ? 'Group' : 'User'} reported successfully.` };
+    return await this.reportService.createRecord({ ...createReportDto, reporter: user._id });
   }
 
   /**
