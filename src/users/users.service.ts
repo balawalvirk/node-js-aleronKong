@@ -21,4 +21,18 @@ export class UsersService extends BaseService<UserDocument> {
   async createCustomerAccount(email: string, name: string) {
     return await this.stripeService.createCustomer({ email, name });
   }
+
+  async searchQuery() {
+    return await this.userModal.find({
+      $expr: {
+        $regexMatch: {
+          input: {
+            $concat: ['$firstName', ' ', '$lastName'],
+          },
+          regex: 'awais',
+          options: 'i',
+        },
+      },
+    });
+  }
 }

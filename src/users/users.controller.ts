@@ -160,6 +160,7 @@ export class UserController {
   }
 
   //----------------------------------------------friends api-----------------------------------
+
   @Put('friend/:id/create')
   async addFriend(@Param('id', ParseObjectId) id: string, @GetUser() user: UserDocument) {
     if (user._id == id) throw new BadRequestException('You cannot add yourself as a friend.');
@@ -178,7 +179,7 @@ export class UserController {
       await this.firebaseService.sendNotification({
         token: friend.fcmToken,
         notification: { title: `${user.firstName} ${user.lastName} started following you.` },
-        data: { user: id, type: NotificationType.USER_FOLLOWING },
+        data: { user: user._id.toString(), type: NotificationType.USER_FOLLOWING },
       });
     }
     return updatedUser;
