@@ -14,6 +14,8 @@ import {
   UsePipes,
   ValidationPipe,
   UnauthorizedException,
+  BadRequestException,
+  ForbiddenException,
 } from '@nestjs/common';
 import { GroupService } from './group.service';
 import { CreateGroupDto } from './dto/create-group.dto';
@@ -55,6 +57,8 @@ export class GroupController {
 
   @Post('create')
   async create(@Body() createGroupDto: CreateGroupDto, @GetUser() user: UserDocument) {
+    const group = await this.groupService.findOneRecord({ name: createGroupDto.name });
+    if (group) throw new BadRequestException('Group already exists with this name.');
     return await this.groupService.createRecord({ ...createGroupDto, creator: user._id });
   }
 
@@ -480,17 +484,19 @@ export class GroupController {
   async deleteModerator(@Param('id', ParseObjectId) id: string, @GetUser() user: UserDocument) {
     const moderator = await this.moderatorService.findOneRecord({ _id: id }).populate('group');
     if (!moderator) throw new HttpException('Moderator does not exists.', HttpStatus.BAD_REQUEST);
-    if (moderator.user.toString() != user._id || moderator.group.creator.toString() != user._id) throw new UnauthorizedException();
-    await this.moderatorService.deleteSingleRecord({ _id: id });
-    await this.groupService.findOneRecordAndUpdate({ _id: moderator.group }, { $pull: { moderators: moderator._id } });
-    return moderator;
+    if (moderator.user.toString() == user._id || moderator.group.creator.toString() == user._id) {
+      await this.moderatorService.deleteSingleRecord({ _id: id });
+      await this.groupService.findOneRecordAndUpdate({ _id: moderator.group }, { $pull: { moderators: moderator._id } });
+      return moderator;
+    } else throw new ForbiddenException();
   }
 
   @Put('moderator/:id/update')
   async updateModerator(@Param('id', ParseObjectId) id: string, @Body() updateModeratorDto: UpdateModeratorDto, @GetUser() user: UserDocument) {
     const moderator = await this.moderatorService.findOneRecord({ _id: id }).populate('group');
-    if (!moderator) throw new HttpException('Moderator does not exists.', HttpStatus.BAD_REQUEST);
-    if (moderator.user.toString() != user._id || moderator.group.creator.toString() != user._id) throw new UnauthorizedException();
-    return await this.moderatorService.findOneRecordAndUpdate({ _id: id }, updateModeratorDto);
+    if (!moderator) throw new BadRequestException('Moderator does not exists.');
+    if (moderator.user.toString() == user._id || moderator.group.creator.toString() == user._id)
+      return await this.moderatorService.findOneRecordAndUpdate({ _id: id }, updateModeratorDto).populate('user');
+    else throw new ForbiddenException();
   }
 }

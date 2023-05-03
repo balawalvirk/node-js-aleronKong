@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { FilterQuery, Model, QueryOptions, UpdateQuery } from 'mongoose';
 import { BaseService } from 'src/helpers/services/base.service';
+import { PostSort } from 'src/types';
 import { PostDocument, Posts } from './posts.schema';
 
 @Injectable()
@@ -47,5 +48,12 @@ export class PostsService extends BaseService<PostDocument> {
 
   async FindAllFundraisingProjects(query: FilterQuery<PostDocument>, options?: QueryOptions<PostDocument>) {
     return await this.postModel.find(query, {}, options).select('fundraising status').populate('fundraising').lean();
+  }
+
+  getHomePostSort(sort?: string) {
+    let sortOrder;
+    if (sort === PostSort.MOST_RECENT) sortOrder = { createdAt: -1 };
+    else if (sort === PostSort.RECENT_INTERACTIONS) sortOrder = { updatedAt: -1 };
+    return { featured: -1, pin: -1, ...sortOrder };
   }
 }

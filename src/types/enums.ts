@@ -138,3 +138,8 @@ export enum AGORA_RTC_ROLE {
   PUBLISHER = 'publisher',
   AUDIENCE = 'audience',
 }
+
+export enum PostSort {
+  MOST_RECENT = 'mostRecent',
+  RECENT_INTERACTIONS = 'recentInteractions',
+}
