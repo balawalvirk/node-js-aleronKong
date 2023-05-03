@@ -32,6 +32,7 @@ import { AddReactionsDto } from './dtos/add-reactions.dto';
 import { CreateCommentDto } from './dtos/create-comment';
 import { FeatureUnFeatureDto } from './dtos/feature-unfeature.dto';
 import { FindAllPostQuery } from './dtos/find-all-post.query.dto';
+import { FindHomePostQueryDto } from './dtos/find-home-post.query.dto';
 import { PinUnpinDto } from './dtos/pin-unpin-post.dto';
 import { UpdateCommentDto } from './dtos/update-comment.dto';
 import { UpdatePostDto } from './dtos/update-post.dto';
@@ -97,23 +98,27 @@ export class PostsController {
   }
 
   @Get('home')
-  async findHomePosts(@Query('page') page: string, @Query('limit') limit: string, @GetUser() user: UserDocument) {
+  @UsePipes(new ValidationPipe({ transform: true }))
+  async findHomePosts(@GetUser() user: UserDocument, @Query() { limit, page, sort }: FindHomePostQueryDto) {
     const $q = makeQuery({ page, limit });
-    const options = { sort: { featured: -1, pin: -1, ...$q.sort }, limit: $q.limit, skip: $q.skip };
+    const options = { sort: this.postsService.getHomePostSort(sort), limit: $q.limit, skip: $q.skip };
     const followings = (await this.userService.findAllRecords({ friends: { $in: [user._id] } }).select('_id')).map((user) => user._id);
     // find all groups that user has joined
     const groups = (await this.groupService.findAllRecords({ 'members.member': user._id })).map((group) => group._id);
     const condition = {
-      creator: { $nin: user.blockedUsers },
+      creator: { $nin: [user.blockedUsers] },
       isBlocked: false,
       status: PostStatus.ACTIVE,
-      $or: [
-        { creator: user._id },
-        { privacy: PostPrivacy.FOLLOWERS, creator: { $in: followings } },
-        { group: { $in: groups } },
-        { type: PostType.FUNDRAISING, creator: { $in: followings } },
-      ],
+      group: { $in: groups },
+      $or: user.isGuildMember
+        ? [{ privacy: PostPrivacy.PUBLIC }, { privacy: PostPrivacy.FOLLOWERS, creator: { $in: followings } }, { privacy: PostPrivacy.GUILD_MEMBERS }]
+        : [
+            { privacy: PostPrivacy.PUBLIC },
+            { privacy: PostPrivacy.FOLLOWERS, creator: { $in: followings } },
+            { $and: [{ privacy: PostPrivacy.GUILD_MEMBERS, creator: user._id }] },
+          ],
     };
+
     const posts = await this.postsService.find(condition, options);
     const total = await this.postsService.countRecords(condition);
     const paginated = {
