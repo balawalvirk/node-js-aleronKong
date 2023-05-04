@@ -106,16 +106,21 @@ export class PostsController {
     // find all groups that user has joined
     const groups = (await this.groupService.findAllRecords({ 'members.member': user._id })).map((group) => group._id);
     const condition = {
-      creator: { $nin: [user.blockedUsers] },
+      creator: { $nin: [user.blockedUsers], $eq: user._id },
       isBlocked: false,
       status: PostStatus.ACTIVE,
-      group: { $in: groups },
       $or: user.isGuildMember
-        ? [{ privacy: PostPrivacy.PUBLIC }, { privacy: PostPrivacy.FOLLOWERS, creator: { $in: followings } }, { privacy: PostPrivacy.GUILD_MEMBERS }]
+        ? [
+            { privacy: PostPrivacy.PUBLIC },
+            { privacy: PostPrivacy.FOLLOWERS, creator: { $in: followings } },
+            { privacy: PostPrivacy.GUILD_MEMBERS },
+            { privacy: PostPrivacy.GROUP, group: { $in: groups } },
+          ]
         : [
             { privacy: PostPrivacy.PUBLIC },
             { privacy: PostPrivacy.FOLLOWERS, creator: { $in: followings } },
             { $and: [{ privacy: PostPrivacy.GUILD_MEMBERS, creator: user._id }] },
+            { privacy: PostPrivacy.GROUP, group: { $in: groups } },
           ],
     };
 
