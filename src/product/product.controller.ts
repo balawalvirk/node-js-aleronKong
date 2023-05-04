@@ -399,7 +399,7 @@ export class ProductController {
     } else {
       //@ts-ignore
       const item = cartExists.items.find((item) => item.item == id);
-      if (item) throw new HttpException('You already added this item in cart.', HttpStatus.BAD_REQUEST);
+      if (item) throw new BadRequestException('You already added this item in cart.');
       const cart = await this.cartService.findOneAndUpdate({ creator: user._id }, { $push: { items: { item: id, selectedColor, selectedSize } } });
       const { total, subTotal, tax } = this.cartService.calculateTax(cart.items);
       return { ...cart, total, subTotal, tax };
