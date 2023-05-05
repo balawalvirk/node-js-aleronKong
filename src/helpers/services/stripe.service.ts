@@ -4,9 +4,6 @@ import { IEnvironmentVariables } from 'src/types';
 import Stripe from 'stripe';
 
 @Injectable()
-/**
- * @author Muhammad Awais
- */
 export class StripeService {
   constructor(private readonly configService: ConfigService<IEnvironmentVariables>) {}
 

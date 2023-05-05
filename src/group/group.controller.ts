@@ -25,7 +25,7 @@ import { UserDocument } from 'src/users/users.schema';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { PostsService } from 'src/posts/posts.service';
 import { CreatePostsDto } from 'src/posts/dtos/create-posts';
-import { GroupPrivacy, MuteInterval, NotificationType, PostType } from 'src/types';
+import { GroupPrivacy, MuteInterval, NotificationType, PostPrivacy, PostType } from 'src/types';
 import { makeQuery, ParseObjectId } from 'src/helpers';
 import { FundService } from 'src/fundraising/fund.service';
 import { FundraisingService } from 'src/fundraising/fundraising.service';
@@ -67,15 +67,11 @@ export class GroupController {
     if (createPostDto.group) {
       const group = await this.groupService.findOneRecord({ _id: createPostDto.group });
       if (!group) throw new HttpException('Group does not exists.', HttpStatus.BAD_REQUEST);
-
       // check if current user is member of group.
       const member = group.members.find((member) => member.member.toString() == user._id);
-
       // check if member is banned or not
       if (member?.banned) throw new HttpException('You are not allowed to create post.', HttpStatus.FORBIDDEN);
-
-      const post = await this.postService.createPost({ ...createPostDto, creator: user._id });
-
+      const post = await this.postService.createPost({ ...createPostDto, privacy: PostPrivacy.GROUP, creator: user._id });
       await this.groupService
         .findOneRecordAndUpdate({ _id: post.group }, { $push: { posts: post._id } })
         .populate({ path: 'creator', select: 'fcmToken' });
@@ -355,9 +351,41 @@ export class GroupController {
     if (group.creator.toString() == user._id) {
       if (isApproved) {
         await this.groupService.findOneRecordAndUpdate({ _id: id }, { $pull: { requests: userId }, $push: { members: { member: userId } } });
+        await this.notificationService.createRecord({
+          group: group._id,
+          sender: user._id,
+          receiver: userId,
+          message: `Your request to join group is approved`,
+          type: NotificationType.GROUP_JOIN_REQUEST_APPROVED,
+        });
+
+        if (group.creator.fcmToken) {
+          await this.firebaseService.sendNotification({
+            token: group.creator.fcmToken,
+            notification: { title: `Your request to join group is approved` },
+            data: { group: group._id.toString(), type: NotificationType.GROUP_JOIN_REQUEST_APPROVED },
+          });
+        }
         return 'Request approved successfully.';
       } else {
         await this.groupService.findOneRecordAndUpdate({ _id: id }, { $pull: { requests: userId } });
+
+        await this.notificationService.createRecord({
+          group: group._id,
+          sender: user._id,
+          receiver: userId,
+          message: `Your request to join group is rejected`,
+          type: NotificationType.GROUP_JOIN_REQUEST_REJECTED,
+        });
+
+        if (group.creator.fcmToken) {
+          await this.firebaseService.sendNotification({
+            token: group.creator.fcmToken,
+            notification: { title: `Your request to join group is rejected` },
+            data: { group: group._id.toString(), type: NotificationType.GROUP_JOIN_REQUEST_REJECTED },
+          });
+        }
+
         return 'Request rejected successfully.';
       }
     } else {
@@ -366,9 +394,43 @@ export class GroupController {
 
       if (isApproved) {
         await this.groupService.findOneRecordAndUpdate({ _id: id }, { $pull: { requests: userId }, $push: { members: { member: userId } } });
+
+        await this.notificationService.createRecord({
+          group: group._id,
+          sender: user._id,
+          receiver: userId,
+          message: `Your request to join group is approved`,
+          type: NotificationType.GROUP_JOIN_REQUEST_APPROVED,
+        });
+
+        if (group.creator.fcmToken) {
+          await this.firebaseService.sendNotification({
+            token: group.creator.fcmToken,
+            notification: { title: `Your request to join group is approved` },
+            data: { group: group._id.toString(), type: NotificationType.GROUP_JOIN_REQUEST_APPROVED },
+          });
+        }
+
         return 'Request approved successfully.';
       } else {
         await this.groupService.findOneRecordAndUpdate({ _id: id }, { $pull: { requests: userId } });
+
+        await this.notificationService.createRecord({
+          group: group._id,
+          sender: user._id,
+          receiver: userId,
+          message: `Your request to join group is rejected`,
+          type: NotificationType.GROUP_JOIN_REQUEST_REJECTED,
+        });
+
+        if (group.creator.fcmToken) {
+          await this.firebaseService.sendNotification({
+            token: group.creator.fcmToken,
+            notification: { title: `Your request to join group is rejected` },
+            data: { group: group._id.toString(), type: NotificationType.GROUP_JOIN_REQUEST_REJECTED },
+          });
+        }
+
         return 'Request rejected successfully.';
       }
     }

@@ -69,6 +69,8 @@ export enum MuteInterval {
 export enum NotificationType {
   NEW_MESSAGE = 'newMessage',
   GROUP_JOIN_REQUEST = 'groupJoinRequest',
+  GROUP_JOIN_REQUEST_APPROVED = 'groupJoinRequestApproved',
+  GROUP_JOIN_REQUEST_REJECTED = 'groupJoinRequestRejected',
   GROUP_JOINED = 'groupJoined',
   POST_LIKED = 'postLiked',
   POST_COMMENTED = 'postCommented',
