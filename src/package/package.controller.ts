@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, HttpException, HttpStatus, Query } from '@nestjs/common';
+import { Controller, Get, Post, Body, Patch, Param, Delete, UseGuards, HttpException, HttpStatus, Query, BadRequestException } from '@nestjs/common';
 import { PackageService } from './package.service';
 import { CreatePackageDto } from './dto/create-package.dto';
 import { UpdatePackageDto } from './dto/update-package.dto';
@@ -106,6 +106,7 @@ export class PackageController {
   @Patch('subscribe/:id')
   async subscribe(@GetUser() user: UserDocument, @Param('id', ParseObjectId) id: string) {
     const pkg = await this.packageService.findOneRecord({ _id: id }).populate({ path: 'creator', select: 'sellerId' });
+    if (!pkg) throw new BadRequestException('Package does not exists.');
 
     //check if user already subscribed to this package.
     const pkgExists = pkg.buyers.find((buyer) => buyer == user._id);
