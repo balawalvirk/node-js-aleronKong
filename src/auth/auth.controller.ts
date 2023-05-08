@@ -1,4 +1,4 @@
-import { Body, Controller, HttpException, HttpStatus, Ip, Post, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
+import { BadRequestException, Body, Controller, Ip, Post, UnauthorizedException, UploadedFile, UseGuards, UseInterceptors } from '@nestjs/common';
 import { hash } from 'bcrypt';
 import { UsersService } from '../users/users.service';
 import { AuthService } from './auth.service';
@@ -50,7 +50,7 @@ export class AuthController {
   @UseGuards(LocalAuthGuard)
   @Post('admin/login')
   async adminLogin(@GetUser() user: UserDocument) {
-    if (!user.role.includes(UserRoles.ADMIN)) throw new HttpException('Invalid email/password', HttpStatus.UNAUTHORIZED);
+    if (!user.role.includes(UserRoles.ADMIN)) throw new UnauthorizedException('Invalid email/password.');
     const { access_token } = await this.authService.login(user.userName, user._id);
     return { access_token, user };
   }
@@ -59,7 +59,7 @@ export class AuthController {
   @UseInterceptors(FileInterceptor('avatar'))
   async register(@Body() registerDto: RegisterDto, @Ip() ip: string, @UploadedFile() avatar: Express.Multer.File) {
     const emailExists = await this.userService.findOneRecord({ email: registerDto.email });
-    if (emailExists) throw new HttpException('User already exists with this email.', HttpStatus.BAD_REQUEST);
+    if (emailExists) throw new BadRequestException('User already exists with this email.');
     let user: UserDocument;
     // check if avatar is coming from client side
     if (avatar) {
@@ -98,7 +98,7 @@ export class AuthController {
   @Post('check-email')
   async checkEmail(@Body('email') email: string) {
     const emailExists = await this.userService.findOneRecord({ email });
-    if (emailExists) throw new HttpException('User already exists with this email.', HttpStatus.BAD_REQUEST);
+    if (emailExists) throw new BadRequestException('User already exists with this email.');
     return { message: 'User does not exist with this email' };
   }
 
@@ -124,7 +124,7 @@ export class AuthController {
         newUser: true,
       };
     } else {
-      if (userFound.authType !== socialLoginDto.authType) throw new HttpException('User already exists with this email.', HttpStatus.BAD_REQUEST);
+      if (userFound.authType !== socialLoginDto.authType) throw new BadRequestException('User already exists with this email.');
       let paymentMethod = null;
       const { access_token } = await this.authService.login(userFound.userName, userFound._id);
       const { unReadMessages, unReadNotifications } = await this.authService.findNotifications(userFound._id);
@@ -149,7 +149,7 @@ export class AuthController {
   @Post('forget-password')
   async forgetPassword(@Body('email') email: string) {
     const userFound = await this.userService.findOneRecord({ email });
-    if (!userFound) throw new HttpException('Email does not exists.', HttpStatus.BAD_REQUEST);
+    if (!userFound) throw new BadRequestException('Email does not exists.');
     const otp: OtpDocument = await this.authService.createOtp({
       otp: Math.floor(Math.random() * 10000 + 1),
       // 5 min expiration time .
@@ -170,9 +170,9 @@ export class AuthController {
   @Post('reset-password')
   async resetPassword(@Body() { password, otp }: ResetPasswordDto) {
     const otpFound: OtpDocument = await this.authService.findOneOtp({ otp });
-    if (!otpFound) throw new HttpException('Invalid Otp.', HttpStatus.BAD_REQUEST);
+    if (!otpFound) throw new BadRequestException('Invalid Otp.');
     const diff = otpFound.expireIn - new Date().getTime();
-    if (diff < 0) throw new HttpException('Otp expired.', HttpStatus.BAD_REQUEST);
+    if (diff < 0) throw new BadRequestException('Otp expired.');
     await this.userService.findOneRecordAndUpdate({ email: otpFound.email }, { password: await hash(password, 10) });
     return { message: 'Password changed successfully.' };
   }
