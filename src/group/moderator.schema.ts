@@ -6,7 +6,7 @@ import { Group } from './group.schema';
 export type ModeratorDocument = Moderator & mongoose.Document;
 @Schema({ timestamps: true })
 export class Moderator {
-  @Prop({ required: true })
+  @Prop()
   nickName: string;
 
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true })

@@ -1,6 +1,7 @@
-import { IsBoolean, IsMongoId, IsString } from 'class-validator';
+import { IsBoolean, IsMongoId, IsOptional, IsString } from 'class-validator';
 
 export class CreateModeratorDto {
+  @IsOptional()
   @IsString()
   nickName: string;
 
