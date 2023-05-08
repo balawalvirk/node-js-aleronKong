@@ -24,13 +24,11 @@ export class GroupService extends BaseService<GroupDocument> {
             options: { sort: { createdAt: -1 } },
             populate: { path: 'creator', select: 'firstName lastName avatar' },
           },
-          {
-            path: 'likes',
-            select: 'firstName lastName avatar',
-          },
+          { path: 'likes', select: 'firstName lastName avatar' },
           { path: 'creator', select: 'firstName lastName avatar' },
           { path: 'group', select: 'name' },
-          { path: 'tagged' },
+          { path: 'tagged', select: 'firstName lastName avatar' },
+          { path: 'reactions', select: 'firstName lastName avatar' },
         ],
       },
     ];
