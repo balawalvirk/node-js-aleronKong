@@ -111,7 +111,7 @@ export class GroupController {
           await this.notificationService.createRecord({
             type: NotificationType.USER_TAGGED,
             post: post._id,
-            message: `has tagged you in post.`,
+            message: `has tagged you in a post.`,
             sender: user._id,
             //@ts-ignore
             receiver: taggedUser._id,

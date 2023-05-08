@@ -278,7 +278,7 @@ export class PostsController {
     if (user._id != post.creator._id.toString()) {
       await this.notificationService.createRecord({
         post: post._id,
-        message: 'reacted on your post.',
+        message: 'reacted to your post.',
         type: NotificationType.POST_REACTED,
         sender: user._id,
         //@ts-ignore
