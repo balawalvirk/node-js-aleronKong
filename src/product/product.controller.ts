@@ -389,12 +389,9 @@ export class ProductController {
     const cartExists = await this.cartService.findOneRecord({ creator: user._id });
     // check if item is added first time then create a cart object.
     if (!cartExists) {
-      const cart = await this.cartService.create({
-        creator: user._id,
-        items: [{ item: id, selectedColor, selectedSize }],
-      });
+      const cart = await this.cartService.create({ creator: user._id, items: [{ item: id, selectedColor, selectedSize }] });
       const { total, subTotal, tax } = this.cartService.calculateTax(cart.items);
-      return { ...cart, subTotal, total, tax };
+      return { ...cart.toJSON(), subTotal, total, tax };
       // otherwise add item in items array
     } else {
       //@ts-ignore
