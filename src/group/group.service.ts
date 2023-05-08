@@ -30,6 +30,7 @@ export class GroupService extends BaseService<GroupDocument> {
           },
           { path: 'creator', select: 'firstName lastName avatar' },
           { path: 'group', select: 'name' },
+          { path: 'tagged' },
         ],
       },
     ];
