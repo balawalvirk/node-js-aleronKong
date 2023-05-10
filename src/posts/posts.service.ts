@@ -16,7 +16,10 @@ export class PostsService extends BaseService<PostDocument> {
       {
         path: 'comments',
         options: { sort: { createdAt: -1 } },
-        populate: { path: 'creator', select: 'firstName lastName avatar isGuildMember userName fcmToken enableNotifications' },
+        populate: [
+          { path: 'creator', select: 'firstName lastName avatar isGuildMember userName fcmToken enableNotifications' },
+          { path: 'reactions', populate: { path: 'user', select: 'firstName lastName avatar' } },
+        ],
       },
       { path: 'likes', select: 'firstName lastName avatar fcmToken' },
       { path: 'creator', select: 'firstName lastName avatar userName isGuildMember sellerId fcmToken enableNotifications' },

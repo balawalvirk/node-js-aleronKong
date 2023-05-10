@@ -27,6 +27,7 @@ import { NotificationService } from 'src/notification/notification.service';
 import { NotificationType, PostPrivacy, PostStatus, PostType, UserRoles } from 'src/types';
 import { UserDocument } from 'src/users/users.schema';
 import { UsersService } from 'src/users/users.service';
+import { CommentDocument } from './comment.schema';
 import { CommentService } from './comment.service';
 import { AddReactionsDto } from './dtos/add-reactions.dto';
 import { CreateCommentDto } from './dtos/create-comment';
@@ -171,9 +172,17 @@ export class PostsController {
   }
 
   @Post('comment/:id')
-  async createComment(@Param('id') id: string, @GetUser() user: UserDocument, @Body() body: CreateCommentDto) {
-    const comment = await this.commentService.create({ content: body.content, creator: user._id, post: id });
-    const post = await this.postsService.findOneRecordAndUpdate({ _id: id }, { $push: { comments: comment._id } });
+  async createComment(@Param('id') id: string, @GetUser() user: UserDocument, @Body() createCommentDto: CreateCommentDto) {
+    const post = await this.postsService.findOneRecord({ _id: id }).populate('creator');
+    if (!post) throw new BadRequestException('Post does not exists.');
+    let comment;
+    if (createCommentDto.comment) {
+      comment = await this.commentService.create({ content: createCommentDto.content, creator: user._id, comment: createCommentDto.comment });
+      await this.commentService.findOneRecordAndUpdate({ _id: createCommentDto.comment }, { $push: { replies: comment._id } });
+    } else {
+      comment = await this.commentService.create({ content: createCommentDto.content, creator: user._id, post: id });
+      await this.postsService.findOneRecordAndUpdate({ _id: id }, { $push: { comments: comment._id } });
+    }
 
     //@ts-ignore
     if (user._id != post.creator._id.toString()) {
@@ -219,13 +228,21 @@ export class PostsController {
     if (!comment) throw new HttpException('Comment does not exist.', HttpStatus.BAD_REQUEST);
     if (comment.creator.toString() == user._id) {
       const deletedComment = await this.commentService.deleteSingleRecord({ _id: id });
-      await this.postsService.findOneRecordAndUpdate({ _id: deletedComment.post }, { $pull: { comments: deletedComment._id } });
+      if (deletedComment.comment) {
+        await this.commentService.findOneRecordAndUpdate({ _id: deletedComment.comment }, { $pull: { replies: deletedComment._id } });
+      } else {
+        await this.postsService.findOneRecordAndUpdate({ _id: deletedComment.post }, { $pull: { comments: deletedComment._id } });
+      }
       return { message: 'Comment deleted successfully.' };
     } else {
       const moderator = await this.isGroupModerator(postId, user._id);
       if (!moderator || !moderator.deleteComments) throw new UnauthorizedException();
       const deletedComment = await this.commentService.deleteSingleRecord({ _id: id });
-      await this.postsService.findOneRecordAndUpdate({ _id: deletedComment.post }, { $pull: { comments: deletedComment._id } });
+      if (deletedComment.comment) {
+        await this.commentService.findOneRecordAndUpdate({ _id: deletedComment.comment }, { $pull: { replies: deletedComment._id } });
+      } else {
+        await this.postsService.findOneRecordAndUpdate({ _id: deletedComment.post }, { $pull: { comments: deletedComment._id } });
+      }
       return { message: 'Comment deleted successfully.' };
     }
   }
@@ -270,38 +287,67 @@ export class PostsController {
 
   @Post('reaction/create')
   async addReactions(@Body() addReactionsDto: AddReactionsDto, @GetUser() user: UserDocument) {
-    const post = await this.postsService.findOneRecord({ _id: addReactionsDto.post }).populate('creator');
-    if (!post) throw new HttpException('Post does not exists', HttpStatus.BAD_REQUEST);
-    const reaction = await this.reactionService.create({ user: user._id, emoji: addReactionsDto.emoji, post: post._id });
-    await this.postsService.findOneRecordAndUpdate({ _id: post._id }, { $push: { reactions: reaction._id } });
-    //@ts-ignore
-    if (user._id != post.creator._id.toString()) {
-      await this.notificationService.createRecord({
-        post: post._id,
-        message: 'reacted to your post.',
-        type: NotificationType.POST_REACTED,
-        sender: user._id,
-        //@ts-ignore
-        receiver: post.creator._id,
-      });
+    // check if user is adding reaction in comment
+    if (addReactionsDto.comment) {
+      const comment = await this.commentService.findOneRecord({ _id: addReactionsDto.comment }).populate('creator');
+      if (!comment) throw new BadRequestException('Comment does not exist.');
+      const reaction = await this.reactionService.create({ user: user._id, emoji: addReactionsDto.emoji, comment: comment._id });
+      await this.commentService.findOneRecordAndUpdate({ _id: comment._id }, { $push: { reactions: reaction._id } });
 
-      if (post.creator.fcmToken) {
-        await this.firebaseService.sendNotification({
-          token: post.creator.fcmToken,
-          notification: { title: `${user.firstName} ${user.lastName} reacted on your post.` },
-          data: { post: post._id.toString(), type: NotificationType.POST_REACTED },
+      //@ts-ignore
+      if (user._id != comment.creator._id.toString()) {
+        await this.notificationService.createRecord({
+          comment: comment._id,
+          message: 'reacted to your comment.',
+          type: NotificationType.COMMENT_REACTED,
+          sender: user._id,
+          //@ts-ignore
+          receiver: comment.creator._id,
         });
-      }
-    }
 
-    return reaction;
+        if (comment.creator.fcmToken) {
+          await this.firebaseService.sendNotification({
+            token: comment.creator.fcmToken,
+            notification: { title: `${user.firstName} ${user.lastName} reacted on your comment.` },
+            data: { post: comment._id.toString(), type: NotificationType.COMMENT_REACTED },
+          });
+        }
+      }
+      return reaction;
+    } else {
+      const post = await this.postsService.findOneRecord({ _id: addReactionsDto.post }).populate('creator');
+      if (!post) throw new HttpException('Post does not exists', HttpStatus.BAD_REQUEST);
+      const reaction = await this.reactionService.create({ user: user._id, emoji: addReactionsDto.emoji, post: post._id });
+      await this.postsService.findOneRecordAndUpdate({ _id: post._id }, { $push: { reactions: reaction._id } });
+      //@ts-ignore
+      if (user._id != post.creator._id.toString()) {
+        await this.notificationService.createRecord({
+          post: post._id,
+          message: 'reacted to your post.',
+          type: NotificationType.POST_REACTED,
+          sender: user._id,
+          //@ts-ignore
+          receiver: post.creator._id,
+        });
+
+        if (post.creator.fcmToken) {
+          await this.firebaseService.sendNotification({
+            token: post.creator.fcmToken,
+            notification: { title: `${user.firstName} ${user.lastName} reacted on your post.` },
+            data: { post: post._id.toString(), type: NotificationType.POST_REACTED },
+          });
+        }
+      }
+      return reaction;
+    }
   }
 
   @Delete('reaction/:id/delete')
   async deleteReaction(@Param('id', ParseObjectId) id: string) {
     const reaction = await this.reactionService.deleteSingleRecord({ _id: id });
     if (!reaction) throw new HttpException('Reaction does not exists', HttpStatus.BAD_REQUEST);
-    await this.postsService.findOneRecordAndUpdate({ _id: reaction.post }, { $pull: { reactions: reaction._id } });
+    if (reaction.post) await this.postsService.findOneRecordAndUpdate({ _id: reaction.post }, { $pull: { reactions: reaction._id } });
+    else if (reaction.comment) await this.commentService.findOneRecordAndUpdate({ _id: reaction.comment }, { $pull: { reactions: reaction._id } });
     return reaction;
   }
 
