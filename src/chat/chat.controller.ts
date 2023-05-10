@@ -45,10 +45,13 @@ export class ChatController {
 
   @Post('/message/create')
   async createMessage(@Body() createMessageDto: CreateMessageDto, @GetUser() user: UserDocument) {
-    const chatFound = await this.chatService.findOneRecord({ _id: createMessageDto.chat });
+    const chatFound = await this.chatService.findOneRecord({ _id: createMessageDto.chat }).populate('members');
     //find receiver from chat object
-    const receiver = chatFound.members.find((member) => member.toString() != user._id);
-    const message = await this.messageService.createRecord({ ...createMessageDto, sender: user._id, receiver });
+    //@ts-ignore
+    const receiver = chatFound.members.find((member) => member._id.toString() != user._id);
+
+    //@ts-ignore
+    const message = await this.messageService.createRecord({ ...createMessageDto, sender: user._id, receiver: receiver._id });
     const chat = await this.chatService.findOneRecordAndUpdate(
       { _id: createMessageDto.chat },
       { lastMessage: message._id, $push: { messages: message._id } }
@@ -61,12 +64,14 @@ export class ChatController {
     await this.notificationService.createRecord({
       message: 'has sent you a message.',
       sender: user._id,
-      receiver: receiver,
+      //@ts-ignore
+      receiver: receiver._id,
       type: NotificationType.NEW_MESSAGE,
       user: user._id,
     });
 
-    if (chat.mutes) {
+    // check if chat has muted object or not
+    if (chat.mutes.length > 0) {
       //find mute object from chat object
       const mute = chat.mutes.find((chat) => chat.user === user._id);
       // check if current user muted the message
@@ -98,6 +103,12 @@ export class ChatController {
           }
         }
       }
+    } else {
+      await this.firebaseService.sendNotification({
+        token: receiver.fcmToken,
+        notification: { title: `${user.firstName} ${user.lastName} has send you message.` },
+        data: { user: user._id.toString(), type: NotificationType.NEW_MESSAGE },
+      });
     }
     return { message: 'message sent successfully.' };
   }

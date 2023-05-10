@@ -44,6 +44,7 @@ import { FindAllCategoriesQueryDto } from './dtos/find-all-categories.query.dto'
 import { UpdateProductCategoryDto } from './dtos/update.category.dto';
 import { BuySeriesDto } from './dtos/buy-series.dto';
 import * as Shopify from 'shopify-api-node';
+import { CreateShowCaseProductDto } from './dtos/create-showcase-product.dto';
 
 @Controller('product')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -427,15 +428,14 @@ export class ProductController {
   // ------------------------------------------------------------showcase products apis---------------------------------------------------------------
   @Roles(UserRoles.ADMIN)
   @Post('showcase/create')
-  async createShowcaseProduct(@Body() createProductDto: CreateProductDto, @GetUser() user: UserDocument) {
-    return await this.productService.create({ ...createProductDto, creator: user._id, isShowCase: true });
+  async createShowcaseProduct(@Body() { product }: CreateShowCaseProductDto, @GetUser() user: UserDocument) {
+    return await this.productService.findOneRecordAndUpdate({ _id: product }, { creator: user._id, isShowCase: true });
   }
 
   @Roles(UserRoles.ADMIN)
   @Delete('showcase/:id/delete')
   async deleteShowcaseProduct(@Param('id', ParseObjectId) id: string) {
-    await this.productService.deleteSingleRecord({ _id: id });
-    return { message: 'Product deleted successfully.' };
+    return await this.productService.deleteSingleRecord({ _id: id });
   }
 
   @Roles(UserRoles.ADMIN)

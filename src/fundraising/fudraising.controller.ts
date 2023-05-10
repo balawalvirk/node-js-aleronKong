@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Delete, UseGuards, HttpException, HttpStatus, Query, Put } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Delete, UseGuards, HttpException, HttpStatus, Query, Put, ParseBoolPipe } from '@nestjs/common';
 import { CreateFudraisingDto } from './dtos/create-fudraising.dto';
 import { PostsService } from 'src/posts/posts.service';
 import { NotificationType, PostPrivacy, PostStatus, PostType, UserRoles } from 'src/types';
@@ -76,9 +76,10 @@ export class FundraisingController {
       message: `has funded ${amount}$ for your project`,
       type: NotificationType.FUNDRAISING_PROJECT_FUNDED,
     });
+
     await this.firebaseService.sendNotification({
       token: post.creator.fcmToken,
-      notification: { title: `${post.creator.firstName} ${post.creator.lastName} has funded ${amount}$ for your project` },
+      notification: { title: `${post.creator.firstName} ${post.creator.lastName} has funded $${amount} for your project` },
       data: { post: post._id.toString(), type: NotificationType.FUNDRAISING_PROJECT_FUNDED },
     });
 
@@ -106,17 +107,36 @@ export class FundraisingController {
 
   @Roles(UserRoles.ADMIN)
   @Put(':id/approve')
-  async approve(@Param('id', ParseObjectId) id: string) {
-    const project = await this.fundraisingService.findOneRecordAndUpdate({ _id: id }, { isApproved: true });
-    const post = await this.postService.findOneRecord({ fundraising: project._id });
-    if (post) throw new HttpException('This project is already approved.', HttpStatus.BAD_REQUEST);
-    await this.postService.createRecord({
+  async approve(@Param('id', ParseObjectId) id: string, @GetUser() user: UserDocument) {
+    const project = await this.fundraisingService.findOneRecordAndUpdate({ _id: id }, { isApproved: true }).populate('creator');
+    const postFound = await this.postService.findOneRecord({ fundraising: project._id });
+    if (postFound) throw new HttpException('This project is already approved.', HttpStatus.BAD_REQUEST);
+    const post = await this.postService.createRecord({
       fundraising: project._id,
-      creator: project.creator,
+      //@ts-ignore
+      creator: project.creator._id,
       type: PostType.FUNDRAISING,
       status: PostStatus.ACTIVE,
       privacy: PostPrivacy.PUBLIC,
     });
+
+    await this.notificationService.createRecord({
+      post: post._id,
+      sender: user._id,
+      //@ts-ignore
+      receiver: project.creator._id,
+      message: `Your fundraising project has been approved`,
+      type: NotificationType.FUNDRAISING_PROJECT_APPROVED,
+    });
+
+    if (project.creator.fcmToken) {
+      await this.firebaseService.sendNotification({
+        token: project.creator.fcmToken,
+        notification: { title: `Your fundraising project has been approved` },
+        data: { post: post._id.toString(), type: NotificationType.FUNDRAISING_PROJECT_APPROVED },
+      });
+    }
+
     return { message: 'Fundraising project approved successfully.' };
   }
 

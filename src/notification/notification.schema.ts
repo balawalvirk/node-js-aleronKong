@@ -2,6 +2,7 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
 import { Group } from 'src/group/group.schema';
 import { Order } from 'src/order/order.schema';
+import { Comment } from 'src/posts/comment.schema';
 import { Posts } from 'src/posts/posts.schema';
 import { Product } from 'src/product/product.schema';
 import { NotificationType } from 'src/types';
@@ -40,6 +41,9 @@ export class Notification {
 
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Group' })
   group: Group;
+
+  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Comment' })
+  comment: Comment;
 }
 
 export const NotificationSchema = SchemaFactory.createForClass(Notification);
