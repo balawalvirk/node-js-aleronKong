@@ -86,6 +86,9 @@ export enum NotificationType {
   SELLER_REQUEST_APPROVED_REJECTED = 'sellerRequestApproveRejected',
   POST_REACTED = 'postReacted',
   COMMENT_REACTED = 'commentReacted',
+  GROUP_INVITATION = 'groupInvitation',
+  GROUP_INVITATION_APPROVED = 'groupInvitationApproved',
+  GROUP_INVITATION_REJECTED = 'groupInvitationRejected',
 }
 
 export enum ReportType {
@@ -145,4 +148,10 @@ export enum AGORA_RTC_ROLE {
 export enum PostSort {
   MOST_RECENT = 'mostRecent',
   RECENT_INTERACTIONS = 'recentInteractions',
+}
+
+export enum GroupInvitationStatus {
+  PENDING = 'pending',
+  APPROVED = 'approved',
+  REJECTED = 'rejected',
 }

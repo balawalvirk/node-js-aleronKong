@@ -1,4 +1,4 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { ProductService } from './product.service';
 import { ProductController } from './product.controller';
 import { Product, ProductSchema } from './product.schema';
@@ -28,7 +28,7 @@ import { ReviewModule } from 'src/review/review.module';
     ReviewModule,
     AddressModule,
     OrderModule,
-    UsersModule,
+    forwardRef(() => UsersModule),
     NotificationModule,
     FirebaseModule,
   ],
