@@ -8,6 +8,7 @@ import { FirebaseService } from 'src/firebase/firebase.service';
 import { makeQuery, ParseObjectId, Roles, StripeService } from 'src/helpers';
 import { GetUser } from 'src/helpers/decorators/user.decorator';
 import { NotificationService } from 'src/notification/notification.service';
+import { CartService } from 'src/product/cart.service';
 import { NotificationType, SellerRequest, TransectionDuration, UserRoles, UserStatus } from 'src/types';
 import { UserDocument } from 'src/users/users.schema';
 import { ApproveRejectSellerDto } from './dtos/approve-reject-seller.dto';
@@ -29,7 +30,8 @@ export class UserController {
     private readonly stripeService: StripeService,
     private readonly notificationService: NotificationService,
     private readonly firebaseService: FirebaseService,
-    private readonly messageService: MessageService
+    private readonly messageService: MessageService,
+    private readonly cartService: CartService
   ) {}
 
   @Put('update')
@@ -169,7 +171,7 @@ export class UserController {
     const friend = await this.usersService.findOneRecord({ _id: id });
     const updatedUser = await this.usersService.findOneRecordAndUpdate({ _id: user._id }, { $push: { friends: id } });
     await this.notificationService.createRecord({
-      user: id,
+      user: user._id,
       message: 'started following you.',
       type: NotificationType.USER_FOLLOWING,
       sender: user._id,
@@ -204,7 +206,8 @@ export class UserController {
   async home(@GetUser() user: UserDocument) {
     const messages = await this.messageService.countRecords({ receiver: user._id, isRead: false });
     const notifications = await this.notificationService.countRecords({ receiver: user._id, isRead: false });
-    return { messages, notifications };
+    const cart = await this.cartService.findOneRecord({ creator: user._id });
+    return { messages, notifications, cartItems: cart?.items?.length || 0 };
   }
 
   //get count of unread messages

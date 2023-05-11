@@ -16,6 +16,7 @@ import {
   UnauthorizedException,
   BadRequestException,
   ForbiddenException,
+  ParseEnumPipe,
 } from '@nestjs/common';
 import { GroupService } from './group.service';
 import { CreateGroupDto } from './dto/create-group.dto';
@@ -25,7 +26,7 @@ import { UserDocument } from 'src/users/users.schema';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { PostsService } from 'src/posts/posts.service';
 import { CreatePostsDto } from 'src/posts/dtos/create-posts';
-import { GroupPrivacy, MuteInterval, NotificationType, PostPrivacy, PostType } from 'src/types';
+import { GroupInvitationStatus, GroupPrivacy, MuteInterval, NotificationType, PostPrivacy, PostType } from 'src/types';
 import { makeQuery, ParseObjectId } from 'src/helpers';
 import { FundService } from 'src/fundraising/fund.service';
 import { FundraisingService } from 'src/fundraising/fundraising.service';
@@ -40,6 +41,9 @@ import { MuteService } from 'src/mute/mute.service';
 import { FindAllQueryDto } from './dto/find-all.query.dto';
 import { RemoveMemberDto } from './dto/remove-member.dto';
 import { BanMemberDto } from './dto/ban-member.dto';
+import { CreateInvitationDto } from './dto/create-invitation.dto';
+import { GroupInvitationService } from './invitation.service';
+import { FindAllInvitationsQueryDto } from './dto/find-all-invitations.query.dto';
 
 @Controller('group')
 @UseGuards(JwtAuthGuard)
@@ -52,7 +56,8 @@ export class GroupController {
     private readonly notificationService: NotificationService,
     private readonly firebaseService: FirebaseService,
     private readonly moderatorService: ModeratorService,
-    private readonly muteService: MuteService
+    private readonly muteService: MuteService,
+    private readonly invitationService: GroupInvitationService
   ) {}
 
   @Post('create')
@@ -560,5 +565,60 @@ export class GroupController {
     if (moderator.user.toString() == user._id || moderator.group.creator.toString() == user._id)
       return await this.moderatorService.findOneRecordAndUpdate({ _id: id }, updateModeratorDto).populate('user');
     else throw new ForbiddenException();
+  }
+
+  // ==============================================================invitation apis=================================================================
+  @Post('invitation/create')
+  async createInvitation(@Body() { friend, group }: CreateInvitationDto, @GetUser() user: UserDocument) {
+    const invitation = await this.invitationService.create({ user: user._id, group, friend });
+    await this.notificationService.createRecord({
+      sender: user._id,
+      receiver: friend,
+      group,
+      message: 'invite you to join group',
+      type: NotificationType.GROUP_INVITATION,
+    });
+    await this.firebaseService.sendNotification({
+      token: invitation.friend.fcmToken,
+      notification: { title: `${user.firstName} ${user.lastName} invite you to join group` },
+      data: { group: group.toString(), type: NotificationType.GROUP_INVITATION },
+    });
+
+    return invitation;
+  }
+
+  @Get('invitation/find-all')
+  async findAllInvitations(@Query() findAllInvitationsQueryDto: FindAllInvitationsQueryDto) {
+    return await this.invitationService.find(findAllInvitationsQueryDto);
+  }
+
+  @Put('invitation/:id/accept-reject')
+  async acceptRejectInvitations(
+    @Body('status', new ParseEnumPipe(GroupInvitationStatus)) status: string,
+    @Param('id', ParseObjectId) id: string,
+    @GetUser() user: UserDocument
+  ) {
+    const message: string = `${status === GroupInvitationStatus.APPROVED ? 'approve' : 'reject'} your group join request.`;
+    const type: string =
+      status === GroupInvitationStatus.APPROVED ? NotificationType.GROUP_INVITATION_APPROVED : NotificationType.GROUP_INVITATION_REJECTED;
+    const invitation = await this.invitationService.findOneAndUpdate({ _id: id }, { status });
+    if (invitation.status === GroupInvitationStatus.APPROVED) {
+      await this.groupService.findOneRecordAndUpdate({ _id: invitation.group }, { $push: { members: invitation.friend } });
+    }
+
+    await this.notificationService.createRecord({
+      sender: user._id,
+      receiver: invitation.user,
+      group: invitation.group,
+      message,
+      type,
+    });
+    await this.firebaseService.sendNotification({
+      token: invitation.friend.fcmToken,
+      notification: { title: `${invitation.friend.firstName} ${invitation.friend.lastName} ${message}` },
+      data: { group: invitation.group.toString(), type },
+    });
+
+    return invitation;
   }
 }

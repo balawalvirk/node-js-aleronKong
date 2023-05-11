@@ -10,11 +10,14 @@ import { FirebaseModule } from 'src/firebase/firebase.module';
 import { Moderator, ModeratorSchema } from './moderator.schema';
 import { ModeratorService } from './moderator.service';
 import { MuteModule } from 'src/mute/mute.module';
+import { GroupInvitation, GroupInvitationSchema } from './invitation.schema';
+import { GroupInvitationService } from './invitation.service';
 
 @Module({
   imports: [
     MongooseModule.forFeature([{ name: Group.name, schema: GroupSchema }]),
     MongooseModule.forFeature([{ name: Moderator.name, schema: ModeratorSchema }]),
+    MongooseModule.forFeature([{ name: GroupInvitation.name, schema: GroupInvitationSchema }]),
     forwardRef(() => PostsModule),
     FundraisingModule,
     NotificationModule,
@@ -22,7 +25,7 @@ import { MuteModule } from 'src/mute/mute.module';
     MuteModule,
   ],
   controllers: [GroupController],
-  providers: [GroupService, ModeratorService],
+  providers: [GroupService, ModeratorService, GroupInvitationService],
   exports: [GroupService, ModeratorService],
 })
 export class GroupModule {}
