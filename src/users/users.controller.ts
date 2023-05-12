@@ -12,7 +12,6 @@ import {
   UsePipes,
   Ip,
   BadRequestException,
-  ParseEnumPipe,
   ParseBoolPipe,
 } from '@nestjs/common';
 import { compare, hash } from 'bcrypt';
@@ -67,8 +66,11 @@ export class UserController {
   }
 
   @Get('find-one/:id')
-  async findOne(@Param('id', ParseObjectId) id: string) {
-    return await this.usersService.findOneRecord({ _id: id });
+  async findOne(@Param('id', ParseObjectId) id: string, @GetUser() user: UserDocument) {
+    const userFound = await this.usersService.findOneRecord({ _id: id });
+    const friendRequest = await this.friendRequestService.findOneRecord({ sender: user._id, receiver: id });
+    if (friendRequest) return { ...userFound, friendRequest };
+    else return userFound;
   }
 
   @Roles(UserRoles.ADMIN)
@@ -445,16 +447,12 @@ export class UserController {
   }
 
   @Put('friend-request/:id/approve-reject')
-  async approveRejectFriendRequest(
-    @GetUser() user: UserDocument,
-    @Body('isApproved', new ParseBoolPipe()) isApproved: boolean,
-    @Param('id', ParseObjectId) id: string
-  ) {
-    const friendRequest = await this.friendRequestService.findOneRecordAndUpdate(
-      { _id: id },
-      { status: isApproved ? FriendRequestStatus.APPROVED : FriendRequestStatus.REJECTED }
-    );
-    await this.usersService.findOneRecordAndUpdate({ _id: friendRequest.sender }, { $push: { friends: friendRequest.receiver } });
-    return friendRequest;
+  async approveRejectFriendRequest(@Body('isApproved', new ParseBoolPipe()) isApproved: boolean, @Param('id', ParseObjectId) id: string) {
+    const deletedRequest = await this.friendRequestService.deleteSingleRecord({ _id: id });
+    if (isApproved) {
+      await this.usersService.findOneRecordAndUpdate({ _id: deletedRequest.sender }, { $push: { friends: deletedRequest.receiver } });
+      await this.usersService.findOneRecordAndUpdate({ _id: deletedRequest.receiver }, { $push: { friends: deletedRequest.sender } });
+    }
+    return deletedRequest;
   }
 }

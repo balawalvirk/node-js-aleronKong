@@ -35,4 +35,19 @@ export class UsersService extends BaseService<UserDocument> {
       },
     });
   }
+
+  getMutalFriends(users: UserDocument[], currentUser: UserDocument) {
+    const currentUserFriends = currentUser.friends.map((id) => id.toString());
+    return users.map((user) => {
+      let mutalFriends = 0;
+      const stringifyArray = user.friends.map((id) => id.toString());
+      //@ts-ignore
+      stringifyArray.forEach((id) => {
+        if (currentUserFriends.includes(id)) {
+          mutalFriends += 1;
+        }
+      });
+      return { ...user, mutalFriends };
+    });
+  }
 }
