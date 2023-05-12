@@ -571,18 +571,18 @@ export class GroupController {
   @Post('invitation/create')
   async createInvitation(@Body() { friend, group }: CreateInvitationDto, @GetUser() user: UserDocument) {
     const invitation = await this.invitationService.create({ user: user._id, group, friend });
-    await this.notificationService.createRecord({
-      sender: user._id,
-      receiver: friend,
-      group,
-      message: 'invite you to join group',
-      type: NotificationType.GROUP_INVITATION,
-    });
-    await this.firebaseService.sendNotification({
-      token: invitation.friend.fcmToken,
-      notification: { title: `${user.firstName} ${user.lastName} invite you to join group` },
-      data: { group: group.toString(), type: NotificationType.GROUP_INVITATION },
-    });
+    // await this.notificationService.createRecord({
+    //   sender: user._id,
+    //   receiver: friend,
+    //   group,
+    //   message: 'invite you to join group',
+    //   type: NotificationType.GROUP_INVITATION,
+    // });
+    // await this.firebaseService.sendNotification({
+    //   token: invitation.friend.fcmToken,
+    //   notification: { title: `${user.firstName} ${user.lastName} invite you to join group` },
+    //   data: { group: group.toString(), type: NotificationType.GROUP_INVITATION },
+    // });
 
     return invitation;
   }
@@ -594,30 +594,32 @@ export class GroupController {
 
   @Put('invitation/:id/accept-reject')
   async acceptRejectInvitations(
-    @Body('status', new ParseEnumPipe(GroupInvitationStatus)) status: string,
+    @Body('isApproved', new ParseBoolPipe()) isApproved: boolean,
     @Param('id', ParseObjectId) id: string,
     @GetUser() user: UserDocument
   ) {
-    const message: string = `${status === GroupInvitationStatus.APPROVED ? 'approve' : 'reject'} your group join request.`;
-    const type: string =
-      status === GroupInvitationStatus.APPROVED ? NotificationType.GROUP_INVITATION_APPROVED : NotificationType.GROUP_INVITATION_REJECTED;
-    const invitation = await this.invitationService.findOneAndUpdate({ _id: id }, { status });
-    if (invitation.status === GroupInvitationStatus.APPROVED) {
+    const message: string = `${isApproved ? 'approve' : 'reject'} your group join request.`;
+    const type: string = isApproved ? NotificationType.GROUP_INVITATION_APPROVED : NotificationType.GROUP_INVITATION_REJECTED;
+    const invitation = await this.invitationService.findOneAndUpdate(
+      { _id: id },
+      { status: isApproved ? GroupInvitationStatus.APPROVED : GroupInvitationStatus.REJECTED }
+    );
+    if (isApproved) {
       await this.groupService.findOneRecordAndUpdate({ _id: invitation.group }, { $push: { members: invitation.friend } });
     }
 
-    await this.notificationService.createRecord({
-      sender: user._id,
-      receiver: invitation.user,
-      group: invitation.group,
-      message,
-      type,
-    });
-    await this.firebaseService.sendNotification({
-      token: invitation.friend.fcmToken,
-      notification: { title: `${invitation.friend.firstName} ${invitation.friend.lastName} ${message}` },
-      data: { group: invitation.group.toString(), type },
-    });
+    // await this.notificationService.createRecord({
+    //   sender: user._id,
+    //   receiver: invitation.user,
+    //   group: invitation.group,
+    //   message,
+    //   type,
+    // });
+    // await this.firebaseService.sendNotification({
+    //   token: invitation.friend.fcmToken,
+    //   notification: { title: `${invitation.friend.firstName} ${invitation.friend.lastName} ${message}` },
+    //   data: { group: invitation.group.toString(), type },
+    // });
 
     return invitation;
   }

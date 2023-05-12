@@ -155,3 +155,9 @@ export enum GroupInvitationStatus {
   APPROVED = 'approved',
   REJECTED = 'rejected',
 }
+
+export enum FriendRequestStatus {
+  PENDING = 'pending',
+  APPROVED = 'approved',
+  REJECTED = 'rejected',
+}

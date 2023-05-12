@@ -1,4 +1,20 @@
-import { Body, Controller, ValidationPipe, Delete, Get, Param, Post, Put, Query, UseGuards, UsePipes, Ip, BadRequestException } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  ValidationPipe,
+  Delete,
+  Get,
+  Param,
+  Post,
+  Put,
+  Query,
+  UseGuards,
+  UsePipes,
+  Ip,
+  BadRequestException,
+  ParseEnumPipe,
+  ParseBoolPipe,
+} from '@nestjs/common';
 import { compare, hash } from 'bcrypt';
 import { ChangePasswordDto } from 'src/auth/dtos/change-pass.dto';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
@@ -9,17 +25,19 @@ import { makeQuery, ParseObjectId, Roles, StripeService } from 'src/helpers';
 import { GetUser } from 'src/helpers/decorators/user.decorator';
 import { NotificationService } from 'src/notification/notification.service';
 import { CartService } from 'src/product/cart.service';
-import { NotificationType, SellerRequest, TransectionDuration, UserRoles, UserStatus } from 'src/types';
+import { FriendRequestStatus, NotificationType, SellerRequest, TransectionDuration, UserRoles, UserStatus } from 'src/types';
 import { UserDocument } from 'src/users/users.schema';
 import { ApproveRejectSellerDto } from './dtos/approve-reject-seller.dto';
 import { CompleteProfileDto } from './dtos/complete-profile.dto';
 import { CreateBankAccountDto } from './dtos/create-bank-account.dto';
 import { CreatePayoutDto } from './dtos/create-payout.dto';
 import { CreateSellerDto } from './dtos/create-seller.dto';
+import { FindAllFriendRequestsQueryDto } from './dtos/find-all-friend-requests.query.dto';
 import { FindAllUsersQueryDto } from './dtos/find-all-users.query.dto';
 import { FindTransectionsQueryDto } from './dtos/find-transections.query.dto';
 import { UpdateBankAccountDto } from './dtos/update-bank-account.dto';
 import { UpdateUserDto } from './dtos/update-user';
+import { FriendRequestService } from './friend-request.service';
 import { UsersService } from './users.service';
 
 @Controller('user')
@@ -31,7 +49,8 @@ export class UserController {
     private readonly notificationService: NotificationService,
     private readonly firebaseService: FirebaseService,
     private readonly messageService: MessageService,
-    private readonly cartService: CartService
+    private readonly cartService: CartService,
+    private readonly friendRequestService: FriendRequestService
   ) {}
 
   @Put('update')
@@ -411,5 +430,31 @@ export class UserController {
       created: { gt: startDate },
     });
     return transfers.data;
+  }
+
+  // *************************************************************************friend request apis***************************************************
+  @Post('friend-request/create')
+  async createFriendRequest(@GetUser() user: UserDocument, @Body('receiver', ParseObjectId) receiver: string) {
+    return await this.friendRequestService.createRecord({ receiver, sender: user._id });
+  }
+
+  @Get('friend-request/find-all')
+  async findAllFriendRequests(@GetUser() user: UserDocument, @Query() { receiver }: FindAllFriendRequestsQueryDto) {
+    if (!receiver) return await this.friendRequestService.findAllRecords({ sender: user._id });
+    else return await this.friendRequestService.findAllRecords({ receiver });
+  }
+
+  @Put('friend-request/:id/approve-reject')
+  async approveRejectFriendRequest(
+    @GetUser() user: UserDocument,
+    @Body('isApproved', new ParseBoolPipe()) isApproved: boolean,
+    @Param('id', ParseObjectId) id: string
+  ) {
+    const friendRequest = await this.friendRequestService.findOneRecordAndUpdate(
+      { _id: id },
+      { status: isApproved ? FriendRequestStatus.APPROVED : FriendRequestStatus.REJECTED }
+    );
+    await this.usersService.findOneRecordAndUpdate({ _id: friendRequest.sender }, { $push: { friends: friendRequest.receiver } });
+    return friendRequest;
   }
 }
