@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { FilterQuery, Model, UpdateQuery } from 'mongoose';
+import { FilterQuery, Model, QueryOptions, UpdateQuery } from 'mongoose';
 import { BaseService } from 'src/helpers/services/base.service';
 import { Comment, CommentDocument } from './comment.schema';
 
@@ -16,9 +16,9 @@ export class CommentService extends BaseService<CommentDocument> {
     ).populate({ path: 'creator', select: 'firstName lastName avatar isGuildMember userName fcmToken enableNotifications' });
   }
 
-  async find(query: FilterQuery<CommentDocument>) {
+  async find(query: FilterQuery<CommentDocument>, options?: QueryOptions<CommentDocument>) {
     return await this.commentModel
-      .find(query)
+      .find(query, {}, options)
       .populate([
         { path: 'creator', select: 'firstName lastName avatar isGuildMember userName fcmToken enableNotifications' },
         { path: 'reactions', populate: { path: 'user', select: 'firstName lastName avatar' } },

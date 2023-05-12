@@ -32,6 +32,7 @@ import { CommentService } from './comment.service';
 import { AddReactionsDto } from './dtos/add-reactions.dto';
 import { CreateCommentDto } from './dtos/create-comment';
 import { FeatureUnFeatureDto } from './dtos/feature-unfeature.dto';
+import { FindAllCommentQueryDto } from './dtos/find-all-comments.query.dto';
 import { FindAllPostQuery } from './dtos/find-all-post.query.dto';
 import { FindHomePostQueryDto } from './dtos/find-home-post.query.dto';
 import { PinUnpinDto } from './dtos/pin-unpin-post.dto';
@@ -208,8 +209,20 @@ export class PostsController {
   }
 
   @Get(':id/comment/find-all')
-  async findAllComments(@Param('id', ParseObjectId) id: string) {
-    return await this.commentService.find({ post: id });
+  async findAllComments(@Param('id', ParseObjectId) id: string, @Query() { page, limit }: FindAllCommentQueryDto) {
+    const $q = makeQuery({ page, limit });
+    const options = { limit: $q.limit, skip: $q.skip, sort: $q.sort };
+    const condition = { post: id };
+    const posts = await this.commentService.find(condition, options);
+    const total = await this.postsService.countRecords(condition);
+    const paginated = {
+      total: total,
+      pages: Math.ceil(total / $q.limit),
+      page: $q.page,
+      limit: $q.limit,
+      data: posts,
+    };
+    return paginated;
   }
 
   @Put('comment/update')
