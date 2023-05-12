@@ -28,7 +28,7 @@ export class GroupService extends BaseService<GroupDocument> {
           { path: 'creator', select: 'firstName lastName avatar' },
           { path: 'group', select: 'name' },
           { path: 'tagged', select: 'firstName lastName avatar' },
-          { path: 'reactions', select: 'firstName lastName avatar' },
+          { path: 'reactions', populate: { path: 'user', select: 'firstName lastName avatar' } },
         ],
       },
     ];

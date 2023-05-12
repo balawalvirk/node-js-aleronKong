@@ -207,6 +207,11 @@ export class PostsController {
     return comment;
   }
 
+  @Get(':id/comment/find-all')
+  async findAllComments(@Param('id', ParseObjectId) id: string) {
+    return await this.commentService.find({ post: id });
+  }
+
   @Put('comment/update')
   async updateComment(@Body() { commentId, content }: UpdateCommentDto) {
     return await this.commentService.update({ _id: commentId }, { content });

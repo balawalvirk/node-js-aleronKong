@@ -69,7 +69,7 @@ export class SearchController {
       );
       const totalProducts = products.length > 0 ? products.reduce((n, { count }) => n + count, 0) : 0;
       return {
-        users,
+        users: this.userService.getMutalFriends(users, user),
         groups,
         products,
         total: totalUsers + totalGroups + totalProducts,
@@ -95,10 +95,10 @@ export class SearchController {
         },
         { sort: sort === 'name' ? { firstName: -1, lastName: -1 } : { createdAt: -1 } }
       );
-      return { users, groups, products, total: users.length };
+      return { users: this.userService.getMutalFriends(users, user), groups, products, total: users.length };
     } else if (filter === 'groups') {
       groups = await this.groupService.findAllRecords({ name: rjx }, { sort: sort === 'name' ? { name: -1 } : { createdAt: -1 } });
-      return { users, groups, products, total: groups.length };
+      return { users: this.userService.getMutalFriends(users, user), groups, products, total: groups.length };
     } else {
       if (category) {
         products = await this.productService.findAllRecords(
@@ -111,7 +111,7 @@ export class SearchController {
       } else {
         products = await this.productService.findAllRecords({ title: rjx }, { sort: sort === 'name' ? { title: -1 } : { createdAt: -1 } });
       }
-      return { users, groups, products, total: products.length };
+      return { users: this.userService.getMutalFriends(users, user), groups, products, total: products.length };
     }
   }
 }
