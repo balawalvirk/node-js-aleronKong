@@ -21,15 +21,20 @@ export class CommentService extends BaseService<CommentDocument> {
       .find(query)
       .populate([
         { path: 'creator', select: 'firstName lastName avatar isGuildMember userName fcmToken enableNotifications' },
-        { path: 'replies', populate: { path: 'creator', select: 'firstName lastName avatar isGuildMember userName fcmToken enableNotifications' } },
+        { path: 'reactions', populate: { path: 'user', select: 'firstName lastName avatar' } },
+        {
+          path: 'replies',
+          options: { sort: { createdAt: -1 } },
+          populate: [
+            { path: 'creator', select: 'firstName lastName avatar isGuildMember userName fcmToken enableNotifications' },
+            { path: 'reactions', populate: { path: 'user', select: 'firstName lastName avatar' } },
+          ],
+        },
       ])
       .lean();
   }
 
   async update(query: FilterQuery<CommentDocument>, updateQuery: UpdateQuery<CommentDocument>) {
-    return await this.commentModel
-      .findOneAndUpdate(query, updateQuery, { new: true })
-      .populate({ path: 'creator', select: 'firstName lastName avatar isGuildMember userName fcmToken enableNotifications' })
-      .lean();
+    return await this.commentModel.findOneAndUpdate(query, updateQuery, { new: true }).lean();
   }
 }
