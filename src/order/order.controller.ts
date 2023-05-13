@@ -1,8 +1,7 @@
 import { Controller, Get, Post, Body, Param, UseGuards, Put, HttpException, HttpStatus, Query, Delete } from '@nestjs/common';
 import { OrderService } from './order.service';
 import { UpdateOrderDto } from './dto/update-order.dto';
-import { GetUser, makeQuery, ParseObjectId, StripeService } from 'src/helpers';
-import { UserDocument } from 'src/users/users.schema';
+import { makeQuery, ParseObjectId, StripeService } from 'src/helpers';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { OrderStatus } from 'src/types';
 import { FindAllOrderQueryDto } from './dto/find-all-query.dto';
@@ -39,7 +38,7 @@ export class OrderController {
     if (!order) throw new HttpException('Order does not exists.', HttpStatus.BAD_REQUEST);
     const paymentMethod = await this.stripeService.findOnePaymentMethod(order.paymentMethod);
     const subTotal = order.product.price * order.quantity;
-    const tax = Math.round((2 / 100) * subTotal);
+    const tax = Math.round((order.product.category.commission / 100) * subTotal);
     const total = subTotal + tax;
     return { ...order, total, tax, subTotal, paymentMethod };
   }
