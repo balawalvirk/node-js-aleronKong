@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { FilterQuery, Model, QueryOptions, UpdateQuery } from 'mongoose';
+import { FilterQuery, LeanDocument, Model, QueryOptions, UpdateQuery } from 'mongoose';
 import { BaseService } from 'src/helpers';
 import { Order, OrderDocument } from './order.schema';
 
@@ -26,7 +26,7 @@ export class OrderService extends BaseService<OrderDocument> {
         {
           path: 'product',
           select: 'media title creator price',
-          populate: { path: 'creator', select: 'sellerId' },
+          populate: [{ path: 'creator', select: 'sellerId' }, { path: 'category' }],
         },
         { path: 'address' },
         { path: 'customer' },
