@@ -19,19 +19,19 @@ export class BaseService<T> {
    * Creates a find query: gets a list of documents that match filter.
    * @param filter
    */
-  findAllRecords = (filter?: FilterQuery<T>, options?: QueryOptions<T>) => this.model.find(filter, {}, options).lean();
+  findAllRecords = (filter?: FilterQuery<T>, options?: QueryOptions<T>) => this.model.find(filter, {}, options);
 
   /**
    * Finds one document.
    *  @param filter
    */
-  findOneRecord = (filter?: FilterQuery<T>) => this.model.findOne(filter).lean();
+  findOneRecord = (filter?: FilterQuery<T>) => this.model.findOne(filter);
 
   /**
    * Creates a countDocuments query: counts the number of documents that match filter.
    * @param filter
    */
-  countRecords = (filter: FilterQuery<T>) => this.model.countDocuments(filter).lean();
+  countRecords = (filter: FilterQuery<T>) => this.model.countDocuments(filter);
 
   /**
    * Finds a single document by its _id field.
@@ -56,7 +56,7 @@ export class BaseService<T> {
    * @param filter
    * @param update
    */
-  findOneRecordAndUpdate = (filter: FilterQuery<T>, update: UpdateQuery<T>) => this.model.findOneAndUpdate(filter, update, { new: true }).lean();
+  findOneRecordAndUpdate = (filter: FilterQuery<T>, update: UpdateQuery<T>) => this.model.findOneAndUpdate(filter, update, { new: true });
 
   updateManyRecords = (filter?: FilterQuery<T>, update?: UpdateQuery<T>) => this.model.updateMany(filter, update, { new: true });
 }

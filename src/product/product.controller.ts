@@ -117,12 +117,12 @@ export class ProductController {
     const product = await this.productService.findOneRecord({ _id: id }).populate('category');
     if (!product) throw new BadRequestException('Product does not exists.');
     //@ts-ignore
-    const webSeries = user?.boughtWebSeries?.find((series) => series.toString() == id);
+    const webSeries = user?.boughtWebSeries?.find((series) => series.equals(id));
     if (webSeries) {
       const series: string[] = [];
       const sales = await this.saleService.findAllRecords({ customer: user._id, product: id });
       const boughtSeries = sales.map((sale) => [...series, ...sale.series]).flat();
-      const result = { ...product, boughtSeries };
+      const result = { ...product.toJSON(), boughtSeries };
       return result;
     } else return product;
   }

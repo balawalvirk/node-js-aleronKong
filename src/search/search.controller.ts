@@ -1,4 +1,4 @@
-import { Controller, Get, Query, UseGuards, DefaultValuePipe } from '@nestjs/common';
+import { Controller, Get, Query, UseGuards, UsePipes, ValidationPipe } from '@nestjs/common';
 import { ProductService } from 'src/product/product.service';
 import { GroupService } from 'src/group/group.service';
 import { UsersService } from 'src/users/users.service';
@@ -6,6 +6,7 @@ import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { UserDocument } from 'src/users/users.schema';
 import mongoose from 'mongoose';
 import { GetUser } from 'src/helpers';
+import { SearchQueryDto } from './dto/search.query.dto';
 
 @Controller('search')
 @UseGuards(JwtAuthGuard)
@@ -17,13 +18,8 @@ export class SearchController {
   ) {}
 
   @Get()
-  async search(
-    @Query('query', new DefaultValuePipe('')) query: string,
-    @Query('filter', new DefaultValuePipe('all')) filter: string,
-    @Query('category') category: string,
-    @Query('sort', new DefaultValuePipe('createdAt')) sort: string,
-    @GetUser() user: UserDocument
-  ) {
+  @UsePipes(new ValidationPipe({ transform: true }))
+  async search(@Query() { sort, query, filter, category }: SearchQueryDto, @GetUser() user: UserDocument) {
     let users = [];
     let groups = [];
     let products = [];

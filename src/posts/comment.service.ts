@@ -17,24 +17,21 @@ export class CommentService extends BaseService<CommentDocument> {
   }
 
   async find(query: FilterQuery<CommentDocument>, options?: QueryOptions<CommentDocument>) {
-    return await this.commentModel
-      .find(query, {}, options)
-      .populate([
-        { path: 'creator', select: 'firstName lastName avatar isGuildMember userName fcmToken enableNotifications' },
-        { path: 'reactions', populate: { path: 'user', select: 'firstName lastName avatar' } },
-        {
-          path: 'replies',
-          options: { sort: { createdAt: -1 } },
-          populate: [
-            { path: 'creator', select: 'firstName lastName avatar isGuildMember userName fcmToken enableNotifications' },
-            { path: 'reactions', populate: { path: 'user', select: 'firstName lastName avatar' } },
-          ],
-        },
-      ])
-      .lean();
+    return await this.commentModel.find(query, {}, options).populate([
+      { path: 'creator', select: 'firstName lastName avatar isGuildMember userName fcmToken enableNotifications' },
+      { path: 'reactions', populate: { path: 'user', select: 'firstName lastName avatar' } },
+      {
+        path: 'replies',
+        options: { sort: { createdAt: -1 } },
+        populate: [
+          { path: 'creator', select: 'firstName lastName avatar isGuildMember userName fcmToken enableNotifications' },
+          { path: 'reactions', populate: { path: 'user', select: 'firstName lastName avatar' } },
+        ],
+      },
+    ]);
   }
 
   async update(query: FilterQuery<CommentDocument>, updateQuery: UpdateQuery<CommentDocument>) {
-    return await this.commentModel.findOneAndUpdate(query, updateQuery, { new: true }).lean();
+    return await this.commentModel.findOneAndUpdate(query, updateQuery, { new: true });
   }
 }

@@ -15,7 +15,7 @@ export class PostsService extends BaseService<PostDocument> {
     return [
       {
         path: 'comments',
-        options: { sort: { createdAt: -1 } },
+        options: { sort: { createdAt: -1 }, limit: 3 },
         populate: [
           { path: 'creator', select: 'firstName lastName avatar isGuildMember userName fcmToken enableNotifications' },
           { path: 'reactions', populate: { path: 'user', select: 'firstName lastName avatar' } },

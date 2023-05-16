@@ -16,7 +16,6 @@ import {
   UnauthorizedException,
   BadRequestException,
   ForbiddenException,
-  ParseEnumPipe,
 } from '@nestjs/common';
 import { GroupService } from './group.service';
 import { CreateGroupDto } from './dto/create-group.dto';
