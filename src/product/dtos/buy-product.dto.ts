@@ -1,9 +1,6 @@
-import { IsMongoId, IsString } from 'class-validator';
+import { IsMongoId } from 'class-validator';
 
 export class BuyProductDto {
-  @IsString()
-  paymentMethod: string;
-
   @IsMongoId()
   product: string;
 }

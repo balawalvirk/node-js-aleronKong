@@ -226,7 +226,7 @@ export class ProductController {
     const { total, applicationFeeAmount } = this.productService.calculateTax(product.price, product.category.commission);
     await this.stripeService.createPaymentIntent({
       currency: 'usd',
-      payment_method: buyProductDto.paymentMethod,
+      payment_method: user.defaultPaymentMethod,
       amount: total,
       customer: user.customerId,
       confirm: true,
