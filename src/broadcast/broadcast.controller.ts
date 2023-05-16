@@ -38,7 +38,7 @@ export class BroadcastController {
       expirationTime,
       privilegeExpiredTs
     );
-    const broadcast = (await this.broadcastService.createRecord({ token, channel, user: user._id })).populate('user');
+    const broadcast = await this.broadcastService.create({ token, channel, user: user._id });
     this.socketService.triggerMessage('new-broadcast', broadcast);
     return broadcast;
   }
