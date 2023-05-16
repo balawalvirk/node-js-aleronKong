@@ -47,8 +47,9 @@ export class ChatController {
   async createMessage(@Body() createMessageDto: CreateMessageDto, @GetUser() user: UserDocument) {
     const chatFound = await this.chatService.findOneRecord({ _id: createMessageDto.chat }).populate('members');
     //find receiver from chat object
+
     //@ts-ignore
-    const receiver = chatFound.members.find((member) => member._id.toString() != user._id);
+    const receiver = chatFound.members.find((member) => !member._id.equals(user._id));
 
     //@ts-ignore
     const message = await this.messageService.createRecord({ ...createMessageDto, sender: user._id, receiver: receiver._id });

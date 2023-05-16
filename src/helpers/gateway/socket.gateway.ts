@@ -18,7 +18,6 @@ export class SocketGateway implements OnGatewayInit, OnGatewayConnection, OnGate
   private onlineUsers: { userId: string; socketId: string }[] = [];
 
   @WebSocketServer() wss: Server;
-
   private readonly logger = new Logger(SocketGateway.name);
 
   handleDisconnect(socket: Socket) {

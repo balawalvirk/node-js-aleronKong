@@ -1,6 +1,6 @@
 import { Controller, Get, Post, Body, Param, Delete, Header, UseGuards } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
-import { GetUser, ParseObjectId } from 'src/helpers';
+import { GetUser, ParseObjectId, SocketGateway } from 'src/helpers';
 import { UserDocument } from 'src/users/users.schema';
 import { BroadcastService } from './broadcast.service';
 import { CreateBroadcastDto } from './dto/create-broadcast.dto';
@@ -12,7 +12,11 @@ import { randomBytes } from 'crypto';
 @Controller('broadcast')
 @UseGuards(JwtAuthGuard)
 export class BroadcastController {
-  constructor(private readonly broadcastService: BroadcastService, private readonly configService: ConfigService<IEnvironmentVariables>) {}
+  constructor(
+    private readonly broadcastService: BroadcastService,
+    private readonly configService: ConfigService<IEnvironmentVariables>,
+    private readonly socketService: SocketGateway
+  ) {}
 
   @Post('create')
   @Header('Cache-Control', 'private, no-cache, no-store, must-revalidate')
@@ -34,8 +38,9 @@ export class BroadcastController {
       expirationTime,
       privilegeExpiredTs
     );
-
-    return (await this.broadcastService.createRecord({ token, channel, user: user._id })).populate('user');
+    const broadcast = (await this.broadcastService.createRecord({ token, channel, user: user._id })).populate('user');
+    this.socketService.triggerMessage('new-broadcast', broadcast);
+    return broadcast;
   }
 
   @Get('find-all')
@@ -45,6 +50,8 @@ export class BroadcastController {
 
   @Delete(':id')
   async remove(@Param('id', ParseObjectId) id: string) {
-    return await this.broadcastService.deleteSingleRecord({ _id: id });
+    const broadcast = await this.broadcastService.deleteSingleRecord({ _id: id });
+    this.socketService.triggerMessage('remove-broadcast', broadcast);
+    return broadcast;
   }
 }

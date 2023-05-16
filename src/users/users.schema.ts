@@ -16,10 +16,10 @@ export class User {
   @Prop({ required: true })
   password: string;
 
-  @Prop()
+  @Prop({ trim: true })
   firstName: string;
 
-  @Prop()
+  @Prop({ trim: true })
   lastName: string;
 
   @Prop({ trim: true })

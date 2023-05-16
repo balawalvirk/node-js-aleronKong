@@ -38,9 +38,9 @@ export class OrderController {
     if (!order) throw new HttpException('Order does not exists.', HttpStatus.BAD_REQUEST);
     const paymentMethod = await this.stripeService.findOnePaymentMethod(order.paymentMethod);
     const subTotal = order.product.price * order.quantity;
-    const tax = Math.round((order.product.category.commission / 100) * subTotal);
+    const tax = Math.round((2 / 100) * subTotal);
     const total = subTotal + tax;
-    return { ...order, total, tax, subTotal, paymentMethod };
+    return { ...order.toJSON(), total, tax, subTotal, paymentMethod };
   }
 
   @Put(':id/update')

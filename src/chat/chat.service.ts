@@ -19,19 +19,18 @@ export class ChatService extends BaseService<ChatDocument> {
   }
 
   async findAll(query: FilterQuery<ChatDocument>, userId: string, options?: QueryOptions<ChatDocument>) {
-    return await this.ChatModel.find(query, {}, options)
-      .populate([
-        { path: 'members', match: { _id: { $ne: userId } }, select: 'avatar firstName lastName' },
-        { path: 'lastMessage' },
-        { path: 'messages', match: { isRead: false, receiver: userId } },
-        { path: 'mutes' },
-      ])
-      .lean();
+    return await this.ChatModel.find(query, {}, options).populate([
+      { path: 'members', match: { _id: { $ne: userId } }, select: 'avatar firstName lastName' },
+      { path: 'lastMessage' },
+      { path: 'messages', match: { isRead: false, receiver: userId } },
+      { path: 'mutes' },
+    ]);
   }
 
   async findOne(query: FilterQuery<ChatDocument>, userId: string) {
-    return await this.ChatModel.findOne(query)
-      .populate([{ path: 'members', match: { _id: { $ne: userId } }, select: 'avatar firstName lastName' }, { path: 'mutes' }])
-      .lean();
+    return await this.ChatModel.findOne(query).populate([
+      { path: 'members', match: { _id: { $ne: userId } }, select: 'avatar firstName lastName' },
+      { path: 'mutes' },
+    ]);
   }
 }

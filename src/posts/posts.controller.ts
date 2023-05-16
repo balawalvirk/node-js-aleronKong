@@ -172,6 +172,7 @@ export class PostsController {
     return await this.postsService.update({ _id: id }, { $pull: { likes: user._id } });
   }
 
+  //==============================================================================comments api========================================================
   @Post('comment/:id')
   async createComment(@Param('id') id: string, @GetUser() user: UserDocument, @Body() createCommentDto: CreateCommentDto) {
     const post = await this.postsService.findOneRecord({ _id: id }).populate('creator');
@@ -213,14 +214,14 @@ export class PostsController {
     const $q = makeQuery({ page, limit });
     const options = { limit: $q.limit, skip: $q.skip, sort: $q.sort };
     const condition = { post: id };
-    const posts = await this.commentService.find(condition, options);
-    const total = await this.postsService.countRecords(condition);
+    const comments = await this.commentService.find(condition, options);
+    const total = await this.commentService.countRecords(condition);
     const paginated = {
       total: total,
       pages: Math.ceil(total / $q.limit),
       page: $q.page,
       limit: $q.limit,
-      data: posts,
+      data: comments,
     };
     return paginated;
   }
