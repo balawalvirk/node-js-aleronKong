@@ -47,7 +47,7 @@ export class UsersService extends BaseService<UserDocument> {
           mutalFriends += 1;
         }
       });
-      return { ...user, mutalFriends };
+      return { ...user.toJSON(), mutalFriends };
     });
   }
 }
