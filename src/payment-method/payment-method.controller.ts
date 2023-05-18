@@ -31,6 +31,7 @@ export class PaymentMethodController {
     });
 
     if (!user.defaultPaymentMethod) {
+      await this.stripeService.updateCustomer(user.customerId, { invoice_settings: { default_payment_method: paymentMethod.id } });
       await this.userService.findOneRecordAndUpdate({ _id: user._id }, { defaultPaymentMethod: paymentMethod.id });
     }
 
