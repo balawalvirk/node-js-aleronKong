@@ -104,7 +104,6 @@ export class GroupController {
           }
         }
       }
-
       return post;
     } else {
       const post = await this.postService.createPost({ ...createPostDto, creator: user._id });
@@ -178,17 +177,10 @@ export class GroupController {
   async feed(@GetUser() user: UserDocument, @Query('page') page: string, @Query('limit') limit: string) {
     const $q = makeQuery({ page, limit });
     const options = { sort: { pin: -1, ...$q.sort }, limit: $q.limit, skip: $q.skip };
-    const condition = {
-      'members.member': user._id,
-    };
-    const total = await this.groupService.countRecords(condition);
-    const groups = await this.groupService.feed(condition, options);
-    let posts = [];
-    groups.forEach((group) => {
-      if (group.posts.length !== 0) {
-        posts = [...posts, ...group.posts];
-      }
-    });
+    const groups = (await this.groupService.findAllRecords({ 'members.member': user._id })).map((group) => group._id);
+    const condition = { group: { $in: groups } };
+    const posts = await this.postService.find(condition, options);
+    const total = await this.postService.countRecords(condition);
     const paginated = {
       total,
       pages: Math.floor(total / $q.limit),

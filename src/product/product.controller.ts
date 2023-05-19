@@ -25,7 +25,6 @@ import { NotificationType, ProductType, UserRoles } from 'src/types';
 import { UserDocument } from 'src/users/users.schema';
 import { ProductCategoryService } from './category.service';
 import { CreateProductCategoryDto } from './dtos/create-category.dto';
-import { CreateCheckoutDto } from './dtos/create-checkout.dto';
 import { CreateProductDto } from './dtos/create-product.dto';
 import { UpdateProductDto } from './dtos/update-product.dto';
 import { ProductService } from './product.service';
@@ -144,13 +143,13 @@ export class ProductController {
   }
 
   @Post('checkout')
-  async checkout(@Body() { paymentMethod, address }: CreateCheckoutDto, @GetUser() user: UserDocument) {
-    const { city, line1, line2, country, state, postalCode } = await this.addressService.findOneRecord({ _id: address });
+  async checkout(@GetUser() user: UserDocument) {
+    const { city, line1, line2, country, state, postalCode } = await this.addressService.findOneRecord({ _id: user.defaultAddress });
     const cart = await this.cartService.findOne({ creator: user._id });
     const { total } = this.cartService.calculateTax(cart.items);
     const paymentIntent = await this.stripeService.createPaymentIntent({
       currency: 'usd',
-      payment_method: paymentMethod,
+      payment_method: user.defaultPaymentMethod,
       amount: Math.round(total * 100),
       customer: user.customerId,
       confirm: true,
@@ -185,13 +184,13 @@ export class ProductController {
     for (const { item, quantity, selectedColor, selectedSize } of cart.items) {
       const order = await this.orderService.createRecord({
         customer: user._id,
-        address: address,
+        address: user.defaultAddress,
         //@ts-ignore
         product: item._id,
         quantity: quantity,
         selectedColor: selectedColor,
         selectedSize: selectedSize,
-        paymentMethod,
+        paymentMethod: user.defaultPaymentMethod,
         //@ts-ignore
         seller: item.creator._id,
         paymentIntent: paymentIntent.id,

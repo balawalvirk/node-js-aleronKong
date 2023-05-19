@@ -24,7 +24,7 @@ import { makeQuery, ParseObjectId, Roles, StripeService } from 'src/helpers';
 import { GetUser } from 'src/helpers/decorators/user.decorator';
 import { NotificationService } from 'src/notification/notification.service';
 import { CartService } from 'src/product/cart.service';
-import { FriendRequestStatus, NotificationType, SellerRequest, TransectionDuration, UserRoles, UserStatus } from 'src/types';
+import { NotificationType, SellerRequest, TransectionDuration, UserRoles, UserStatus } from 'src/types';
 import { UserDocument } from 'src/users/users.schema';
 import { ApproveRejectSellerDto } from './dtos/approve-reject-seller.dto';
 import { CompleteProfileDto } from './dtos/complete-profile.dto';
@@ -442,8 +442,15 @@ export class UserController {
 
   @Get('friend-request/find-all')
   async findAllFriendRequests(@GetUser() user: UserDocument, @Query() { receiver }: FindAllFriendRequestsQueryDto) {
-    if (!receiver) return await this.friendRequestService.findAllRecords({ sender: user._id });
-    else return await this.friendRequestService.findAllRecords({ receiver });
+    if (!receiver) return await this.friendRequestService.findAllRecords({ sender: user._id }).populate('receiver');
+    else return await this.friendRequestService.findAllRecords({ receiver }).populate('sender');
+  }
+
+  @Delete('friend-request/:id/delete')
+  async deleteFriendRequest(@Param('id', ParseObjectId) id: string) {
+    const friendRequest = await this.friendRequestService.deleteSingleRecord({ _id: id });
+    if (!friendRequest) throw new BadRequestException('Friend request does not exists.');
+    return friendRequest;
   }
 
   @Put('friend-request/:id/approve-reject')
