@@ -69,7 +69,7 @@ export class UserController {
   async findOne(@Param('id', ParseObjectId) id: string, @GetUser() user: UserDocument) {
     const userFound = await this.usersService.findOneRecord({ _id: id });
     const friendRequest = await this.friendRequestService.findOneRecord({ sender: user._id, receiver: id });
-    if (friendRequest) return { ...userFound, friendRequest };
+    if (friendRequest) return { ...userFound.toJSON(), friendRequest };
     else return userFound;
   }
 
