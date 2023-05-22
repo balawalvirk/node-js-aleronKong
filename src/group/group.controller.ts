@@ -25,7 +25,7 @@ import { UserDocument } from 'src/users/users.schema';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { PostsService } from 'src/posts/posts.service';
 import { CreatePostsDto } from 'src/posts/dtos/create-posts';
-import { GroupInvitationStatus, GroupPrivacy, MuteInterval, NotificationType, PostPrivacy, PostType } from 'src/types';
+import { GroupPrivacy, MuteInterval, NotificationType, PostPrivacy, PostType } from 'src/types';
 import { makeQuery, ParseObjectId } from 'src/helpers';
 import { FundService } from 'src/fundraising/fund.service';
 import { FundraisingService } from 'src/fundraising/fundraising.service';
@@ -42,7 +42,6 @@ import { RemoveMemberDto } from './dto/remove-member.dto';
 import { BanMemberDto } from './dto/ban-member.dto';
 import { CreateInvitationDto } from './dto/create-invitation.dto';
 import { GroupInvitationService } from './invitation.service';
-import { FindAllInvitationsQueryDto } from './dto/find-all-invitations.query.dto';
 
 @Controller('group')
 @UseGuards(JwtAuthGuard)
@@ -560,10 +559,9 @@ export class GroupController {
   // ==============================================================invitation apis=================================================================
   @Post('invitation/create')
   async createInvitation(@Body() { friend, group }: CreateInvitationDto, @GetUser() user: UserDocument) {
-    const invitationFound = await this.invitationService.findOneRecord({ user: user._id, group, friend });
-    if (invitationFound) throw new BadRequestException('Group request already exists.');
-    const invitation = await this.invitationService.create({ user: user._id, group, friend });
-    return invitation;
+    const invitation = await this.invitationService.findOneRecord({ user: user._id, group, friend });
+    if (invitation) throw new BadRequestException('Group request already exists.');
+    return await this.invitationService.create({ user: user._id, group, friend });
   }
 
   @Get('invitation/find-all')
@@ -584,7 +582,6 @@ export class GroupController {
     if (isApproved) {
       await this.notificationService.createRecord({
         type: NotificationType.GROUP_JOIN_REQUEST,
-
         // @ts-ignore
         group: invitation.group._id,
         message: `has sent a join request for ${invitation.group.name} group`,
@@ -600,7 +597,7 @@ export class GroupController {
         // @ts-ignore
         data: { group: invitation.group._id.toString(), type: NotificationType.GROUP_JOIN_REQUEST },
       });
-      await this.groupService.findOneRecordAndUpdate({ _id: id }, { $push: { requests: user._id } });
+      await this.groupService.findOneRecordAndUpdate({ _id: invitation.group }, { $push: { requests: user._id } });
     }
     return invitation;
   }
