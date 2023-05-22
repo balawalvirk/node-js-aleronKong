@@ -213,8 +213,8 @@ export class UserController {
     //@ts-ignore
     const isFriend = user.friends.find((friend) => friend.equals(id));
     if (!isFriend) throw new BadRequestException('User is not your friend.');
-    await this.usersService.findOneRecordAndUpdate({ _id: id }, { $pull: { friends: user._id } });
-    return await this.usersService.findOneRecordAndUpdate({ _id: user._id }, { $pull: { friends: id } });
+    await this.usersService.findOneRecordAndUpdate({ _id: user._id }, { $pull: { friends: id } });
+    return await this.usersService.findOneRecordAndUpdate({ _id: id }, { $pull: { friends: user._id } });
   }
 
   @Get('friend/find-all')
