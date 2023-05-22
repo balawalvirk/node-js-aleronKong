@@ -410,7 +410,6 @@ export class GroupController {
         return 'Request approved successfully.';
       } else {
         await this.groupService.findOneRecordAndUpdate({ _id: id }, { $pull: { requests: userId } });
-
         await this.notificationService.createRecord({
           group: group._id,
           sender: user._id,
@@ -589,29 +588,31 @@ export class GroupController {
     @Param('id', ParseObjectId) id: string,
     @GetUser() user: UserDocument
   ) {
-    const message: string = `${isApproved ? 'approve' : 'reject'} your group join request.`;
-    const type: string = isApproved ? NotificationType.GROUP_INVITATION_APPROVED : NotificationType.GROUP_INVITATION_REJECTED;
-    const invitation = await this.invitationService.findOneAndUpdate(
-      { _id: id },
-      { status: isApproved ? GroupInvitationStatus.APPROVED : GroupInvitationStatus.REJECTED }
-    );
+    const invitation = await this.invitationService.findOne({ _id: id });
+    if (!invitation) throw new BadRequestException('Group invitation does not exists.');
+    await this.invitationService.deleteSingleRecord({ _id: id });
+
     if (isApproved) {
-      await this.groupService.findOneRecordAndUpdate({ _id: invitation.group }, { $push: { members: invitation.friend } });
+      await this.notificationService.createRecord({
+        type: NotificationType.GROUP_JOIN_REQUEST,
+
+        // @ts-ignore
+        group: invitation.group._id,
+        message: `has sent a join request for ${invitation.group.name} group`,
+        sender: user._id,
+        //@ts-ignore
+        receiver: invitation.user,
+      });
+      //@ts-ignore
+
+      await this.firebaseService.sendNotification({
+        token: invitation.group.creator.fcmToken,
+        notification: { title: `${user.firstName} ${user.lastName} has sent a join request for ${invitation.group.name} group` },
+        // @ts-ignore
+        data: { group: invitation.group._id.toString(), type: NotificationType.GROUP_JOIN_REQUEST },
+      });
+      await this.groupService.findOneRecordAndUpdate({ _id: id }, { $push: { requests: user._id } });
     }
-
-    // await this.notificationService.createRecord({
-    //   sender: user._id,
-    //   receiver: invitation.user,
-    //   group: invitation.group,
-    //   message,
-    //   type,
-    // });
-    // await this.firebaseService.sendNotification({
-    //   token: invitation.friend.fcmToken,
-    //   notification: { title: `${invitation.friend.firstName} ${invitation.friend.lastName} ${message}` },
-    //   data: { group: invitation.group.toString(), type },
-    // });
-
     return invitation;
   }
 }

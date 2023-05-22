@@ -89,6 +89,7 @@ export enum NotificationType {
   GROUP_INVITATION = 'groupInvitation',
   GROUP_INVITATION_APPROVED = 'groupInvitationApproved',
   GROUP_INVITATION_REJECTED = 'groupInvitationRejected',
+  FRIEND_REQUEST = 'friendRequest',
 }
 
 export enum ReportType {

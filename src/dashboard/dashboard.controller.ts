@@ -5,13 +5,11 @@ import { OrderService } from 'src/order/order.service';
 import { ProductService } from 'src/product/product.service';
 import { SaleService } from 'src/product/sale.service';
 import { UserDocument } from 'src/users/users.schema';
-import { UsersService } from 'src/users/users.service';
 
 @Controller()
 @UseGuards(JwtAuthGuard)
 export class DashboardController {
   constructor(
-    private readonly userService: UsersService,
     private readonly productService: ProductService,
     private readonly orderService: OrderService,
     private readonly saleService: SaleService
