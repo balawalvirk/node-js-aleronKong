@@ -560,20 +560,9 @@ export class GroupController {
   // ==============================================================invitation apis=================================================================
   @Post('invitation/create')
   async createInvitation(@Body() { friend, group }: CreateInvitationDto, @GetUser() user: UserDocument) {
+    const invitationFound = await this.invitationService.findOneRecord({ user: user._id, group, friend });
+    if (invitationFound) throw new BadRequestException('Group request already exists.');
     const invitation = await this.invitationService.create({ user: user._id, group, friend });
-    // await this.notificationService.createRecord({
-    //   sender: user._id,
-    //   receiver: friend,
-    //   group,
-    //   message: 'invite you to join group',
-    //   type: NotificationType.GROUP_INVITATION,
-    // });
-    // await this.firebaseService.sendNotification({
-    //   token: invitation.friend.fcmToken,
-    //   notification: { title: `${user.firstName} ${user.lastName} invite you to join group` },
-    //   data: { group: group.toString(), type: NotificationType.GROUP_INVITATION },
-    // });
-
     return invitation;
   }
 
