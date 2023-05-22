@@ -19,10 +19,14 @@ export class GroupInvitationService extends BaseService<GroupInvitationDocument>
   }
 
   async find(filter: FilterQuery<GroupInvitationDocument>) {
-    return await this.groupInvitationModel.find(filter).populate(this.getPopulateFields()).lean();
+    return await this.groupInvitationModel.find(filter).populate(this.getPopulateFields());
   }
 
   async findOneAndUpdate(query: FilterQuery<GroupInvitationDocument>, updateQuery: UpdateQuery<GroupInvitationDocument>) {
-    return await this.groupInvitationModel.findOneAndUpdate(query, updateQuery, { new: true }).populate(this.getPopulateFields()).lean();
+    return await this.groupInvitationModel.findOneAndUpdate(query, updateQuery, { new: true }).populate(this.getPopulateFields());
+  }
+
+  async findOne(query: FilterQuery<GroupInvitationDocument>) {
+    return await this.groupInvitationModel.findOne(query).populate(this.getPopulateFields());
   }
 }

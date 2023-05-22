@@ -438,13 +438,33 @@ export class UserController {
   // *************************************************************************friend request apis***************************************************
   @Post('friend-request/create')
   async createFriendRequest(@GetUser() user: UserDocument, @Body('receiver', ParseObjectId) receiver: string) {
-    return await this.friendRequestService.createRecord({ receiver, sender: user._id });
+    const friendRequestExists = await this.friendRequestService.findOneRecord({ receiver, sender: user._id });
+    if (friendRequestExists) throw new BadRequestException('Friend request for this user exists already.');
+    const friendRequest = await this.friendRequestService.create({ receiver, sender: user._id });
+
+    await this.notificationService.createRecord({
+      sender: user._id,
+      receiver: receiver,
+      user: user._id,
+      message: 'sent you a friend request.',
+      type: NotificationType.FRIEND_REQUEST,
+    });
+
+    await this.firebaseService.sendNotification({
+      token: friendRequest.receiver.fcmToken,
+      notification: { title: `${user.firstName} ${user.lastName} sent you a friend request.` },
+      data: { user: user._id.toString(), type: NotificationType.FRIEND_REQUEST },
+    });
+
+    return friendRequest;
   }
 
   @Get('friend-request/find-all')
   async findAllFriendRequests(@GetUser() user: UserDocument, @Query() { receiver }: FindAllFriendRequestsQueryDto) {
-    if (!receiver) return await this.friendRequestService.findAllRecords({ sender: user._id }).populate('receiver');
-    else return await this.friendRequestService.findAllRecords({ receiver }).populate('sender');
+    let condition = {};
+    if (!receiver) condition = { sender: user._id };
+    else condition = { receiver };
+    return await this.friendRequestService.find(condition);
   }
 
   @Delete('friend-request/:id/delete')
@@ -456,11 +476,12 @@ export class UserController {
 
   @Put('friend-request/:id/approve-reject')
   async approveRejectFriendRequest(@Body('isApproved', new ParseBoolPipe()) isApproved: boolean, @Param('id', ParseObjectId) id: string) {
-    const deletedRequest = await this.friendRequestService.deleteSingleRecord({ _id: id });
+    const friendRequest = await this.friendRequestService.deleteSingleRecord({ _id: id });
+    if (!friendRequest) throw new BadRequestException('Friend Request does not exists.');
     if (isApproved) {
-      await this.usersService.findOneRecordAndUpdate({ _id: deletedRequest.sender }, { $push: { friends: deletedRequest.receiver } });
-      await this.usersService.findOneRecordAndUpdate({ _id: deletedRequest.receiver }, { $push: { friends: deletedRequest.sender } });
+      await this.usersService.findOneRecordAndUpdate({ _id: friendRequest.sender }, { $push: { friends: friendRequest.receiver } });
+      await this.usersService.findOneRecordAndUpdate({ _id: friendRequest.receiver }, { $push: { friends: friendRequest.sender } });
     }
-    return deletedRequest;
+    return friendRequest;
   }
 }
