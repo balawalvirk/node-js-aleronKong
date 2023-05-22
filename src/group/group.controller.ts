@@ -578,8 +578,8 @@ export class GroupController {
   }
 
   @Get('invitation/find-all')
-  async findAllInvitations(@Query() findAllInvitationsQueryDto: FindAllInvitationsQueryDto) {
-    return await this.invitationService.find(findAllInvitationsQueryDto);
+  async findAllInvitations(@GetUser() user: UserDocument) {
+    return await this.invitationService.find({ friend: user._id });
   }
 
   @Put('invitation/:id/accept-reject')
