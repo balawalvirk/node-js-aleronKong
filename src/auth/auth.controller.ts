@@ -132,7 +132,7 @@ export class AuthController {
       return {
         access_token,
         user: {
-          ...userFound,
+          ...userFound.toJSON(),
           unReadNotifications,
           unReadMessages,
           defaultPaymentMethod: paymentMethod,
