@@ -15,19 +15,8 @@ export class PostsService extends BaseService<PostDocument> {
     return [
       {
         path: 'comments',
-        options: { sort: { createdAt: -1 }, limit: 3 },
-        populate: [
-          { path: 'creator', select: 'firstName lastName avatar isGuildMember userName fcmToken enableNotifications' },
-          { path: 'reactions', populate: { path: 'user', select: 'firstName lastName avatar' } },
-          {
-            path: 'replies',
-            options: { sort: { createdAt: -1 } },
-            populate: [
-              { path: 'creator', select: 'firstName lastName avatar isGuildMember userName fcmToken enableNotifications' },
-              { path: 'reactions', populate: { path: 'user', select: 'firstName lastName avatar' } },
-            ],
-          },
-        ],
+        options: { sort: { createdAt: -1 } },
+        populate: [{ path: 'creator', select: 'firstName lastName avatar isGuildMember userName fcmToken enableNotifications' }],
       },
       { path: 'likes', select: 'firstName lastName avatar fcmToken' },
       { path: 'creator', select: 'firstName lastName avatar userName isGuildMember sellerId fcmToken enableNotifications' },
@@ -39,7 +28,8 @@ export class PostsService extends BaseService<PostDocument> {
   }
 
   async find(query: FilterQuery<PostDocument>, options?: QueryOptions<PostDocument>) {
-    return await this.postModel.find(query, {}, options).populate(this.getPopulateFields()).lean();
+    const posts = await this.postModel.find(query, {}, options).populate(this.getPopulateFields()).lean();
+    return posts.map((post) => ({ ...post, totalComments: post.comments.length, comments: post.comments.slice(0, 3) }));
   }
 
   async update(query: FilterQuery<PostDocument>, updateQuery: UpdateQuery<PostDocument>) {
