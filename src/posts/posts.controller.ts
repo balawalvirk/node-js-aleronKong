@@ -179,29 +179,46 @@ export class PostsController {
     let comment;
     if (createCommentDto.comment) {
       comment = await this.commentService.create({ content: createCommentDto.content, creator: user._id, comment: createCommentDto.comment });
-      await this.commentService.findOneRecordAndUpdate({ _id: createCommentDto.comment }, { $push: { replies: comment._id } });
+      const updatedComment = await this.commentService
+        .findOneRecordAndUpdate({ _id: createCommentDto.comment }, { $push: { replies: comment._id } })
+        .populate('creator');
+
+      await this.notificationService.createRecord({
+        post: post._id,
+        message: 'replied to you comment.',
+        type: NotificationType.COMMENT_REPLIED,
+        sender: user._id,
+        //@ts-ignore
+        receiver: updatedComment.creator._id,
+      });
+
+      await this.firebaseService.sendNotification({
+        token: updatedComment.creator.fcmToken,
+        notification: { title: `${user.firstName} ${user.lastName} replied to you comment.` },
+        data: { post: post._id.toString(), type: NotificationType.COMMENT_REPLIED },
+      });
     } else {
       comment = await this.commentService.create({ content: createCommentDto.content, creator: user._id, post: id });
       await this.postsService.findOneRecordAndUpdate({ _id: id }, { $push: { comments: comment._id } });
-    }
 
-    //@ts-ignore
-    if (user._id != post.creator._id.toString()) {
-      await this.notificationService.createRecord({
-        post: post._id,
-        message: 'commented on your post.',
-        type: NotificationType.POST_COMMENTED,
-        sender: user._id,
-        //@ts-ignore
-        receiver: post.creator._id,
-      });
-      // check if user has fcm token then send notification to that user.
-      if (post.creator.fcmToken) {
-        await this.firebaseService.sendNotification({
-          token: post.creator.fcmToken,
-          notification: { title: `${user.firstName} ${user.lastName} commented on your post.` },
-          data: { post: post._id.toString(), type: NotificationType.POST_COMMENTED },
+      //@ts-ignore
+      if (user._id != post.creator._id.toString()) {
+        await this.notificationService.createRecord({
+          post: post._id,
+          message: 'commented on your post.',
+          type: NotificationType.POST_COMMENTED,
+          sender: user._id,
+          //@ts-ignore
+          receiver: post.creator._id,
         });
+        // check if user has fcm token then send notification to that user.
+        if (post.creator.fcmToken) {
+          await this.firebaseService.sendNotification({
+            token: post.creator.fcmToken,
+            notification: { title: `${user.firstName} ${user.lastName} commented on your post.` },
+            data: { post: post._id.toString(), type: NotificationType.POST_COMMENTED },
+          });
+        }
       }
     }
 
@@ -315,7 +332,7 @@ export class PostsController {
       //@ts-ignore
       if (user._id != comment.creator._id.toString()) {
         await this.notificationService.createRecord({
-          comment: comment._id,
+          post: comment.post,
           message: 'reacted to your comment.',
           type: NotificationType.COMMENT_REACTED,
           sender: user._id,
@@ -327,7 +344,7 @@ export class PostsController {
           await this.firebaseService.sendNotification({
             token: comment.creator.fcmToken,
             notification: { title: `${user.firstName} ${user.lastName} reacted on your comment.` },
-            data: { post: comment._id.toString(), type: NotificationType.COMMENT_REACTED },
+            data: { post: comment.post.toString(), type: NotificationType.COMMENT_REACTED },
           });
         }
       }
