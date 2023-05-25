@@ -32,6 +32,8 @@ export class CommentService extends BaseService<CommentDocument> {
   }
 
   async update(query: FilterQuery<CommentDocument>, updateQuery: UpdateQuery<CommentDocument>) {
-    return await this.commentModel.findOneAndUpdate(query, updateQuery, { new: true });
+    return await this.commentModel
+      .findOneAndUpdate(query, updateQuery, { new: true })
+      .populate({ path: 'creator', select: 'firstName lastName avatar' });
   }
 }
