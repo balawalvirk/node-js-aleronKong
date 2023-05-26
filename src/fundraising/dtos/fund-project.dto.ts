@@ -4,9 +4,6 @@ export class FundProjectDto {
   @IsNumber()
   amount: number;
 
-  @IsString()
-  paymentMethod: string;
-
   @IsMongoId()
   projectId: string;
 }

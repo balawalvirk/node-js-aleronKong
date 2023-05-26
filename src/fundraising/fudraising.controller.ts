@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, Delete, UseGuards, HttpException, HttpStatus, Query, Put, ParseBoolPipe } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Delete, UseGuards, HttpException, HttpStatus, Query, Put, BadRequestException } from '@nestjs/common';
 import { CreateFudraisingDto } from './dtos/create-fudraising.dto';
 import { PostsService } from 'src/posts/posts.service';
 import { NotificationType, PostPrivacy, PostStatus, PostType, UserRoles } from 'src/types';
@@ -11,7 +11,6 @@ import { RolesGuard } from 'src/auth/role.guard';
 import { FudraisingCategoryService } from './category.service';
 import { FudraisingSubCategoryService } from './subcategory.service';
 import { FundraisingService } from './fundraising.service';
-import { FundraisingDocument } from './fundraising.schema';
 import { FundProjectDto } from './dtos/fund-project.dto';
 import { FindAllFundraisingQueryDto } from './dtos/find-all-query.dto';
 import { FundService } from './fund.service';
@@ -42,12 +41,14 @@ export class FundraisingController {
   }
 
   @Post('fund')
-  async fundProject(@Body() { amount, projectId, paymentMethod }: FundProjectDto, @GetUser() user: UserDocument) {
+  async fundProject(@Body() { amount, projectId }: FundProjectDto, @GetUser() user: UserDocument) {
+    if (!user.defaultPaymentMethod) throw new BadRequestException('User does not have default Payment method');
     const post = await this.postService.findOne({ fundraising: projectId });
     if (!post) throw new HttpException('Fundraising project does not exists.', HttpStatus.BAD_REQUEST);
+
     await this.stripeService.createPaymentIntent({
       currency: 'usd',
-      payment_method: paymentMethod,
+      payment_method: user.defaultPaymentMethod,
       amount: Math.round(amount * 100),
       customer: user.customerId,
       confirm: true,
