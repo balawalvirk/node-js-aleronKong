@@ -41,6 +41,7 @@ export class CreateProductDto {
   @IsNumber()
   quantity: number;
 
+  @IsOptional()
   @IsBoolean()
   syncWithAmazon: boolean;
 

@@ -10,6 +10,10 @@ export class ModeratorService extends BaseService<ModeratorDocument> {
     super(moderatorModel);
   }
 
+  async create(data: ModeratorDocument | {}) {
+    return (await this.moderatorModel.create(data)).populate({ path: 'user', select: 'avatar firstName lastName' });
+  }
+
   async find(query: FilterQuery<ModeratorDocument>) {
     return await this.moderatorModel.find(query).populate({ path: 'user', select: 'avatar firstName lastName' });
   }

@@ -56,7 +56,7 @@ export class Product {
   @Prop({ enum: ProductStatus, required: true })
   status: string;
 
-  @Prop({ required: true })
+  @Prop()
   syncWithAmazon: boolean;
 
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true })
