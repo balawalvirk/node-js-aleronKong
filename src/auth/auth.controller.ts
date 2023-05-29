@@ -100,7 +100,7 @@ export class AuthController {
   }
 
   @Post('social-login')
-  async socialLogin(@Body() socialLoginDto: SocialLoginDto, @Ip() ip: string) {
+  async socialLogin(@Body() socialLoginDto: SocialLoginDto) {
     const userFound = await this.userService.findOneRecord({ email: socialLoginDto.email });
     if (!userFound) {
       const customerAccount = await this.userService.createCustomerAccount(

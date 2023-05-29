@@ -6,8 +6,10 @@ import { GetUser, makeQuery, ParseObjectId, StripeService } from 'src/helpers';
 import { UserDocument } from 'src/users/users.schema';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { UsersService } from 'src/users/users.service';
-import { UserRoles } from 'src/types';
+import { NotificationType, UserRoles } from 'src/types';
 import { FindAllPackagesQueryDto } from './dto/find-all-query.dto';
+import { NotificationService } from 'src/notification/notification.service';
+import { FirebaseService } from 'src/firebase/firebase.service';
 
 @Controller('package')
 @UseGuards(JwtAuthGuard)
@@ -15,7 +17,9 @@ export class PackageController {
   constructor(
     private readonly packageService: PackageService,
     private readonly stripeService: StripeService,
-    private readonly userService: UsersService
+    private readonly userService: UsersService,
+    private readonly notificationService: NotificationService,
+    private readonly firebaseService: FirebaseService
   ) {}
 
   @Post('create')
@@ -105,7 +109,7 @@ export class PackageController {
 
   @Patch('subscribe/:id')
   async subscribe(@GetUser() user: UserDocument, @Param('id', ParseObjectId) id: string) {
-    const pkg = await this.packageService.findOneRecord({ _id: id }).populate({ path: 'creator', select: 'sellerId' });
+    const pkg = await this.packageService.findOneRecord({ _id: id }).populate({ path: 'creator', select: 'sellerId fcmToken' });
     if (!pkg) throw new BadRequestException('Package does not exists.');
 
     //check if user already subscribed to this package.
@@ -140,6 +144,24 @@ export class PackageController {
     } else {
       await this.userService.findOneRecordAndUpdate({ _id: user._id }, { $push: { supportingPackages: pkg._id } });
     }
+
+    if (!pkg.isGuildPackage) {
+      await this.notificationService.createRecord({
+        user: user._id,
+        sender: user._id,
+        //@ts-ignore
+        receiver: pkg.creator._id,
+        message: `subscribed your pacakge.`,
+        type: NotificationType.USER_SUPPORTING,
+      });
+
+      await this.firebaseService.sendNotification({
+        token: pkg.creator.fcmToken,
+        notification: { title: `${user.firstName} ${user.lastName} subscribed your pacakge.` },
+        data: { user: user._id.toString(), type: NotificationType.USER_SUPPORTING },
+      });
+    }
+
     return await this.packageService.findOneRecordAndUpdate({ _id: id }, { $push: { buyers: user._id } });
   }
 

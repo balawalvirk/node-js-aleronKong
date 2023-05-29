@@ -198,7 +198,9 @@ export class GroupController {
   @Put('update/:id')
   async update(@Param('id', ParseObjectId) id: string, @Body() updateGroupDto: UpdateGroupDto) {
     const group = await this.groupService.findOneRecord({ _id: id });
-    if (!group) throw new HttpException('Group not found.', HttpStatus.BAD_REQUEST);
+    if (!group) throw new BadRequestException('Group does not exists.');
+    const GroupWithName = await this.groupService.findOneRecord({ _id: { $ne: group._id }, name: updateGroupDto.name });
+    if (GroupWithName) throw new BadRequestException('A group with this name aleady exists.');
     return await this.groupService.findOneRecordAndUpdate({ _id: id }, updateGroupDto);
   }
 
@@ -525,7 +527,7 @@ export class GroupController {
     const group = await this.groupService.findOneRecord({ _id: createModeratorDto.group });
     if (!group) throw new HttpException('Group does not exists.', HttpStatus.BAD_REQUEST);
     if (group.creator.toString() != user._id) throw new UnauthorizedException();
-    const moderator = await this.moderatorService.createRecord(createModeratorDto);
+    const moderator = await this.moderatorService.create(createModeratorDto);
     await this.groupService.findOneRecordAndUpdate({ _id: createModeratorDto.group }, { $push: { moderators: moderator._id } });
     return moderator;
   }
