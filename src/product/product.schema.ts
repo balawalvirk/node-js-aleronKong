@@ -4,6 +4,7 @@ import { ProductStatus, ProductType } from 'src/types';
 import { User } from 'src/users/users.schema';
 import { ProductCategory } from './category.schema';
 import { Review } from '../review/review.schema';
+import { Track } from './tracking.schema';
 
 export type ProductDocument = Product & mongoose.Document;
 
@@ -121,6 +122,9 @@ export class Product {
 
   @Prop()
   isFree: boolean;
+
+  @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Track' }] })
+  tracks: Track[];
 }
 
 export const ProductSchema = SchemaFactory.createForClass(Product);

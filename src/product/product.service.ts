@@ -286,4 +286,68 @@ export class ProductService extends BaseService<ProductDocument> {
       },
     ]);
   }
+
+  async getBoughtProducts(query: FilterQuery<ProductDocument>) {
+    return await this.productModel.aggregate([
+      { $match: query },
+      {
+        $lookup: {
+          from: 'tracks',
+          localField: 'tracks',
+          foreignField: '_id',
+          as: 'tracks',
+        },
+      },
+      {
+        $lookup: {
+          from: 'users',
+          localField: 'creator',
+          foreignField: '_id',
+          as: 'creator',
+        },
+      },
+      {
+        $unwind: {
+          path: '$creator',
+        },
+      },
+      {
+        $lookup: {
+          from: 'productcategories',
+          localField: 'category',
+          foreignField: '_id',
+          as: 'category',
+        },
+      },
+      {
+        $unwind: {
+          path: '$category',
+        },
+      },
+      {
+        $group: {
+          _id: '$creator._id',
+          authorFirstName: {
+            $first: '$creator.firstName',
+          },
+          authorLastName: {
+            $first: '$creator.lastName',
+          },
+          products: {
+            $push: '$$ROOT',
+          },
+          count: {
+            $sum: 1,
+          },
+        },
+      },
+
+      {
+        $sort: {
+          'products.tracks.isCompleted': -1,
+          'products.tracks.updatedAt': -1,
+        },
+      },
+    ]);
+  }
 }
