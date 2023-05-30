@@ -44,6 +44,8 @@ import { UpdateProductCategoryDto } from './dtos/update.category.dto';
 import { BuySeriesDto } from './dtos/buy-series.dto';
 import * as Shopify from 'shopify-api-node';
 import { CreateShowCaseProductDto } from './dtos/create-showcase-product.dto';
+import { TrackDto } from './dtos/track.dto';
+import { TrackService } from './track.service';
 
 @Controller('product')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -59,7 +61,8 @@ export class ProductController {
     private readonly userService: UsersService,
     private readonly reviewService: ReviewService,
     private readonly notificationService: NotificationService,
-    private readonly firebaseService: FirebaseService
+    private readonly firebaseService: FirebaseService,
+    private readonly trackService: TrackService
   ) {}
 
   @Post('create')
@@ -138,7 +141,7 @@ export class ProductController {
     } else {
       //@ts-ignore
       const totalProducts = [...user.boughtDigitalProducts, ...user.boughtWebSeries].map((product) => new ObjectId(product));
-      return await this.productService.findStoreProducts({ _id: { $in: totalProducts } });
+      return await this.productService.getBoughtProducts({ _id: { $in: totalProducts } });
     }
   }
 
@@ -478,5 +481,16 @@ export class ProductController {
     if (!shopifyAccessToken || !shopifyStoreName) throw new BadRequestException('User does not have required shopify credientals.');
     const shopify = new Shopify({ shopName: shopifyStoreName, accessToken: shopifyAccessToken });
     return await shopify.product.list();
+  }
+
+  // ---------------------------------------------tracking apis-------------------------------------------------------------------------------
+  @Post('track')
+  async track(@Body() trackDto: TrackDto, @GetUser() user: UserDocument) {
+    const { product, ...rest } = trackDto;
+    const trackFound = await this.trackService.findOneRecordAndUpdate({ user: user._id, product }, rest);
+    if (trackFound) return trackFound;
+    const track = await this.trackService.createRecord({ ...trackDto, user: user._id });
+    await this.productService.findOneRecordAndUpdate({ _id: product }, { $push: { tracks: track._id } });
+    return track;
   }
 }

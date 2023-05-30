@@ -3,8 +3,6 @@ import { ProductService } from './product.service';
 import { ProductController } from './product.controller';
 import { Product, ProductSchema } from './product.schema';
 import { MongooseModule } from '@nestjs/mongoose';
-import { Collection, CollectionSchema } from './collection.schema';
-import { CollectionService } from './collection.service';
 import { StripeService } from 'src/helpers';
 import { AddressModule } from 'src/address/address.module';
 import { ProductCategory, ProductCategorySchema } from './category.schema';
@@ -18,6 +16,8 @@ import { UsersModule } from 'src/users/users.module';
 import { NotificationModule } from 'src/notification/notification.module';
 import { FirebaseModule } from 'src/firebase/firebase.module';
 import { ReviewModule } from 'src/review/review.module';
+import { Track, TrackSchema } from './tracking.schema';
+import { TrackService } from './track.service';
 
 @Module({
   imports: [
@@ -25,6 +25,7 @@ import { ReviewModule } from 'src/review/review.module';
     MongooseModule.forFeature([{ name: ProductCategory.name, schema: ProductCategorySchema }]),
     MongooseModule.forFeature([{ name: Cart.name, schema: CartSchema }]),
     MongooseModule.forFeature([{ name: Sale.name, schema: SaleSchema }]),
+    MongooseModule.forFeature([{ name: Track.name, schema: TrackSchema }]),
     ReviewModule,
     AddressModule,
     OrderModule,
@@ -33,7 +34,7 @@ import { ReviewModule } from 'src/review/review.module';
     FirebaseModule,
   ],
   controllers: [ProductController],
-  providers: [ProductService, StripeService, ProductCategoryService, CartService, SaleService],
+  providers: [ProductService, StripeService, ProductCategoryService, CartService, SaleService, TrackService],
   exports: [ProductService, CartService, SaleService],
 })
 export class ProductModule {}
