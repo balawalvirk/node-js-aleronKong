@@ -11,4 +11,7 @@ export class FindHomePostQueryDto {
   @IsOptional()
   @IsEnum(PostSort, { each: true })
   sort: string = PostSort.MOST_RECENT;
+
+  @IsOptional()
+  showDetails: boolean;
 }
