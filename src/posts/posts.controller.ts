@@ -100,7 +100,7 @@ export class PostsController {
 
   @Get('home')
   @UsePipes(new ValidationPipe({ transform: true }))
-  async findHomePosts(@GetUser() user: UserDocument, @Query() { limit, page, sort }: FindHomePostQueryDto) {
+  async findHomePosts(@GetUser() user: UserDocument, @Query() { limit, page, sort, showDetails }: FindHomePostQueryDto) {
     const $q = makeQuery({ page, limit });
     const options = { sort: this.postsService.getHomePostSort(sort), limit: $q.limit, skip: $q.skip };
     const followings = (await this.userService.findAllRecords({ friends: { $in: [user._id] } }).select('_id')).map((user) => user._id);
@@ -126,7 +126,7 @@ export class PostsController {
           ],
     };
 
-    const posts = await this.postsService.find(condition, options);
+    const posts = await this.postsService.find(condition, options, showDetails);
     const total = await this.postsService.countRecords(condition);
     const paginated = {
       total,
