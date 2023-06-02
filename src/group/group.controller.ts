@@ -177,7 +177,7 @@ export class GroupController {
     const $q = makeQuery({ page, limit });
     const options = { sort: { pin: -1, ...$q.sort }, limit: $q.limit, skip: $q.skip };
     const groups = (await this.groupService.findAllRecords({ 'members.member': user._id })).map((group) => group._id);
-    const condition = { group: { $in: groups } };
+    const condition = { group: { $in: groups }, creator: { $nin: user.blockedUsers } };
     const posts = await this.postService.find(condition, options);
     const total = await this.postService.countRecords(condition);
     const paginated = {
@@ -504,10 +504,10 @@ export class GroupController {
   }
 
   @Get(':id/post/find-all')
-  async findPostsOfGroups(@Param('id', ParseObjectId) id: string, @Query() { limit, page }: FindPostsOfGroupQueryDto) {
+  async findPostsOfGroups(@Param('id', ParseObjectId) id: string, @Query() { limit, page }: FindPostsOfGroupQueryDto, @GetUser() user: UserDocument) {
     const $q = makeQuery({ page, limit });
     const options = { sort: { feature: -1, pin: -1, ...$q.sort }, limit: $q.limit, skip: $q.skip };
-    const condition = { group: id };
+    const condition = { group: id, creator: { $nin: user.blockedUsers } };
     const posts = await this.postService.find(condition, options);
     const total = await this.postService.countRecords(condition);
     const paginated = {
