@@ -526,6 +526,10 @@ export class GroupController {
   async createModerator(@Body() createModeratorDto: CreateModeratorDto, @GetUser() user: UserDocument) {
     const group = await this.groupService.findOneRecord({ _id: createModeratorDto.group });
     if (!group) throw new HttpException('Group does not exists.', HttpStatus.BAD_REQUEST);
+
+    // check if user is already a moderator in this group
+    // @ts-ignore
+    if (group.moderators.includes(createModeratorDto.user)) throw new BadRequestException('This moderator already exists in this group.');
     if (group.creator.toString() != user._id) throw new UnauthorizedException();
     const moderator = await this.moderatorService.create(createModeratorDto);
     await this.groupService.findOneRecordAndUpdate({ _id: createModeratorDto.group }, { $push: { moderators: moderator._id } });
