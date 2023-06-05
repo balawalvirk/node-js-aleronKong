@@ -20,7 +20,7 @@ import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/role.guard';
 import { MessageService } from 'src/chat/message.service';
 import { FirebaseService } from 'src/firebase/firebase.service';
-import { makeQuery, ParseObjectId, Roles, StripeService } from 'src/helpers';
+import { makeQuery, PaginationDto, ParseObjectId, Roles, StripeService } from 'src/helpers';
 import { GetUser } from 'src/helpers/decorators/user.decorator';
 import { NotificationService } from 'src/notification/notification.service';
 import { CartService } from 'src/product/cart.service';
@@ -287,41 +287,20 @@ export class UserController {
         },
       },
 
-      // capabilities: {
-      //   card_payments: {
-      //     requested: false,
-      //   },
-      //   transfers: {
-      //     requested: false,
-      //   },
-
       // need to change this dynamically
-
       capabilities: {
         card_payments: {
-          requested: true,
+          requested: false,
         },
         transfers: {
-          requested: true,
+          requested: false,
         },
       },
     });
 
-    // await this.usersService.findOneRecordAndUpdate(
-    //   { _id: user._id },
-    //   { ip, sellerRequest: SellerRequest.PENDING, sellerId: seller.id, ...createSellerDto }
-    // );
-
-    // need to change this dynamically
     await this.usersService.findOneRecordAndUpdate(
       { _id: user._id },
-      {
-        ip,
-        sellerRequest: SellerRequest.APPROVED,
-        sellerId: seller.id,
-        role: [UserRoles.SELLER, UserRoles.CUSTOMER],
-        ...createSellerDto,
-      }
+      { ip, sellerRequest: SellerRequest.PENDING, sellerId: seller.id, ...createSellerDto }
     );
 
     const admin = await this.usersService.findOneRecord({ role: { $in: [UserRoles.ADMIN] } });
@@ -345,43 +324,46 @@ export class UserController {
   @Roles(UserRoles.ADMIN)
   @Put('seller/approve-reject')
   async approveRejectSeller(@Body() { sellerRequest, user }: ApproveRejectSellerDto) {
-    const { fcmToken, sellerId, _id } = await this.usersService.findOneRecord({ _id: user });
-    if (_id) throw new BadRequestException('User does not exists.');
+    const userFound = await this.usersService.findOneRecord({ _id: user });
+    if (!userFound) throw new BadRequestException('User does not exists.');
 
     if (sellerRequest === SellerRequest.APPROVED) {
       // seller reequest is approved make capabilites enabled
-      await this.stripeService.updateAccount(sellerId, {
+      await this.stripeService.updateAccount(userFound.sellerId, {
         capabilities: { transfers: { requested: true }, card_payments: { requested: true } },
         settings: {
           payouts: {
             schedule: {
-              interval: 'manual',
+              // ealrier interval was manual
+              // interval:"manual"
+              interval: 'daily',
+
               delay_days: 16,
             },
           },
         },
       });
       await this.usersService.findOneRecordAndUpdate(
-        { _id },
+        { _id: userFound._id },
         { role: [UserRoles.SELLER, UserRoles.CUSTOMER], sellerRequest: SellerRequest.APPROVED }
       );
     } else if (sellerRequest === SellerRequest.REJECTED) {
-      // seller reequest is rejected delete account
-      await this.stripeService.deleteAccount(sellerId);
+      // seller request is rejected delete account
+      await this.stripeService.deleteAccount(userFound.sellerId);
       await this.usersService.findOneRecordAndUpdate({ _id: user }, { sellerRequest: SellerRequest.REJECTED, $unset: { sellerId: 1 } });
     }
 
     await this.notificationService.createRecord({
       type: NotificationType.SELLER_REQUEST_APPROVED_REJECTED,
       message: `Your seller request has been ${sellerRequest}`,
-      receiver: _id,
+      receiver: userFound._id,
     });
 
-    if (fcmToken) {
+    if (userFound.fcmToken) {
       await this.firebaseService.sendNotification({
-        token: fcmToken,
+        token: userFound.fcmToken,
         notification: { title: `Your seller request has been ${sellerRequest}` },
-        data: { user: _id, type: NotificationType.SELLER_REQUEST_APPROVED_REJECTED },
+        data: { user: userFound._id, type: NotificationType.SELLER_REQUEST_APPROVED_REJECTED },
       });
     }
 
@@ -391,8 +373,36 @@ export class UserController {
   // api to find all seller request
   @Roles(UserRoles.ADMIN)
   @Get('seller/find-all')
-  async findAllSellerRequests() {
-    return await this.usersService.findAllRecords({ sellerRequest: SellerRequest.PENDING });
+  @UsePipes(new ValidationPipe({ transform: true }))
+  async findAllSellerRequests(@Query() { page, limit, query }: PaginationDto) {
+    const $q = makeQuery({ page, limit });
+    const options = { limit: $q.limit, skip: $q.skip, sort: $q.sort };
+    const condition = {
+      $or: [
+        {
+          $expr: {
+            $regexMatch: {
+              input: { $concat: ['$firstName', ' ', '$lastName'] },
+              regex: query,
+              options: 'i',
+            },
+          },
+        },
+      ],
+      sellerRequest: SellerRequest.PENDING,
+    };
+    const users = await this.usersService.findAllRecords(condition, options);
+    const total = await this.usersService.countRecords(condition);
+
+    const paginated = {
+      total: total,
+      pages: Math.ceil(total / $q.limit),
+      page: $q.page,
+      limit: $q.limit,
+      data: users,
+    };
+
+    return paginated;
   }
 
   @Get('seller/check-status')

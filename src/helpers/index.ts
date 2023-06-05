@@ -8,6 +8,7 @@ export * from './pipes/objectId.pipe';
 export * from './services/stripe.service';
 export * from './interceptors/transform.interceptor';
 export * from './decorators/role.decorator';
+export * from './dtos/pagination.dto';
 
 export const makeQuery = (q: IQuery) => {
   let page = parseInt(q.page) || 1;
