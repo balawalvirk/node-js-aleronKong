@@ -287,13 +287,12 @@ export class UserController {
         },
       },
 
-      // need to change this dynamically
       capabilities: {
         card_payments: {
-          requested: false,
+          requested: true,
         },
         transfers: {
-          requested: false,
+          requested: true,
         },
       },
     });
@@ -330,14 +329,12 @@ export class UserController {
     if (sellerRequest === SellerRequest.APPROVED) {
       // seller reequest is approved make capabilites enabled
       await this.stripeService.updateAccount(userFound.sellerId, {
-        capabilities: { transfers: { requested: true }, card_payments: { requested: true } },
         settings: {
           payouts: {
             schedule: {
               // ealrier interval was manual
               // interval:"manual"
               interval: 'daily',
-
               delay_days: 16,
             },
           },
