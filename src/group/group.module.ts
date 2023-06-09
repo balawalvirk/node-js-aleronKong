@@ -12,6 +12,7 @@ import { ModeratorService } from './moderator.service';
 import { MuteModule } from 'src/mute/mute.module';
 import { GroupInvitation, GroupInvitationSchema } from './invitation.schema';
 import { GroupInvitationService } from './invitation.service';
+import { ReportModule } from 'src/report/report.module';
 
 @Module({
   imports: [
@@ -23,6 +24,7 @@ import { GroupInvitationService } from './invitation.service';
     NotificationModule,
     FirebaseModule,
     MuteModule,
+    ReportModule,
   ],
   controllers: [GroupController],
   providers: [GroupService, ModeratorService, GroupInvitationService],

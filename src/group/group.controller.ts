@@ -25,7 +25,7 @@ import { UserDocument } from 'src/users/users.schema';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { PostsService } from 'src/posts/posts.service';
 import { CreatePostsDto } from 'src/posts/dtos/create-posts';
-import { GroupPrivacy, MuteInterval, NotificationType, PostPrivacy, PostType } from 'src/types';
+import { GroupPrivacy, MuteInterval, NotificationType, PostPrivacy, PostType, ReportType } from 'src/types';
 import { makeQuery, ParseObjectId } from 'src/helpers';
 import { FundService } from 'src/fundraising/fund.service';
 import { FundraisingService } from 'src/fundraising/fundraising.service';
@@ -42,6 +42,7 @@ import { RemoveMemberDto } from './dto/remove-member.dto';
 import { BanMemberDto } from './dto/ban-member.dto';
 import { CreateInvitationDto } from './dto/create-invitation.dto';
 import { GroupInvitationService } from './invitation.service';
+import { ReportService } from 'src/report/report.service';
 
 @Controller('group')
 @UseGuards(JwtAuthGuard)
@@ -55,7 +56,8 @@ export class GroupController {
     private readonly firebaseService: FirebaseService,
     private readonly moderatorService: ModeratorService,
     private readonly muteService: MuteService,
-    private readonly invitationService: GroupInvitationService
+    private readonly invitationService: GroupInvitationService,
+    private readonly reportService: ReportService
   ) {}
 
   @Post('create')
@@ -437,7 +439,16 @@ export class GroupController {
   async findAllGroups(@Query() { type, query, showModeratorGroups }: FindAllQueryDto, @GetUser() user: UserDocument) {
     let groups;
     if (type === 'forYou') {
-      groups = await this.groupService.findAllRecords({ name: { $regex: query, $options: 'i' }, 'members.member': user._id }, { createdAt: -1 });
+      const reports = await this.reportService.findAllRecords({ reporter: user._id, type: ReportType.GROUP });
+      const reportedGroups = reports.map((report) => report.group);
+      groups = await this.groupService.findAllRecords(
+        {
+          name: { $regex: query, $options: 'i' },
+          'members.member': user._id,
+          _id: { $nin: reportedGroups },
+        },
+        { createdAt: -1 }
+      );
     } else if (type === 'yourGroups') {
       groups = await this.groupService.findAllRecords(
         {
@@ -461,12 +472,6 @@ export class GroupController {
       groups = await this.groupService.findAllRecords();
     }
     return groups;
-  }
-
-  @Put('report/:id')
-  async report(@Param('id', ParseObjectId) id: string, @GetUser() user: UserDocument, @Body('reason') reason: string) {
-    await this.groupService.findOneRecordAndUpdate({ _id: id }, { $push: { reports: { reporter: user._id, reason } } });
-    return 'Report submitted successfully.';
   }
 
   @Put('mute')

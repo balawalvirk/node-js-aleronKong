@@ -24,7 +24,8 @@ import { ModeratorService } from 'src/group/moderator.service';
 import { makeQuery, ParseObjectId, Roles } from 'src/helpers';
 import { GetUser } from 'src/helpers/decorators/user.decorator';
 import { NotificationService } from 'src/notification/notification.service';
-import { NotificationType, PostPrivacy, PostStatus, UserRoles } from 'src/types';
+import { ReportService } from 'src/report/report.service';
+import { NotificationType, PostPrivacy, PostStatus, ReportType, UserRoles } from 'src/types';
 import { UserDocument } from 'src/users/users.schema';
 import { UsersService } from 'src/users/users.service';
 import { CommentService } from './comment.service';
@@ -52,7 +53,8 @@ export class PostsController {
     private readonly notificationService: NotificationService,
     private readonly reactionService: ReactionService,
     private readonly groupService: GroupService,
-    private readonly moderatorService: ModeratorService
+    private readonly moderatorService: ModeratorService,
+    private readonly reportService: ReportService
   ) {}
 
   @Roles(UserRoles.ADMIN)
@@ -104,10 +106,12 @@ export class PostsController {
     const $q = makeQuery({ page, limit });
     const options = { sort: this.postsService.getHomePostSort(sort), limit: $q.limit, skip: $q.skip };
     const followings = (await this.userService.findAllRecords({ friends: { $in: [user._id] } }).select('_id')).map((user) => user._id);
+    const reports = await this.reportService.findAllRecords({ reporter: user._id, type: ReportType.USER });
+    const reportedUsers = reports.map((report) => report.user);
     // find all groups that user has joined
     const groups = (await this.groupService.findAllRecords({ 'members.member': user._id })).map((group) => group._id);
     const condition = {
-      creator: { $nin: user.blockedUsers },
+      creator: { $nin: [...user.blockedUsers, ...reportedUsers] },
       isBlocked: false,
       status: PostStatus.ACTIVE,
       $or: user.isGuildMember

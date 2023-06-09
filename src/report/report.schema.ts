@@ -11,13 +11,13 @@ export class Report {
   type: string;
 
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User' })
-  reportedUser: User;
+  user: User;
 
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true })
   reporter: User;
 
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Group' })
-  reportedGroup: Group;
+  group: Group;
 
   @Prop({ required: true })
   reason: string;
