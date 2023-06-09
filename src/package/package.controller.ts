@@ -151,13 +151,13 @@ export class PackageController {
         sender: user._id,
         //@ts-ignore
         receiver: pkg.creator._id,
-        message: `subscribed your pacakge.`,
+        message: `subscribed your package.`,
         type: NotificationType.USER_SUPPORTING,
       });
 
       await this.firebaseService.sendNotification({
         token: pkg.creator.fcmToken,
-        notification: { title: `${user.firstName} ${user.lastName} subscribed your pacakge.` },
+        notification: { title: `${user.firstName} ${user.lastName} subscribed your package.` },
         data: { user: user._id.toString(), type: NotificationType.USER_SUPPORTING },
       });
     }

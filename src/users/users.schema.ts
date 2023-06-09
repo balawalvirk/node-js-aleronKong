@@ -4,7 +4,6 @@ import { Address } from 'src/address/address.schema';
 import { Package } from 'src/package/package.schema';
 import { Product } from 'src/product/product.schema';
 import { AuthTypes, SellerRequest, UserRoles, UserStatus } from 'src/types';
-import { Report, ReportSchema } from './report.schema';
 
 export type UserDocument = User & Document;
 
@@ -69,14 +68,8 @@ export class User {
   @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }] })
   blockedUsers: User[];
 
-  @Prop({ type: [ReportSchema] })
-  reports: Report[];
-
   @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Package' }] })
   supportingPackages: Package[];
-
-  @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Package' }] })
-  supportingGuildPackages: Package[];
 
   @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Product' }] })
   boughtDigitalProducts: Product[];

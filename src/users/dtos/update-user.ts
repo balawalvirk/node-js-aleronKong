@@ -22,6 +22,22 @@ export class UpdateUserDto {
   enableNotifications: string;
 
   @IsOptional()
+  @IsBoolean()
+  newReleaseNotifications: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  newPostsNotifications: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  appUpdatesNotifications: boolean;
+
+  @IsOptional()
+  @IsBoolean()
+  receiveCalls: boolean;
+
+  @IsOptional()
   @IsString()
   shopifyStoreName: string;
 

@@ -4,6 +4,7 @@ import { FirebaseModule } from 'src/firebase/firebase.module';
 import { GroupModule } from 'src/group/group.module';
 import { ModeratorService } from 'src/group/moderator.service';
 import { NotificationModule } from 'src/notification/notification.module';
+import { ReportModule } from 'src/report/report.module';
 import { UsersModule } from 'src/users/users.module';
 import { CommentSchema, Comment } from './comment.schema';
 import { CommentService } from './comment.service';
@@ -22,6 +23,7 @@ import { ReactionService } from './reaction.service';
     NotificationModule,
     FirebaseModule,
     forwardRef(() => GroupModule),
+    ReportModule,
   ],
   controllers: [PostsController],
   providers: [PostsService, CommentService, ReactionService],
