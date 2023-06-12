@@ -116,7 +116,7 @@ export class ProductController {
 
   @Get(':id/find-one')
   async findOne(@Param('id') id: string, @GetUser() user: UserDocument) {
-    const product = await this.productService.findOneRecord({ _id: id }).populate('category');
+    const product = await this.productService.findOne({ _id: id });
     if (!product) throw new BadRequestException('Product does not exists.');
     //@ts-ignore
     const webSeries = user?.boughtWebSeries?.find((series) => series.equals(id));
