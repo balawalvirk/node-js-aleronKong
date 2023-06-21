@@ -20,6 +20,7 @@ import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/role.guard';
 import { MessageService } from 'src/chat/message.service';
 import { FirebaseService } from 'src/firebase/firebase.service';
+import { GroupService } from 'src/group/group.service';
 import { makeQuery, PaginationDto, ParseObjectId, Roles, StripeService } from 'src/helpers';
 import { GetUser } from 'src/helpers/decorators/user.decorator';
 import { NotificationService } from 'src/notification/notification.service';
@@ -49,7 +50,8 @@ export class UserController {
     private readonly firebaseService: FirebaseService,
     private readonly messageService: MessageService,
     private readonly cartService: CartService,
-    private readonly friendRequestService: FriendRequestService
+    private readonly friendRequestService: FriendRequestService,
+    private readonly groupService: GroupService
   ) {}
 
   @Put('update')
@@ -220,8 +222,20 @@ export class UserController {
   @Get('friend/find-all')
   @UsePipes(new ValidationPipe({ transform: true }))
   async findAllFriends(@GetUser() user: UserDocument, @Query('limit') limit: string) {
-    const userFound = await this.usersService.findOneRecord({ _id: user._id }).populate('friends', { limit: parseInt(limit) });
+    const userFound = await this.usersService.findOneRecord({ _id: user._id }).populate({ path: 'friends', options: { limit: parseInt(limit) } });
     return userFound.friends;
+  }
+
+  @Get('suggested-friends/find-all')
+  async findAllSuggestedFriends(@GetUser() user: UserDocument) {
+    const userFound = await this.usersService.findOneRecord({ _id: user._id }).populate({ path: 'friends', populate: { path: 'friends' } });
+    const suggestedFriends = userFound.friends.map((friend) => friend.friends).flat(Infinity);
+    const groups = await this.groupService.findAllRecords({ 'members.member': user._id }).populate('members.member');
+    const groupMembers = groups.map((group) => group.members).flat(Infinity);
+    //@ts-ignore
+    const members = groupMembers.map((val) => val.member);
+    const allFriends = [...suggestedFriends, ...members].slice(0, 5);
+    return allFriends;
   }
 
   // find count of unread messages and unread notifications
