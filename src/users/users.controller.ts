@@ -218,8 +218,9 @@ export class UserController {
   }
 
   @Get('friend/find-all')
-  async findAllFriends(@GetUser() user: UserDocument) {
-    const userFound = await this.usersService.findOneRecord({ _id: user._id }).populate('friends');
+  @UsePipes(new ValidationPipe({ transform: true }))
+  async findAllFriends(@GetUser() user: UserDocument, @Query('limit') limit: string) {
+    const userFound = await this.usersService.findOneRecord({ _id: user._id }).populate('friends', { limit: parseInt(limit) });
     return userFound.friends;
   }
 

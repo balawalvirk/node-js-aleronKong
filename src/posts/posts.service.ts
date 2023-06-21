@@ -30,6 +30,9 @@ export class PostsService extends BaseService<PostDocument> {
         populate: [
           { path: 'creator', select: 'firstName lastName avatar' },
           { path: 'group', select: 'name' },
+          { path: 'likes', select: 'firstName lastName avatar fcmToken' },
+          { path: 'fundraising', populate: [{ path: 'category' }, { path: 'subCategory' }] },
+          { path: 'tagged', select: 'firstName lastName avatar fcmToken enableNotifications' },
         ],
       },
     ];

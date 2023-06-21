@@ -12,5 +12,6 @@ import { NotificationModule } from 'src/notification/notification.module';
   imports: [MongooseModule.forFeature([{ name: Package.name, schema: PackageSchema }]), UsersModule, NotificationModule],
   controllers: [PackageController],
   providers: [PackageService, StripeService, FirebaseService],
+  exports: [PackageService],
 })
 export class PackageModule {}
