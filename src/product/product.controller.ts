@@ -21,7 +21,7 @@ import { RolesGuard } from 'src/auth/role.guard';
 import { CartService } from 'src/product/cart.service';
 import { makeQuery, ParseObjectId, Roles, StripeService } from 'src/helpers';
 import { GetUser } from 'src/helpers/decorators/user.decorator';
-import { NotificationType, ProductType, UserRoles } from 'src/types';
+import { BoughtProductsSort, NotificationType, ProductType, UserRoles } from 'src/types';
 import { UserDocument } from 'src/users/users.schema';
 import { ProductCategoryService } from './category.service';
 import { CreateProductCategoryDto } from './dtos/create-category.dto';
@@ -46,6 +46,7 @@ import * as Shopify from 'shopify-api-node';
 import { CreateShowCaseProductDto } from './dtos/create-showcase-product.dto';
 import { TrackDto } from './dtos/track.dto';
 import { TrackService } from './track.service';
+import { FindBoughtProductsQueryDto } from './dtos/find-bought.query.dto';
 
 @Controller('product')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -141,8 +142,19 @@ export class ProductController {
     } else {
       //@ts-ignore
       const totalProducts = [...user.boughtDigitalProducts, ...user.boughtWebSeries].map((product) => new ObjectId(product));
-      return await this.productService.getBoughtProducts({ _id: { $in: totalProducts } });
+      const sorting = this.productService.getBoughtProductsSorting(BoughtProductsSort.TITLE);
+      return await this.productService.getBoughtProducts({ _id: { $in: totalProducts } }, sorting);
     }
+  }
+
+  // find bought products
+  @Get('find-bought')
+  async findBoughtProducts(@Query() { sort }: FindBoughtProductsQueryDto, @GetUser() user: UserDocument) {
+    const ObjectId = mongoose.Types.ObjectId;
+    //@ts-ignore
+    const totalProducts = [...user.boughtDigitalProducts, ...user.boughtWebSeries].map((product) => new ObjectId(product));
+    const sorting = this.productService.getBoughtProductsSorting(sort);
+    return await this.productService.getBoughtProducts({ _id: { $in: totalProducts } }, sorting);
   }
 
   @Post('checkout')

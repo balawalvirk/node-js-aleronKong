@@ -1,19 +1,10 @@
-import { Transform } from 'class-transformer';
-import { IsBoolean, IsMongoId, IsOptional, IsString } from 'class-validator';
+import { IsOptional, IsString } from 'class-validator';
 
 export class FindAllQueryDto {
   @IsOptional()
+  @IsString({ each: true })
   type: string;
 
   @IsOptional()
   query: string = '';
-
-  @IsOptional()
-  @IsBoolean()
-  @Transform(({ value }) => {
-    if (value === 'true') return true;
-    if (value === 'false') return false;
-    return value;
-  })
-  showModeratorGroups: boolean;
 }

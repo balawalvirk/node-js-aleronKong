@@ -161,3 +161,9 @@ export enum FriendRequestStatus {
   APPROVED = 'approved',
   REJECTED = 'rejected',
 }
+
+export enum BoughtProductsSort {
+  TITLE = 'title',
+  AUTHOR = 'author',
+  UNREAD = 'unread',
+}

@@ -25,5 +25,8 @@ export class Comment {
 
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Comment' })
   comment: Comment;
+
+  @Prop()
+  gif: string;
 }
 export const CommentSchema = SchemaFactory.createForClass(Comment);
