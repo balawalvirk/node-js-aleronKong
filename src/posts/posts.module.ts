@@ -19,7 +19,7 @@ import { ReactionService } from './reaction.service';
     MongooseModule.forFeature([{ name: Posts.name, schema: PostSchema }]),
     MongooseModule.forFeature([{ name: Comment.name, schema: CommentSchema }]),
     MongooseModule.forFeature([{ name: Reaction.name, schema: ReactionSchema }]),
-    UsersModule,
+    forwardRef(() => UsersModule),
     NotificationModule,
     FirebaseModule,
     forwardRef(() => GroupModule),

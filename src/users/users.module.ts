@@ -1,7 +1,8 @@
-import { Module } from '@nestjs/common';
+import { forwardRef, Module } from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ChatModule } from 'src/chat/chat.module';
 import { FirebaseModule } from 'src/firebase/firebase.module';
+import { GroupModule } from 'src/group/group.module';
 import { StripeService } from 'src/helpers';
 import { NotificationModule } from 'src/notification/notification.module';
 import { OrderModule } from 'src/order/order.module';
@@ -21,6 +22,7 @@ import { UsersService } from './users.service';
     OrderModule,
     ChatModule,
     ProductModule,
+    GroupModule,
   ],
   controllers: [UserController],
   providers: [UsersService, StripeService, FriendRequestService],
