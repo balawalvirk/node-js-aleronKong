@@ -61,7 +61,7 @@ export class Posts {
   @Prop()
   gif: string;
 
-  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Post' })
+  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Posts' })
   sharedPost: Posts;
 }
 
