@@ -24,6 +24,14 @@ export class PostsService extends BaseService<PostDocument> {
       { path: 'fundraising', populate: [{ path: 'category' }, { path: 'subCategory' }] },
       { path: 'reactions', populate: { path: 'user', select: 'firstName lastName avatar' } },
       { path: 'tagged', select: 'firstName lastName avatar fcmToken enableNotifications' },
+      // populate options for shared post.
+      {
+        path: 'sharedPost',
+        populate: [
+          { path: 'creator', select: 'firstName lastName avatar' },
+          { path: 'group', select: 'name' },
+        ],
+      },
     ];
   }
 

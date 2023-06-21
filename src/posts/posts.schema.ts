@@ -57,6 +57,12 @@ export class Posts {
 
   @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }] })
   tagged: User[];
+
+  @Prop()
+  gif: string;
+
+  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Post' })
+  sharedPost: Posts;
 }
 
 export const PostSchema = SchemaFactory.createForClass(Posts);

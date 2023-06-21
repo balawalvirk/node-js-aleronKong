@@ -436,42 +436,52 @@ export class GroupController {
 
   @Get('find-all')
   @UsePipes(new ValidationPipe({ transform: true }))
-  async findAllGroups(@Query() { type, query, showModeratorGroups }: FindAllQueryDto, @GetUser() user: UserDocument) {
-    let groups;
-    if (type === 'forYou') {
-      const reports = await this.reportService.findAllRecords({ reporter: user._id, type: ReportType.GROUP });
-      const reportedGroups = reports.map((report) => report.group);
-      groups = await this.groupService.findAllRecords(
-        {
-          name: { $regex: query, $options: 'i' },
-          'members.member': user._id,
-          _id: { $nin: reportedGroups },
-        },
-        { createdAt: -1 }
-      );
-    } else if (type === 'yourGroups') {
-      groups = await this.groupService.findAllRecords(
-        {
-          $and: [{ name: { $regex: query, $options: 'i' } }, { creator: user._id }],
-        },
-        { createdAt: -1 }
-      );
-    } else if (type === 'discover') {
-      groups = await this.groupService.findAllRecords(
-        {
-          $and: [{ name: { $regex: query, $options: 'i' } }, { 'members.member': { $ne: user._id }, creator: { $ne: user._id } }],
-        },
-        { createdAt: -1 }
-      );
-    }
-    // if moderator group is true then show all groups where user added as moderator
-    else if (showModeratorGroups) {
-      const groupIds = (await this.moderatorService.findAllRecords({ user: user._id })).map((moderator) => moderator.group);
-      groups = await this.groupService.findAllRecords({ _id: { $in: groupIds } });
+  async findAllGroups(@Query() { type, query }: FindAllQueryDto, @GetUser() user: UserDocument) {
+    if (type) {
+      let allGroups = [];
+      if (type.includes('forYou')) {
+        const reports = await this.reportService.findAllRecords({ reporter: user._id, type: ReportType.GROUP });
+        const reportedGroups = reports.map((report) => report.group);
+        const groups = await this.groupService.findAllRecords(
+          {
+            name: { $regex: query, $options: 'i' },
+            'members.member': user._id,
+            _id: { $nin: reportedGroups },
+          },
+          { createdAt: -1 }
+        );
+        console.log({ forYou: groups });
+        allGroups = [...allGroups, ...groups];
+      }
+      if (type.includes('yourGroups')) {
+        const groups = await this.groupService.findAllRecords(
+          {
+            $and: [{ name: { $regex: query, $options: 'i' } }, { creator: user._id }],
+          },
+          { createdAt: -1 }
+        );
+        console.log({ yourGroups: groups });
+        allGroups = [...allGroups, ...groups];
+      }
+      if (type.includes('discover')) {
+        const groups = await this.groupService.findAllRecords(
+          {
+            $and: [{ name: { $regex: query, $options: 'i' } }, { 'members.member': { $ne: user._id }, creator: { $ne: user._id } }],
+          },
+          { createdAt: -1 }
+        );
+        allGroups = [...allGroups, ...groups];
+      }
+      // if moderator group is true then show all groups where user added as moderator
+      if (type.includes('moderating')) {
+        const groupIds = (await this.moderatorService.findAllRecords({ user: user._id })).map((moderator) => moderator.group);
+        const groups = await this.groupService.findAllRecords({ _id: { $in: groupIds } });
+        allGroups = [...allGroups, ...groups];
+      }
+      return allGroups;
     } else {
-      groups = await this.groupService.findAllRecords();
+      return await this.groupService.findAllRecords();
     }
-    return groups;
   }
 
   @Put('mute')

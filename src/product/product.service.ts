@@ -2,6 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { FilterQuery, Model, QueryOptions, UpdateQuery } from 'mongoose';
 import { BaseService } from 'src/helpers/services/base.service';
+import { BoughtProductsSort } from 'src/types';
 import { Product, ProductDocument } from './product.schema';
 
 @Injectable()
@@ -287,7 +288,7 @@ export class ProductService extends BaseService<ProductDocument> {
     ]);
   }
 
-  async getBoughtProducts(query: FilterQuery<ProductDocument>) {
+  async getBoughtProducts(query: FilterQuery<ProductDocument>, sort: any) {
     return await this.productModel.aggregate([
       { $match: query },
       {
@@ -343,11 +344,20 @@ export class ProductService extends BaseService<ProductDocument> {
       },
 
       {
-        $sort: {
-          'products.tracks.isCompleted': -1,
-          'products.tracks.updatedAt': -1,
-        },
+        $sort: sort,
       },
     ]);
+  }
+
+  getBoughtProductsSorting(sort: string) {
+    if (sort === BoughtProductsSort.TITLE) {
+      return { 'products.title': 1 };
+    } else if (sort === BoughtProductsSort.AUTHOR) {
+      return { 'products.authorFirstName': 1, 'products.authorLastName': 1 };
+    } else if (sort === BoughtProductsSort.UNREAD) {
+      return { 'products.tracks.page': 1 };
+    } else {
+      return { 'products.tracks.isCompleted': -1, 'products.tracks.updatedAt': -1 };
+    }
   }
 }

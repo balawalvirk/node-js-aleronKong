@@ -7,4 +7,8 @@ export class CreateCommentDto {
   @IsOptional()
   @IsMongoId()
   comment: string;
+
+  @IsOptional()
+  @IsString()
+  gif: string;
 }

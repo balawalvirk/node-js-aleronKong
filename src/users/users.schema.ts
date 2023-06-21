@@ -3,7 +3,7 @@ import mongoose, { Document } from 'mongoose';
 import { Address } from 'src/address/address.schema';
 import { Package } from 'src/package/package.schema';
 import { Product } from 'src/product/product.schema';
-import { AuthTypes, SellerRequest, UserRoles, UserStatus } from 'src/types';
+import { AuthTypes, PostPrivacy, SellerRequest, UserRoles, UserStatus } from 'src/types';
 
 export type UserDocument = User & Document;
 
@@ -134,6 +134,9 @@ export class User {
 
   @Prop()
   goLive: boolean;
+
+  @Prop({ default: PostPrivacy.GUILD_MEMBERS })
+  postPrivay: string;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
