@@ -6,5 +6,11 @@ export class FindAllQueryDto {
   type: string;
 
   @IsOptional()
+  limit: string;
+
+  @IsOptional()
   query: string = '';
+
+  @IsOptional()
+  page: string;
 }

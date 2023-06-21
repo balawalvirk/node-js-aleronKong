@@ -72,6 +72,7 @@ export class GroupController {
     if (createPostDto.group) {
       const group = await this.groupService.findOneRecord({ _id: createPostDto.group });
       if (!group) throw new HttpException('Group does not exists.', HttpStatus.BAD_REQUEST);
+
       // check if current user is member of group.
       const member = group.members.find((member) => member.member.toString() == user._id);
       // check if member is banned or not
@@ -436,21 +437,19 @@ export class GroupController {
 
   @Get('find-all')
   @UsePipes(new ValidationPipe({ transform: true }))
-  async findAllGroups(@Query() { type, query }: FindAllQueryDto, @GetUser() user: UserDocument) {
+  async findAllGroups(@Query() { type, query, limit, page }: FindAllQueryDto, @GetUser() user: UserDocument) {
     if (type) {
+      const $q = makeQuery({ page, limit });
+      const options = { limit: $q.limit, sort: $q.sort };
       let allGroups = [];
       if (type.includes('forYou')) {
         const reports = await this.reportService.findAllRecords({ reporter: user._id, type: ReportType.GROUP });
         const reportedGroups = reports.map((report) => report.group);
         const groups = await this.groupService.findAllRecords(
-          {
-            name: { $regex: query, $options: 'i' },
-            'members.member': user._id,
-            _id: { $nin: reportedGroups },
-          },
-          { createdAt: -1 }
+          { name: { $regex: query, $options: 'i' }, 'members.member': user._id, _id: { $nin: reportedGroups } },
+          options
         );
-        console.log({ forYou: groups });
+
         allGroups = [...allGroups, ...groups];
       }
       if (type.includes('yourGroups')) {
@@ -458,9 +457,9 @@ export class GroupController {
           {
             $and: [{ name: { $regex: query, $options: 'i' } }, { creator: user._id }],
           },
-          { createdAt: -1 }
+          options
         );
-        console.log({ yourGroups: groups });
+
         allGroups = [...allGroups, ...groups];
       }
       if (type.includes('discover')) {
@@ -468,14 +467,14 @@ export class GroupController {
           {
             $and: [{ name: { $regex: query, $options: 'i' } }, { 'members.member': { $ne: user._id }, creator: { $ne: user._id } }],
           },
-          { createdAt: -1 }
+          options
         );
         allGroups = [...allGroups, ...groups];
       }
       // if moderator group is true then show all groups where user added as moderator
       if (type.includes('moderating')) {
         const groupIds = (await this.moderatorService.findAllRecords({ user: user._id })).map((moderator) => moderator.group);
-        const groups = await this.groupService.findAllRecords({ _id: { $in: groupIds } });
+        const groups = await this.groupService.findAllRecords({ _id: { $in: groupIds } }, options);
         allGroups = [...allGroups, ...groups];
       }
       return allGroups;
