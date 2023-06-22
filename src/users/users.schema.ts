@@ -136,7 +136,7 @@ export class User {
   goLive: boolean;
 
   @Prop({ default: PostPrivacy.GUILD_MEMBERS })
-  postPrivay: string;
+  postPrivacy: string;
 }
 
 export const UserSchema = SchemaFactory.createForClass(User);
