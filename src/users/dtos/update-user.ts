@@ -1,51 +1,56 @@
-import { IsString, IsDateString, IsOptional, IsBoolean } from 'class-validator';
+import { IsString, IsDateString, IsOptional, IsBoolean, IsEnum } from 'class-validator';
+import { PostPrivacy } from 'src/types';
 
 export class UpdateUserDto {
   @IsOptional()
   @IsString()
-  firstName: string;
+  firstName?: string;
 
   @IsOptional()
   @IsString()
-  lastName: string;
+  lastName?: string;
 
   @IsOptional()
   @IsDateString()
-  birthDate: Date;
+  birthDate?: Date;
 
   @IsOptional()
   @IsString()
-  avatar: string;
+  avatar?: string;
 
   @IsOptional()
   @IsBoolean()
-  enableNotifications: string;
+  enableNotifications?: string;
 
   @IsOptional()
   @IsBoolean()
-  newReleaseNotifications: boolean;
+  newReleaseNotifications?: boolean;
 
   @IsOptional()
   @IsBoolean()
-  newPostsNotifications: boolean;
+  newPostsNotifications?: boolean;
 
   @IsOptional()
   @IsBoolean()
-  appUpdatesNotifications: boolean;
+  appUpdatesNotifications?: boolean;
 
   @IsOptional()
   @IsBoolean()
-  receiveCalls: boolean;
+  receiveCalls?: boolean;
 
   @IsOptional()
   @IsString()
-  shopifyStoreName: string;
+  shopifyStoreName?: string;
 
   @IsOptional()
   @IsString()
-  shopifyAccessToken: string;
+  shopifyAccessToken?: string;
 
   @IsOptional()
-  @IsString()
-  goLive: boolean;
+  @IsBoolean()
+  goLive?: boolean;
+
+  @IsOptional()
+  @IsEnum(PostPrivacy, { each: true })
+  postPrivacy?: string;
 }

@@ -54,4 +54,7 @@ export class BroadcastController {
     this.socketService.triggerMessage('remove-broadcast', broadcast);
     return broadcast;
   }
+
+  @Post('/cloud-recording/acquire')
+  async acquire() {}
 }
