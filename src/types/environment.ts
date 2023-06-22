@@ -12,4 +12,6 @@ export interface IEnvironmentVariables {
   STRIPE_ACCOUNT_ID: string;
   AGORA_APP_ID: string;
   AGORA_APP_CERTIFICATE: string;
+  AGORA_CUSTOMER_ID: string;
+  AGORA_CUSTOMER_SECRET: string;
 }

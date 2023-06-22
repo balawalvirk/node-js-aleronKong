@@ -76,7 +76,7 @@ export class SearchController {
         users: this.userService.getMutalFriends(users, user),
         groups,
         products,
-        total: totalUsers + totalGroups + totalProducts,
+        total: totalUsers + totalGroups + totalProducts + totalPackages,
         totalUsers,
         totalGroups,
         totalProducts,
