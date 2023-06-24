@@ -92,6 +92,8 @@ export class ProductController {
 
   @Put(':id/update')
   async update(@Param('id') id: string, @Body() updateProductDto: UpdateProductDto, @GetUser() user: UserDocument) {
+    console.log({ this: 'this' });
+
     const product = await this.productService.findOneRecord({ _id: id });
     if (!product) throw new HttpException('Product does not exists.', HttpStatus.BAD_REQUEST);
     if (product.creator != user._id.toString()) throw new HttpException('Forbidden resource', HttpStatus.FORBIDDEN);
@@ -398,13 +400,13 @@ export class ProductController {
   }
 
   @Post(':id/add-to-cart')
-  async addItem(@GetUser() user: UserDocument, @Param('id', ParseObjectId) id: string, @Body() { selectedColor, selectedSize }: AddToCartDto) {
+  async addItem(@GetUser() user: UserDocument, @Param('id', ParseObjectId) id: string, @Body() addToCartDto: AddToCartDto) {
     const product = await this.productService.findOneRecord({ _id: id });
     if (!product) throw new HttpException('Product does not exists', HttpStatus.BAD_REQUEST);
     const cartExists = await this.cartService.findOneRecord({ creator: user._id });
     // check if item is added first time then create a cart object.
     if (!cartExists) {
-      const cart = await this.cartService.create({ creator: user._id, items: [{ item: id, selectedColor, selectedSize }] });
+      const cart = await this.cartService.create({ creator: user._id, items: [{ item: id, ...addToCartDto }] });
       const { total, subTotal, tax } = this.cartService.calculateTax(cart.items);
       return { ...cart.toJSON(), subTotal, total, tax };
       // otherwise add item in items array
@@ -412,7 +414,7 @@ export class ProductController {
       //@ts-ignore
       const item = cartExists.items.find((item) => item.item == id);
       if (item) throw new BadRequestException('You already added this item in cart.');
-      const cart = await this.cartService.findOneAndUpdate({ creator: user._id }, { $push: { items: { item: id, selectedColor, selectedSize } } });
+      const cart = await this.cartService.findOneAndUpdate({ creator: user._id }, { $push: { items: { item: id, ...addToCartDto } } });
       const { total, subTotal, tax } = this.cartService.calculateTax(cart.items);
       return { ...cart, total, subTotal, tax };
     }

@@ -221,21 +221,47 @@ export class UserController {
 
   @Get('friend/find-all')
   @UsePipes(new ValidationPipe({ transform: true }))
-  async findAllFriends(@GetUser() user: UserDocument, @Query('limit') limit: string) {
-    const userFound = await this.usersService.findOneRecord({ _id: user._id }).populate({ path: 'friends', options: { limit: parseInt(limit) } });
-    return userFound.friends;
+  async findAllFriends(@GetUser() user: UserDocument, @Query() { limit, page }: PaginationDto) {
+    const $q = makeQuery({ page, limit });
+    const condition = { _id: { $in: user.friends } };
+    const options = { sort: $q.sort, limit: $q.limit, skip: $q.skip };
+    const friends = await this.usersService.findAllRecords(condition, options);
+    const total = await this.usersService.countRecords(condition);
+    const paginated = {
+      total,
+      pages: Math.round(total / $q.limit),
+      page: $q.page,
+      limit: $q.limit,
+      data: friends,
+    };
+    return paginated;
   }
 
   @Get('suggested-friends/find-all')
-  async findAllSuggestedFriends(@GetUser() user: UserDocument) {
-    const userFound = await this.usersService.findOneRecord({ _id: user._id }).populate({ path: 'friends', populate: { path: 'friends' } });
+  async findAllSuggestedFriends(@GetUser() user: UserDocument, @Query() { limit, page }: PaginationDto) {
+    const userFound = await this.usersService.findOneRecord({ _id: user._id }).populate({ path: 'friends' });
     const suggestedFriends = userFound.friends.map((friend) => friend.friends).flat(Infinity);
-    const groups = await this.groupService.findAllRecords({ 'members.member': user._id }).populate('members.member');
-    const groupMembers = groups.map((group) => group.members).flat(Infinity);
-    //@ts-ignore
-    const members = groupMembers.map((val) => val.member);
-    const allFriends = [...suggestedFriends, ...members].slice(0, 5);
-    return allFriends;
+    const groups = await this.groupService.findAllRecords({ 'members.member': user._id });
+    const groupMembers = groups
+      .map((group) => group.members)
+      .flat(Infinity)
+      //@ts-ignore
+      .map((member) => member.member);
+    const allUsers = [...suggestedFriends, ...groupMembers].filter((usr) => !usr.equals(user._id));
+
+    const $q = makeQuery({ page, limit });
+    const condition = { _id: { $in: allUsers } };
+    const options = { sort: $q.sort, limit: $q.limit, skip: $q.skip };
+    const friends = await this.usersService.findAllRecords(condition, options);
+    const total = await this.usersService.countRecords(condition);
+    const paginated = {
+      total,
+      pages: Math.round(total / $q.limit),
+      page: $q.page,
+      limit: $q.limit,
+      data: friends,
+    };
+    return paginated;
   }
 
   // find count of unread messages and unread notifications
