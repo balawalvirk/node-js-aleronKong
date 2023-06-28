@@ -53,6 +53,11 @@ export class BroadcastController {
     return await this.broadcastService.findAllRecords().sort({ createdAt: -1 }).populate('user');
   }
 
+  @Get(':id/find-one')
+  async findOne(@Param('id', ParseObjectId) id: string) {
+    return await this.broadcastService.findOneRecord({ _id: id }).populate('user');
+  }
+
   @Delete(':id')
   async remove(@Param('id', ParseObjectId) id: string) {
     const broadcast = await this.broadcastService.deleteSingleRecord({ _id: id });
