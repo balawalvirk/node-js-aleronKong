@@ -38,12 +38,9 @@ export class PostsService extends BaseService<PostDocument> {
     ];
   }
 
-  async find(query: FilterQuery<PostDocument>, options?: QueryOptions<PostDocument>, showDetails?: boolean) {
+  async find(query: FilterQuery<PostDocument>, options?: QueryOptions<PostDocument>) {
     const posts = await this.postModel.find(query, {}, options).populate(this.getPopulateFields()).lean();
-    if (showDetails) return posts;
-    else {
-      return posts.map((post) => ({ ...post, totalComments: post.comments.length, comments: post.comments.slice(0, 3) }));
-    }
+    return posts.map((post) => ({ ...post, totalComments: post.comments.length, comments: post.comments.slice(0, 3) }));
   }
 
   async update(query: FilterQuery<PostDocument>, updateQuery: UpdateQuery<PostDocument>) {
