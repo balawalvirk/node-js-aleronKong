@@ -182,7 +182,7 @@ export class PostsController {
     if (!post) throw new BadRequestException('Post does not exists.');
     let comment;
     if (createCommentDto.comment) {
-      comment = await this.commentService.create({ content: createCommentDto.content, creator: user._id, comment: createCommentDto.comment });
+      comment = await this.commentService.create({ creator: user._id, ...createCommentDto });
       const updatedComment = await this.commentService
         .findOneRecordAndUpdate({ _id: createCommentDto.comment }, { $push: { replies: comment._id } })
         .populate('creator');
@@ -202,7 +202,7 @@ export class PostsController {
         data: { post: post._id.toString(), type: NotificationType.COMMENT_REPLIED },
       });
     } else {
-      comment = await this.commentService.create({ content: createCommentDto.content, creator: user._id, post: id });
+      comment = await this.commentService.create({ creator: user._id, post: id, ...createCommentDto });
       await this.postsService.findOneRecordAndUpdate({ _id: id }, { $push: { comments: comment._id } });
 
       //@ts-ignore
