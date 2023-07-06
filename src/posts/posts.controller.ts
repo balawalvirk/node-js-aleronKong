@@ -397,6 +397,6 @@ export class PostsController {
 
   @Get('tagged/find-all')
   async findTaggedPosts(@GetUser() user: UserDocument) {
-    return await this.postsService.find({ tagged: { $in: [user._id] } });
+    return await this.postsService.find({ tagged: { $in: [user._id] } }, { sort: { createdAt: -1 } });
   }
 }

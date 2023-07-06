@@ -1,6 +1,7 @@
-import { IsMongoId, IsString } from 'class-validator';
+import { IsMongoId, IsOptional, IsString } from 'class-validator';
 
 export class UpdateCommentDto {
+  @IsOptional()
   @IsString()
   content: string;
 
@@ -11,4 +12,8 @@ export class UpdateCommentDto {
   @IsString()
   @IsMongoId()
   commentId: string;
+
+  @IsOptional()
+  @IsString()
+  gif: string;
 }
