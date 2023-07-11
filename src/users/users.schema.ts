@@ -135,7 +135,7 @@ export class User {
   @Prop()
   goLive: boolean;
 
-  @Prop({ default: PostPrivacy.GUILD_MEMBERS })
+  @Prop({ default: PostPrivacy.PUBLIC })
   postPrivacy: string;
 }
 
