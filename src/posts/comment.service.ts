@@ -16,16 +16,56 @@ export class CommentService extends BaseService<CommentDocument> {
     ).populate({ path: 'creator', select: 'firstName lastName avatar isGuildMember userName fcmToken enableNotifications' });
   }
 
+  getRepliesPopulateFields() {
+    return {
+      path: 'replies',
+      options: { sort: { createdAt: -1 } },
+      populate: [
+        { path: 'creator', select: 'firstName lastName avatar isGuildMember userName fcmToken enableNotifications' },
+        { path: 'reactions', populate: { path: 'user', select: 'firstName lastName avatar' } },
+      ],
+    };
+  }
+
   async find(query: FilterQuery<CommentDocument>, options?: QueryOptions<CommentDocument>) {
     return await this.commentModel.find(query, {}, options).populate([
       { path: 'creator', select: 'firstName lastName avatar isGuildMember userName fcmToken enableNotifications' },
       { path: 'reactions', populate: { path: 'user', select: 'firstName lastName avatar' } },
+      // populate replies upto 4 levels
       {
+        // first level of population
         path: 'replies',
         options: { sort: { createdAt: -1 } },
         populate: [
           { path: 'creator', select: 'firstName lastName avatar isGuildMember userName fcmToken enableNotifications' },
           { path: 'reactions', populate: { path: 'user', select: 'firstName lastName avatar' } },
+          // second level of population
+          {
+            path: 'replies',
+            options: { sort: { createdAt: -1 } },
+            populate: [
+              { path: 'creator', select: 'firstName lastName avatar isGuildMember userName fcmToken enableNotifications' },
+              { path: 'reactions', populate: { path: 'user', select: 'firstName lastName avatar' } },
+              // third level of population
+              {
+                path: 'replies',
+                options: { sort: { createdAt: -1 } },
+                populate: [
+                  { path: 'creator', select: 'firstName lastName avatar isGuildMember userName fcmToken enableNotifications' },
+                  { path: 'reactions', populate: { path: 'user', select: 'firstName lastName avatar' } },
+                  //  fourth level of population
+                  {
+                    path: 'replies',
+                    options: { sort: { createdAt: -1 } },
+                    populate: [
+                      { path: 'creator', select: 'firstName lastName avatar isGuildMember userName fcmToken enableNotifications' },
+                      { path: 'reactions', populate: { path: 'user', select: 'firstName lastName avatar' } },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
         ],
       },
     ]);
