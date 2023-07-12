@@ -130,7 +130,7 @@ export class PostsController {
           ],
     };
 
-    const posts = await this.postsService.find(condition, options);
+    const posts = await this.postsService.findHomePosts(condition, options);
     const total = await this.postsService.countRecords(condition);
     const paginated = {
       total,

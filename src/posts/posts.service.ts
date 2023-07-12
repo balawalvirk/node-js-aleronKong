@@ -38,8 +38,72 @@ export class PostsService extends BaseService<PostDocument> {
     ];
   }
 
+  getHomePostpopulateFields() {
+    return [
+      {
+        path: 'comments',
+        options: { sort: { createdAt: -1 } },
+        populate: [
+          { path: 'creator', select: 'firstName lastName avatar isGuildMember userName fcmToken enableNotifications' },
+          {
+            // first level reply
+            path: 'replies',
+            options: { sort: { createdAt: -1 } },
+            populate: [
+              { path: 'creator', select: 'firstName lastName avatar isGuildMember userName fcmToken enableNotifications' },
+              {
+                // second level reply
+                path: 'replies',
+                options: { sort: { createdAt: -1 } },
+                populate: [
+                  {
+                    path: 'creator',
+                    select: 'firstName lastName avatar isGuildMember userName fcmToken enableNotifications',
+                  },
+                  {
+                    // third level reply
+                    path: 'replies',
+                    options: { sort: { createdAt: -1 } },
+                    populate: [
+                      {
+                        path: 'creator',
+                        select: 'firstName lastName avatar isGuildMember userName fcmToken enableNotifications',
+                      },
+                    ],
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+      { path: 'likes', select: 'firstName lastName avatar fcmToken' },
+      { path: 'creator', select: 'firstName lastName avatar userName isGuildMember sellerId fcmToken enableNotifications' },
+      { path: 'group', select: 'name' },
+      { path: 'fundraising', populate: [{ path: 'category' }, { path: 'subCategory' }] },
+      { path: 'reactions', populate: { path: 'user', select: 'firstName lastName avatar' } },
+      { path: 'tagged', select: 'firstName lastName avatar fcmToken enableNotifications' },
+      // populate options for shared post.
+      {
+        path: 'sharedPost',
+        populate: [
+          { path: 'creator', select: 'firstName lastName avatar' },
+          { path: 'group', select: 'name' },
+          { path: 'likes', select: 'firstName lastName avatar fcmToken' },
+          { path: 'fundraising', populate: [{ path: 'category' }, { path: 'subCategory' }] },
+          { path: 'tagged', select: 'firstName lastName avatar fcmToken enableNotifications' },
+        ],
+      },
+    ];
+  }
+
   async find(query: FilterQuery<PostDocument>, options?: QueryOptions<PostDocument>) {
     const posts = await this.postModel.find(query, {}, options).populate(this.getPopulateFields()).lean();
+    return posts.map((post) => ({ ...post, totalComments: post.comments.length, comments: post.comments.slice(0, 3) }));
+  }
+
+  async findHomePosts(query: FilterQuery<PostDocument>, options?: QueryOptions<PostDocument>) {
+    const posts = await this.postModel.find(query, {}, options).populate(this.getHomePostpopulateFields()).lean();
     return posts.map((post) => ({ ...post, totalComments: post.comments.length, comments: post.comments.slice(0, 3) }));
   }
 
