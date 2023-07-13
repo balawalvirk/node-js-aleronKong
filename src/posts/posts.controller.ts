@@ -332,26 +332,6 @@ export class PostsController {
       if (!comment) throw new BadRequestException('Comment does not exist.');
       const reaction = await this.reactionService.create({ user: user._id, emoji: addReactionsDto.emoji, comment: comment._id });
       await this.commentService.findOneRecordAndUpdate({ _id: comment._id }, { $push: { reactions: reaction._id } });
-
-      //@ts-ignore
-      if (user._id != comment.creator._id.toString()) {
-        await this.notificationService.createRecord({
-          post: comment.post,
-          message: 'reacted to your comment.',
-          type: NotificationType.COMMENT_REACTED,
-          sender: user._id,
-          //@ts-ignore
-          receiver: comment.creator._id,
-        });
-
-        if (comment.creator.fcmToken) {
-          await this.firebaseService.sendNotification({
-            token: comment.creator.fcmToken,
-            notification: { title: `${user.firstName} ${user.lastName} reacted on your comment.` },
-            data: { post: comment.post.toString(), type: NotificationType.COMMENT_REACTED },
-          });
-        }
-      }
       return reaction;
     } else {
       const post = await this.postsService.findOneRecord({ _id: addReactionsDto.post }).populate('creator');
