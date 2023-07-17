@@ -5,6 +5,10 @@ export class TrackDto {
   product: string;
 
   @IsOptional()
+  @IsMongoId()
+  series: string;
+
+  @IsOptional()
   @IsNumber()
   page: string;
 

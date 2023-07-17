@@ -498,13 +498,31 @@ export class ProductController {
   }
 
   // ---------------------------------------------tracking apis-------------------------------------------------------------------------------
+
+  // api to add/update product or series track
   @Post('track')
   async track(@Body() trackDto: TrackDto, @GetUser() user: UserDocument) {
-    const { product, ...rest } = trackDto;
-    const trackFound = await this.trackService.findOneRecordAndUpdate({ user: user._id, product }, rest);
-    if (trackFound) return trackFound;
-    const track = await this.trackService.createRecord({ ...trackDto, user: user._id });
-    await this.productService.findOneRecordAndUpdate({ _id: product }, { $push: { tracks: track._id } });
-    return track;
+    const { product, series, ...rest } = trackDto;
+
+    // check if keep track to series
+    if (series) {
+      // if track found then update that track and return that track
+      const trackFound = await this.trackService.findOneRecordAndUpdate({ user: user._id, product: series }, rest);
+      if (trackFound) return trackFound;
+
+      // else create a new track in series and return that track
+      const track = await this.trackService.createRecord({ ...rest, user: user._id, product: series });
+      await this.productService.findOneRecordAndUpdate({ _id: product, 'series._id': series }, { $push: { 'series.tracks': track._id } });
+      return track;
+    }
+
+    // check if keep track to product
+    else {
+      const trackFound = await this.trackService.findOneRecordAndUpdate({ user: user._id, product }, rest);
+      if (trackFound) return trackFound;
+      const track = await this.trackService.createRecord({ ...trackDto, user: user._id });
+      await this.productService.findOneRecordAndUpdate({ _id: product }, { $push: { tracks: track._id } });
+      return track;
+    }
   }
 }

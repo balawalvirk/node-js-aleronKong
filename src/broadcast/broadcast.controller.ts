@@ -125,7 +125,6 @@ export class BroadcastController {
       },
     };
     const options = { headers: { Authorization } };
-
     const start = await this.httpService.axiosRef.post(url, body, options);
     return start.data;
   }

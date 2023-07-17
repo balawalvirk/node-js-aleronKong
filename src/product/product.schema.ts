@@ -21,6 +21,9 @@ class Series {
 
   @Prop()
   isFree: boolean;
+
+  @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Track' }] })
+  tracks: Track[];
 }
 
 export const SeriesSchema = SchemaFactory.createForClass(Series);
