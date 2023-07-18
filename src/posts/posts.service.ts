@@ -104,7 +104,7 @@ export class PostsService extends BaseService<PostDocument> {
 
   async findHomePosts(query: FilterQuery<PostDocument>, options?: QueryOptions<PostDocument>) {
     const posts = await this.postModel.find(query, {}, options).populate(this.getHomePostpopulateFields()).lean();
-    return posts.map((post) => ({ ...post, totalComments: post.comments.length, comments: post.comments.slice(0, 3) }));
+    return posts.map((post) => ({ ...post, comments: post.comments.slice(0, 3) }));
   }
 
   async update(query: FilterQuery<PostDocument>, updateQuery: UpdateQuery<PostDocument>) {

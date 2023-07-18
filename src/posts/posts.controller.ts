@@ -131,13 +131,21 @@ export class PostsController {
     };
 
     const posts = await this.postsService.findHomePosts(condition, options);
+
+    const totalPosts = await Promise.all(
+      posts.map(async (post) => {
+        const totalComments = await this.commentService.countRecords({ post: post._id });
+        return { ...post, totalComments };
+      })
+    );
+
     const total = await this.postsService.countRecords(condition);
     const paginated = {
       total,
       pages: Math.ceil(total / $q.limit),
       page: $q.page,
       limit: $q.limit,
-      data: posts,
+      data: totalPosts,
     };
     return paginated;
   }
@@ -182,7 +190,7 @@ export class PostsController {
     if (!post) throw new BadRequestException('Post does not exists.');
     let comment;
     if (createCommentDto.comment) {
-      comment = await this.commentService.create({ creator: user._id, ...createCommentDto });
+      comment = await this.commentService.create({ creator: user._id, post: id, ...createCommentDto });
       const updatedComment = await this.commentService
         .findOneRecordAndUpdate({ _id: createCommentDto.comment }, { $push: { replies: comment._id } })
         .populate('creator');
@@ -202,7 +210,7 @@ export class PostsController {
         data: { post: post._id.toString(), type: NotificationType.COMMENT_REPLIED },
       });
     } else {
-      comment = await this.commentService.create({ creator: user._id, post: id, ...createCommentDto });
+      comment = await this.commentService.create({ creator: user._id, post: id, root: true, ...createCommentDto });
       await this.postsService.findOneRecordAndUpdate({ _id: id }, { $push: { comments: comment._id } });
 
       //@ts-ignore
@@ -233,9 +241,9 @@ export class PostsController {
   async findAllComments(@Param('id', ParseObjectId) id: string, @Query() { page, limit }: FindAllCommentQueryDto) {
     const $q = makeQuery({ page, limit });
     const options = { limit: $q.limit, skip: $q.skip, sort: $q.sort };
-    const condition = { post: id };
+    const condition = { post: id, root: true };
     const comments = await this.commentService.find(condition, options);
-    const total = await this.commentService.countRecords(condition);
+    const total = await this.commentService.countRecords({ post: id });
     const paginated = {
       total: total,
       pages: Math.ceil(total / $q.limit),

@@ -28,5 +28,8 @@ export class Comment {
 
   @Prop()
   gif: string;
+
+  @Prop()
+  root: boolean;
 }
 export const CommentSchema = SchemaFactory.createForClass(Comment);
