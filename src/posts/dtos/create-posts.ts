@@ -29,6 +29,10 @@ export class CreatePostsDto {
   tagged?: string[];
 
   @IsOptional()
+  @IsMongoId({ each: true })
+  mentions?: string[];
+
+  @IsOptional()
   @IsString()
   gif?: string;
 

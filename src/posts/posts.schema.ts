@@ -58,6 +58,9 @@ export class Posts {
   @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }] })
   tagged: User[];
 
+  @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }] })
+  mentions: User[];
+
   @Prop()
   gif: string;
 
