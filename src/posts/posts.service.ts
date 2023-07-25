@@ -35,6 +35,7 @@ export class PostsService extends BaseService<PostDocument> {
           { path: 'tagged', select: 'firstName lastName avatar fcmToken enableNotifications' },
         ],
       },
+      { path: 'mentions', select: 'firstName lastName avatar' },
     ];
   }
 
@@ -45,6 +46,7 @@ export class PostsService extends BaseService<PostDocument> {
         options: { sort: { createdAt: -1 } },
         populate: [
           { path: 'creator', select: 'firstName lastName avatar isGuildMember userName fcmToken enableNotifications' },
+          { path: 'mentions', select: 'firstName lastName avatar' },
           {
             // first level reply
             path: 'replies',
@@ -94,6 +96,7 @@ export class PostsService extends BaseService<PostDocument> {
           { path: 'tagged', select: 'firstName lastName avatar fcmToken enableNotifications' },
         ],
       },
+      { path: 'mentions', select: 'firstName lastName avatar' },
     ];
   }
 

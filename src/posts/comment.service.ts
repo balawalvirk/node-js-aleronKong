@@ -31,6 +31,8 @@ export class CommentService extends BaseService<CommentDocument> {
     return await this.commentModel.find(query, {}, options).populate([
       { path: 'creator', select: 'firstName lastName avatar isGuildMember userName fcmToken enableNotifications' },
       { path: 'reactions', populate: { path: 'user', select: 'firstName lastName avatar' } },
+      { path: 'mentions', select: 'firstName lastName avatar' },
+
       // populate replies upto 4 levels
       {
         // first level of population

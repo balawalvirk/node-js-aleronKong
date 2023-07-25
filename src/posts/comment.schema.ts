@@ -31,5 +31,8 @@ export class Comment {
 
   @Prop()
   root: boolean;
+
+  @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }] })
+  mentions: User[];
 }
 export const CommentSchema = SchemaFactory.createForClass(Comment);
