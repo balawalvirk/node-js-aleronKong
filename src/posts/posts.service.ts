@@ -53,24 +53,21 @@ export class PostsService extends BaseService<PostDocument> {
             options: { sort: { createdAt: -1 } },
             populate: [
               { path: 'creator', select: 'firstName lastName avatar isGuildMember userName fcmToken enableNotifications' },
+              { path: 'mentions', select: 'firstName lastName avatar' },
               {
                 // second level reply
                 path: 'replies',
                 options: { sort: { createdAt: -1 } },
                 populate: [
-                  {
-                    path: 'creator',
-                    select: 'firstName lastName avatar isGuildMember userName fcmToken enableNotifications',
-                  },
+                  { path: 'creator', select: 'firstName lastName avatar isGuildMember userName fcmToken enableNotifications' },
+                  { path: 'mentions', select: 'firstName lastName avatar' },
                   {
                     // third level reply
                     path: 'replies',
                     options: { sort: { createdAt: -1 } },
                     populate: [
-                      {
-                        path: 'creator',
-                        select: 'firstName lastName avatar isGuildMember userName fcmToken enableNotifications',
-                      },
+                      { path: 'creator', select: 'firstName lastName avatar isGuildMember userName fcmToken enableNotifications' },
+                      { path: 'mentions', select: 'firstName lastName avatar' },
                     ],
                   },
                 ],
