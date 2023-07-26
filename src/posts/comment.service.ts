@@ -13,7 +13,10 @@ export class CommentService extends BaseService<CommentDocument> {
   async create(query: FilterQuery<CommentDocument>) {
     return await (
       await this.commentModel.create(query)
-    ).populate({ path: 'creator', select: 'firstName lastName avatar isGuildMember userName fcmToken enableNotifications' });
+    ).populate([
+      { path: 'creator', select: 'firstName lastName avatar isGuildMember userName fcmToken enableNotifications' },
+      { path: 'mentions', select: 'firstName lastName avatar' },
+    ]);
   }
 
   getRepliesPopulateFields() {
@@ -41,6 +44,7 @@ export class CommentService extends BaseService<CommentDocument> {
         populate: [
           { path: 'creator', select: 'firstName lastName avatar isGuildMember userName fcmToken enableNotifications' },
           { path: 'reactions', populate: { path: 'user', select: 'firstName lastName avatar' } },
+          { path: 'mentions', select: 'firstName lastName avatar' },
           // second level of population
           {
             path: 'replies',
@@ -48,6 +52,7 @@ export class CommentService extends BaseService<CommentDocument> {
             populate: [
               { path: 'creator', select: 'firstName lastName avatar isGuildMember userName fcmToken enableNotifications' },
               { path: 'reactions', populate: { path: 'user', select: 'firstName lastName avatar' } },
+              { path: 'mentions', select: 'firstName lastName avatar' },
               // third level of population
               {
                 path: 'replies',
@@ -55,6 +60,7 @@ export class CommentService extends BaseService<CommentDocument> {
                 populate: [
                   { path: 'creator', select: 'firstName lastName avatar isGuildMember userName fcmToken enableNotifications' },
                   { path: 'reactions', populate: { path: 'user', select: 'firstName lastName avatar' } },
+                  { path: 'mentions', select: 'firstName lastName avatar' },
                   //  fourth level of population
                   {
                     path: 'replies',
@@ -62,6 +68,7 @@ export class CommentService extends BaseService<CommentDocument> {
                     populate: [
                       { path: 'creator', select: 'firstName lastName avatar isGuildMember userName fcmToken enableNotifications' },
                       { path: 'reactions', populate: { path: 'user', select: 'firstName lastName avatar' } },
+                      { path: 'mentions', select: 'firstName lastName avatar' },
                     ],
                   },
                 ],
@@ -74,8 +81,9 @@ export class CommentService extends BaseService<CommentDocument> {
   }
 
   async update(query: FilterQuery<CommentDocument>, updateQuery: UpdateQuery<CommentDocument>) {
-    return await this.commentModel
-      .findOneAndUpdate(query, updateQuery, { new: true })
-      .populate({ path: 'creator', select: 'firstName lastName avatar' });
+    return await this.commentModel.findOneAndUpdate(query, updateQuery, { new: true }).populate([
+      { path: 'creator', select: 'firstName lastName avatar' },
+      { path: 'mentions', select: 'firstName lastName avatar' },
+    ]);
   }
 }
