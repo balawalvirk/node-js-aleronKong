@@ -16,7 +16,10 @@ export class PostsService extends BaseService<PostDocument> {
       {
         path: 'comments',
         options: { sort: { createdAt: -1 } },
-        populate: [{ path: 'creator', select: 'firstName lastName avatar isGuildMember userName fcmToken enableNotifications' }],
+        populate: [
+          { path: 'creator', select: 'firstName lastName avatar isGuildMember userName fcmToken enableNotifications' },
+          { path: 'mentions', select: 'firstName lastName avatar' },
+        ],
       },
       { path: 'likes', select: 'firstName lastName avatar fcmToken' },
       { path: 'creator', select: 'firstName lastName avatar userName isGuildMember sellerId fcmToken enableNotifications' },
@@ -24,6 +27,7 @@ export class PostsService extends BaseService<PostDocument> {
       { path: 'fundraising', populate: [{ path: 'category' }, { path: 'subCategory' }] },
       { path: 'reactions', populate: { path: 'user', select: 'firstName lastName avatar' } },
       { path: 'tagged', select: 'firstName lastName avatar fcmToken enableNotifications' },
+      { path: 'mentions', select: 'firstName lastName avatar' },
       // populate options for shared post.
       {
         path: 'sharedPost',
@@ -35,7 +39,6 @@ export class PostsService extends BaseService<PostDocument> {
           { path: 'tagged', select: 'firstName lastName avatar fcmToken enableNotifications' },
         ],
       },
-      { path: 'mentions', select: 'firstName lastName avatar' },
     ];
   }
 
@@ -128,5 +131,16 @@ export class PostsService extends BaseService<PostDocument> {
     if (sort === PostSort.MOST_RECENT) sortOrder = { createdAt: -1 };
     else if (sort === PostSort.RECENT_INTERACTIONS) sortOrder = { updatedAt: -1 };
     return { featured: -1, pin: -1, ...sortOrder };
+  }
+
+  async findPostMedia(id?: string) {
+    const posts = await this.postModel.find({ creator: id }).select('images videos');
+    let images = [];
+    let videos = [];
+    posts.forEach((post) => {
+      if (post.images.length > 0) images = [...images, ...post.images];
+      else if (post.videos.length > 0) videos = [...videos, ...post.videos];
+    });
+    return { images, videos };
   }
 }
