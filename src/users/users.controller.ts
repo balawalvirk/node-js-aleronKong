@@ -221,20 +221,24 @@ export class UserController {
 
   @Get('friend/find-all')
   @UsePipes(new ValidationPipe({ transform: true }))
-  async findAllFriends(@GetUser() user: UserDocument, @Query() { limit, page }: PaginationDto) {
-    const $q = makeQuery({ page, limit });
+  async findAllFriends(@GetUser() user: UserDocument, @Query() paginationDto: PaginationDto) {
     const condition = { _id: { $in: user.friends } };
-    const options = { sort: $q.sort, limit: $q.limit, skip: $q.skip };
-    const friends = await this.usersService.findAllRecords(condition, options);
-    const total = await this.usersService.countRecords(condition);
-    const paginated = {
-      total,
-      pages: Math.round(total / $q.limit),
-      page: $q.page,
-      limit: $q.limit,
-      data: friends,
-    };
-    return paginated;
+    if (paginationDto) {
+      const $q = makeQuery({ page: paginationDto.page, limit: paginationDto.limit });
+      const options = { sort: $q.sort, limit: $q.limit, skip: $q.skip };
+      const friends = await this.usersService.findAllRecords(condition, options);
+      const total = await this.usersService.countRecords(condition);
+      const paginated = {
+        total,
+        pages: Math.round(total / $q.limit),
+        page: $q.page,
+        limit: $q.limit,
+        data: friends,
+      };
+      return paginated;
+    } else {
+      return await this.usersService.findAllRecords(condition);
+    }
   }
 
   @Get('suggested-friends/find-all')

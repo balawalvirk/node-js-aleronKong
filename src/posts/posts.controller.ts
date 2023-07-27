@@ -387,4 +387,10 @@ export class PostsController {
   async findTaggedPosts(@GetUser() user: UserDocument) {
     return await this.postsService.find({ tagged: { $in: [user._id] } }, { sort: { createdAt: -1 } });
   }
+
+  @Get('media')
+  async findPostAssets(@GetUser() user: UserDocument) {
+    const media = await this.postsService.findPostMedia(user._id);
+    return media;
+  }
 }
