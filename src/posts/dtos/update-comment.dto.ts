@@ -16,4 +16,8 @@ export class UpdateCommentDto {
   @IsOptional()
   @IsString()
   gif: string;
+
+  @IsOptional()
+  @IsMongoId({ each: true })
+  mentions: string[];
 }

@@ -255,8 +255,8 @@ export class PostsController {
   }
 
   @Put('comment/update')
-  async updateComment(@Body() { commentId, content }: UpdateCommentDto) {
-    return await this.commentService.update({ _id: commentId }, { content });
+  async updateComment(@Body() { commentId, postId, ...rest }: UpdateCommentDto) {
+    return await this.commentService.update({ _id: commentId }, rest);
   }
 
   async isGroupModerator(postId: string, userId: string) {
