@@ -2,6 +2,7 @@ import { IsEnum, IsMongoId, IsOptional, IsString } from 'class-validator';
 import { PostPrivacy } from 'src/types';
 
 export class CreatePostsDto {
+  @IsOptional()
   @IsString()
   content: string;
 
