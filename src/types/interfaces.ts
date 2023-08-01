@@ -3,3 +3,8 @@ export interface IQuery {
   limit: string;
   query?: string;
 }
+
+export interface acquireRecording {
+  channelName: string;
+  uid: string;
+}
