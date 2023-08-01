@@ -24,6 +24,7 @@ import { DashboardModule } from './dashboard/dashboard.module';
 import { ReviewModule } from './review/review.module';
 import { MuteModule } from './mute/mute.module';
 import { BroadcastModule } from './broadcast/broadcast.module';
+import { PageModule } from './page/page.module';
 
 @Module({
   imports: [
@@ -49,6 +50,7 @@ import { BroadcastModule } from './broadcast/broadcast.module';
     ReviewModule,
     MuteModule,
     BroadcastModule,
+    PageModule,
   ],
   // global interceptor for transforming response.
   providers: [
