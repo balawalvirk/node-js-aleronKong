@@ -48,6 +48,7 @@ export enum PostPrivacy {
   FOLLOWERS = 'followers',
   PUBLIC = 'public',
   GROUP = 'group',
+  PAGE = 'page',
 }
 
 export enum PostType {

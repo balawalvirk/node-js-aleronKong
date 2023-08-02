@@ -43,6 +43,7 @@ import { BanMemberDto } from './dto/ban-member.dto';
 import { CreateInvitationDto } from './dto/create-invitation.dto';
 import { GroupInvitationService } from './invitation.service';
 import { ReportService } from 'src/report/report.service';
+import { PageService } from 'src/page/page.service';
 
 @Controller('group')
 @UseGuards(JwtAuthGuard)
@@ -57,7 +58,8 @@ export class GroupController {
     private readonly moderatorService: ModeratorService,
     private readonly muteService: MuteService,
     private readonly invitationService: GroupInvitationService,
-    private readonly reportService: ReportService
+    private readonly reportService: ReportService,
+    private readonly pageService: PageService
   ) {}
 
   @Post('create')
@@ -107,9 +109,18 @@ export class GroupController {
         }
       }
       return post;
+    } else if (createPostDto.page) {
+      const page = await this.pageService.findOneRecord({ _id: createPostDto.page });
+      if (!page) throw new BadRequestException('Page does not exists.');
+
+      const follower = page.followers.find((follower) => follower.follower.toString() == user._id);
+      if (follower?.banned) throw new ForbiddenException('You are not allowed to create post.');
+
+      const post = await this.postService.createPost({ ...createPostDto, privacy: PostPrivacy.PAGE, creator: user._id });
+      await this.pageService.findOneRecordAndUpdate({ _id: post.page }, { $push: { posts: post._id } });
+      return post;
     } else {
       const post = await this.postService.createPost({ ...createPostDto, creator: user._id });
-
       // check if user tagged to any friend
       if (post.tagged) {
         for (const taggedUser of post.tagged) {

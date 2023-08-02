@@ -2,6 +2,7 @@ import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
 import { Fundraising } from 'src/fundraising/fundraising.schema';
 import { Group } from 'src/group/group.schema';
+import { Page } from 'src/page/page.schema';
 import { PostPrivacy, PostStatus, PostType } from 'src/types';
 import { User } from 'src/users/users.schema';
 import { Comment } from './comment.schema';
@@ -66,6 +67,9 @@ export class Posts {
 
   @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Posts' })
   sharedPost: Posts;
+
+  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Page' })
+  page: Page;
 }
 
 export const PostSchema = SchemaFactory.createForClass(Posts);
