@@ -40,4 +40,8 @@ export class CreatePostsDto {
   @IsOptional()
   @IsMongoId()
   sharedPost?: string;
+
+  @IsOptional()
+  @IsMongoId()
+  page?: string;
 }

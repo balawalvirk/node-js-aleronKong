@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { Model } from 'mongoose';
+import { FilterQuery, Model } from 'mongoose';
 import { BaseService } from 'src/helpers/services/base.service';
 import { Page, PageDocument } from './page.schema';
 
@@ -8,5 +8,12 @@ import { Page, PageDocument } from './page.schema';
 export class PageService extends BaseService<PageDocument> {
   constructor(@InjectModel(Page.name) private PageModel: Model<PageDocument>) {
     super(PageModel);
+  }
+
+  async findAllFollowers(query: FilterQuery<PageDocument>) {
+    const pages = await this.PageModel.findOne(query)
+      .populate({ path: 'followers.follower', select: 'firstName lastName avatar' })
+      .select('followers -_id');
+    return pages.followers;
   }
 }

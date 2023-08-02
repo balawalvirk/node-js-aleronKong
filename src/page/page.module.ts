@@ -8,5 +8,6 @@ import { Page, PageSchema } from './page.schema';
   imports: [MongooseModule.forFeature([{ name: Page.name, schema: PageSchema }])],
   controllers: [PageController],
   providers: [PageService],
+  exports: [PageService],
 })
 export class PageModule {}
