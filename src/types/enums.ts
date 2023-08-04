@@ -168,3 +168,10 @@ export enum BoughtProductsSort {
   AUTHOR = 'author',
   UNREAD = 'unread',
 }
+
+export enum PageFilter {
+  ALL = 'all',
+  POPULAR = 'popular',
+  SUGGESTED = 'suggested',
+  LATEST = 'latest',
+}
