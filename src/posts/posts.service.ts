@@ -28,6 +28,8 @@ export class PostsService extends BaseService<PostDocument> {
       { path: 'reactions', populate: { path: 'user', select: 'firstName lastName avatar' } },
       { path: 'tagged', select: 'firstName lastName avatar fcmToken enableNotifications' },
       { path: 'mentions', select: 'firstName lastName avatar' },
+      { path: 'page', select: 'name profilePhoto' },
+
       // populate options for shared post.
       {
         path: 'sharedPost',
@@ -85,6 +87,7 @@ export class PostsService extends BaseService<PostDocument> {
       { path: 'fundraising', populate: [{ path: 'category' }, { path: 'subCategory' }] },
       { path: 'reactions', populate: { path: 'user', select: 'firstName lastName avatar' } },
       { path: 'tagged', select: 'firstName lastName avatar fcmToken enableNotifications' },
+      { path: 'page', select: 'name profilePhoto' },
       // populate options for shared post.
       {
         path: 'sharedPost',
