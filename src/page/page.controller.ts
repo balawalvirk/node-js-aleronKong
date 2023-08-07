@@ -35,19 +35,55 @@ export class PageController {
     const $q = makeQuery({ page, limit });
     const options = { limit: $q.limit, sort: $q.sort };
     if (filter === PageFilter.ALL) {
-      return await this.pageService.findAllRecords({ name: { $regex: query, $options: 'i' } }, options);
+      const condition = { name: { $regex: query, $options: 'i' } };
+      const total = await this.pageService.countRecords(condition);
+      const pages = await this.pageService.findAllRecords(condition, options);
+      return {
+        total,
+        pages: Math.floor(total / $q.limit),
+        page: $q.page,
+        limit: $q.limit,
+        data: pages,
+      };
     }
 
     if (filter === PageFilter.POPULAR) {
-      return await this.pageService.findAllRecords({ name: { $regex: query, $options: 'i' } }, options);
+      const condition = { name: { $regex: query, $options: 'i' } };
+      const total = await this.pageService.countRecords(condition);
+      const pages = await this.pageService.findAllRecords(condition, options);
+      return {
+        total,
+        pages: Math.floor(total / $q.limit),
+        page: $q.page,
+        limit: $q.limit,
+        data: pages,
+      };
     }
 
     if (filter === PageFilter.LATEST) {
-      return await this.pageService.findAllRecords({ name: { $regex: query, $options: 'i' } }, options);
+      const condition = { name: { $regex: query, $options: 'i' } };
+      const total = await this.pageService.countRecords(condition);
+      const pages = await this.pageService.findAllRecords(condition, options);
+      return {
+        total,
+        pages: Math.floor(total / $q.limit),
+        page: $q.page,
+        limit: $q.limit,
+        data: pages,
+      };
     }
 
     if (filter === PageFilter.SUGGESTED) {
-      return await this.pageService.findAllRecords({ name: { $regex: query, $options: 'i' } }, options);
+      const condition = { name: { $regex: query, $options: 'i' } };
+      const total = await this.pageService.countRecords(condition);
+      const pages = await this.pageService.findAllRecords(condition, options);
+      return {
+        total,
+        pages: Math.floor(total / $q.limit),
+        page: $q.page,
+        limit: $q.limit,
+        data: pages,
+      };
     }
   }
 
@@ -88,7 +124,7 @@ export class PageController {
 
   @Get('follow/find-all')
   async findAllfollowedPages(@GetUser() user: UserDocument) {
-    return await this.pageService.findAllRecords({ 'followers.follower': user._id });
+    return await this.pageService.findAllRecords({ 'followers.follower': user._id }).populate('creator');
   }
 
   // find all post of page that user follow
