@@ -2,7 +2,7 @@ import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
 import { FilterQuery, Model, QueryOptions, UpdateQuery } from 'mongoose';
 import { BaseService } from 'src/helpers/services/base.service';
-import { PostSort } from 'src/types';
+import { MediaType, PostSort } from 'src/types';
 import { PostDocument, Posts } from './posts.schema';
 
 @Injectable()
@@ -137,14 +137,25 @@ export class PostsService extends BaseService<PostDocument> {
     return { featured: -1, pin: -1, ...sortOrder };
   }
 
-  async findPostMedia(id?: string) {
-    const posts = await this.postModel.find({ creator: id }).select('images videos');
-    let images = [];
-    let videos = [];
-    posts.forEach((post) => {
-      if (post.images.length > 0) images = [...images, ...post.images];
-      else if (post.videos.length > 0) videos = [...videos, ...post.videos];
-    });
-    return { images, videos };
+  async findPostMedia(query: FilterQuery<PostDocument>, type: string) {
+    const posts = await this.postModel.find(query).select('images videos');
+
+    // retrive all videos
+    if (type === MediaType.VIDEO) {
+      let videos = [];
+      posts.forEach((post) => {
+        if (post.videos.length > 0) videos = [...videos, ...post.videos];
+      });
+      return videos;
+    }
+
+    // retrive all images
+    else if (type === MediaType.IMAGE) {
+      let images = [];
+      posts.forEach((post) => {
+        if (post.images.length > 0) images = [...images, ...post.images];
+      });
+      return images;
+    }
   }
 }

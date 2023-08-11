@@ -175,3 +175,8 @@ export enum PageFilter {
   SUGGESTED = 'suggested',
   LATEST = 'latest',
 }
+
+export enum MediaType {
+  VIDEO = 'video',
+  IMAGE = 'image',
+}
