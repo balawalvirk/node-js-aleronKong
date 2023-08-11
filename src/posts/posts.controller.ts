@@ -25,7 +25,7 @@ import { makeQuery, ParseObjectId, Roles } from 'src/helpers';
 import { GetUser } from 'src/helpers/decorators/user.decorator';
 import { NotificationService } from 'src/notification/notification.service';
 import { ReportService } from 'src/report/report.service';
-import { NotificationType, PostPrivacy, PostStatus, ReportType, UserRoles } from 'src/types';
+import { MediaType, NotificationType, PostPrivacy, PostStatus, ReportType, UserRoles } from 'src/types';
 import { UserDocument } from 'src/users/users.schema';
 import { UsersService } from 'src/users/users.service';
 import { CommentService } from './comment.service';
@@ -389,8 +389,9 @@ export class PostsController {
   }
 
   @Get('media')
-  async findPostAssets(@GetUser() user: UserDocument) {
-    const media = await this.postsService.findPostMedia(user._id);
-    return media;
+  @UsePipes(new ValidationPipe({ transform: true }))
+  async findPostAssets(@GetUser() user: UserDocument, @Query('type') type: string) {
+    const condition = { creator: user._id };
+    return await this.postsService.findPostMedia(condition, type);
   }
 }
