@@ -1,4 +1,4 @@
-import { Controller, Get, Post, Body, Param, UseGuards, Put, BadRequestException, Query, UsePipes, ValidationPipe } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, UseGuards, Put, BadRequestException, Query, UsePipes, ValidationPipe, Delete } from '@nestjs/common';
 import { PageService } from './page.service';
 import { CreatePageDto } from './dto/create-page.dto';
 import { UpdatePageDto } from './dto/update-page.dto';
@@ -167,5 +167,15 @@ export class PageController {
       data: posts,
     };
     return paginated;
+  }
+
+  @Delete(':id/delete')
+  async remove(@Param('id', ParseObjectId) id: string, @GetUser() user: UserDocument) {
+    const page = await this.pageService.findOneRecord({ _id: id });
+    if (!page) throw new BadRequestException('Page does not exist.');
+    if (page.creator.toString() != user._id) throw new BadRequestException('You cannot delete this page.');
+    await this.pageService.deleteSingleRecord({ _id: page._id });
+    await this.postService.deleteManyRecord({ page: page._id });
+    return page;
   }
 }
