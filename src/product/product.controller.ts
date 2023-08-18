@@ -512,7 +512,7 @@ export class ProductController {
 
       // else create a new track in series and return that track
       const track = await this.trackService.createRecord({ ...rest, user: user._id, product: series });
-      await this.productService.findOneRecordAndUpdate({ _id: product, 'series._id': series }, { $push: { 'series.tracks': track._id } });
+      await this.productService.findOneRecordAndUpdate({ _id: product, 'series._id': series }, { $push: { 'series.$.tracks': track._id } });
       return track;
     }
 

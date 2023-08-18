@@ -154,6 +154,7 @@ export class UserController {
     return bankAccount;
   }
 
+  // api to find all bank accounts
   @Get('bank-account/find-all')
   async findAllBankAccounts(@GetUser() user: UserDocument) {
     const bankAccounts = await this.stripeService.findAllBankAccounts(user.sellerId, { object: 'bank_account' });

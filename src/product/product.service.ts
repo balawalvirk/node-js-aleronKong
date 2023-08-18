@@ -1,6 +1,6 @@
 import { Injectable } from '@nestjs/common';
 import { InjectModel } from '@nestjs/mongoose';
-import { FilterQuery, Model, QueryOptions, UpdateQuery } from 'mongoose';
+import mongoose, { FilterQuery, Model, QueryOptions, UpdateQuery } from 'mongoose';
 import { BaseService } from 'src/helpers/services/base.service';
 import { BoughtProductsSort } from 'src/types';
 import { Product, ProductDocument } from './product.schema';
@@ -20,7 +20,9 @@ export class ProductService extends BaseService<ProductDocument> {
   }
 
   async findOne(query: FilterQuery<ProductDocument>) {
-    return await this.productModel.findOne(query).populate('category creator');
+    return await this.productModel
+      .findOne(query)
+      .populate([{ path: 'category' }, { path: 'creator' }, { path: 'series.tracks' }, { path: 'tracks' }]);
   }
 
   async update(query: FilterQuery<ProductDocument>, updateQuery: UpdateQuery<ProductDocument>) {
