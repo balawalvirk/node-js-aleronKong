@@ -180,3 +180,9 @@ export enum MediaType {
   VIDEO = 'video',
   IMAGE = 'image',
 }
+
+export enum EngagedPostFilter {
+  ALL = 'all',
+  LIKED = 'liked',
+  COMMENTED = 'commented',
+}

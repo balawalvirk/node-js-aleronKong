@@ -156,7 +156,26 @@ export class ProductController {
     //@ts-ignore
     const totalProducts = [...user.boughtDigitalProducts, ...user.boughtWebSeries].map((product) => new ObjectId(product));
     const sorting = this.productService.getBoughtProductsSorting(sort);
-    return await this.productService.getBoughtProducts({ _id: { $in: totalProducts } }, sorting);
+    const products = await this.productService.getBoughtProducts({ _id: { $in: totalProducts } }, sorting);
+
+    // code to check if user has completed all web series or not
+    for (const productObj of products) {
+      for (const product of productObj.products) {
+        // check if product array is empty
+        if (product.series.length > 0) {
+          const series = (await this.productService.findOneRecord({ _id: product._id })).series;
+          const tracks = await this.trackService.findAllRecords({ product: { $in: series }, user: user._id });
+
+          const completedTracks = tracks.filter((track) => track.isCompleted);
+
+          if (completedTracks.length === tracks.length) {
+            product.isWebSeriesCompleted = true;
+          }
+        }
+      }
+    }
+
+    return products;
   }
 
   @Post('checkout')
