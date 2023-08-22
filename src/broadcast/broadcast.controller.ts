@@ -1,26 +1,23 @@
-import { Controller, Get, Post, Body, Param, Delete, Header, UseGuards } from '@nestjs/common';
+import { Controller, Get, Post, Body, Param, Delete, Header, UseGuards, BadRequestException } from '@nestjs/common';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { GetUser, ParseObjectId, SocketGateway } from 'src/helpers';
 import { UserDocument } from 'src/users/users.schema';
 import { BroadcastService } from './broadcast.service';
 import { CreateBroadcastDto } from './dto/create-broadcast.dto';
 import { RtcRole, RtcTokenBuilder } from 'agora-token';
-import { AGORA_RTC_ROLE, IEnvironmentVariables } from 'src/types';
+import { AGORA_RTC_ROLE, IEnvironmentVariables, PostPrivacy } from 'src/types';
 import { ConfigService } from '@nestjs/config';
 import { randomBytes } from 'crypto';
-import { AcquireRecordingDto } from './dto/acquire-recording.dto';
-import { HttpService } from '@nestjs/axios';
-import { StartRecordingDto } from './dto/start-recording.dto';
-import { StopRecordingDto } from './dto/stop-recording.dto';
+import { PostsService } from 'src/posts/posts.service';
 
 @Controller('broadcast')
 @UseGuards(JwtAuthGuard)
 export class BroadcastController {
   constructor(
     private readonly broadcastService: BroadcastService,
+    private readonly postService: PostsService,
     private readonly configService: ConfigService<IEnvironmentVariables>,
-    private readonly socketService: SocketGateway,
-    private readonly httpService: HttpService
+    private readonly socketService: SocketGateway
   ) {}
 
   @Post('create')
@@ -64,81 +61,14 @@ export class BroadcastController {
   }
 
   @Delete(':id')
-  async remove(@Param('id', ParseObjectId) id: string) {
+  async remove(@Param('id', ParseObjectId) id: string, @GetUser() user: UserDocument) {
     const broadcast = await this.broadcastService.deleteSingleRecord({ _id: id });
+    if (!broadcast) throw new BadRequestException('Broadcast does not exists.');
     this.socketService.triggerMessage('remove-broadcast', broadcast);
     const stop = await this.broadcastService.stopRecording(broadcast.recording.resourceId, broadcast.channel, broadcast.recording.sid);
     const prefix = this.configService.get('S3_URL');
-    const url = stop.serverResponse.fileList[0].fileName;
-    return `${prefix}${url}`;
+    const url = `${prefix}${stop.serverResponse.fileList[0].fileName}`;
+    await this.postService.createRecord({ privacy: PostPrivacy.PUBLIC, videos: [url], creator: user._id });
+    return broadcast;
   }
-
-  // @Post('/recording/acquire')
-  // async acquireRecording(@Body() acquireRecordingDto: AcquireRecordingDto) {
-  //   const Authorization = `Basic ${Buffer.from(
-  //     `${this.configService.get('AGORA_CUSTOMER_ID')}:${this.configService.get('AGORA_CUSTOMER_SECRET')}`
-  //   ).toString('base64')}`;
-
-  //   const acquire = await this.httpService.axiosRef.post(
-  //     `https://api.agora.io/v1/apps/${this.configService.get('AGORA_APP_ID')}/cloud_recording/acquire`,
-  //     {
-  //       cname: acquireRecordingDto.channelName,
-  //       uid: acquireRecordingDto.uid,
-  //       clientRequest: {
-  //         resourceExpiredHour: 24,
-  //       },
-  //     },
-  //     { headers: { Authorization } }
-  //   );
-
-  //   return acquire.data;
-  // }
-
-  // @Post('/recording/start')
-  // async startRecording(@Body() { resourceId, channelName, uid }: StartRecordingDto) {
-  //   const customerId = this.configService.get('AGORA_CUSTOMER_ID');
-  //   const customerSecret = this.configService.get('AGORA_CUSTOMER_SECRET');
-  //   const appId = this.configService.get('AGORA_APP_ID');
-  //   const Authorization = `Basic ${Buffer.from(`${customerId}:${customerSecret}`).toString('base64')}`;
-  //   const url = `https://api.agora.io/v1/apps/${appId}/cloud_recording/resourceid/${resourceId}/mode/mix/start`;
-  //   const body = {
-  //     cname: channelName,
-  //     uid: uid,
-  //     clientRequest: {
-  //       token:
-  //         '007eJxTYHj6aS+3xGSdcrVlEtwLtyj5WRU+vu7ydJEfpy/Hwxt8B3QVGIxMki2SUkzMDU2MTU3Skk0sLCyMzc2STExMLVIsUi2NztUdTxHgY2D4rt7AyMjAyMACxPd6jqcwgUlmMMkCJjUYLJMSDc0SzdKMTAwSU1ISDUxNU5LTEpMTjQ2MjQ2TEy2SjMwMEy0t0hgYAKG/MOI=',
-  //       recordingFileConfig: {
-  //         avFileType: ['mp4', 'hls'],
-  //       },
-  //       storageConfig: {
-  //         vendor: 1,
-  //         region: 0,
-  //         bucket: this.configService.get('S3_BUCKET_NAME'),
-  //         accessKey: this.configService.get('AWS_ACCESS_KEY'),
-  //         secretKey: this.configService.get('AWS_SECRET_KEY'),
-  //         fileNamePrefix: ['directory1', 'directory2'],
-  //       },
-  //     },
-  //   };
-  //   const options = { headers: { Authorization } };
-  //   const start = await this.httpService.axiosRef.post(url, body, options);
-  //   return start.data;
-  // }
-
-  // @Post('recording/stop')
-  // async stopRecording(@Body() { sid, resourceId, channelName, uid }: StopRecordingDto) {
-  //   const customerId = this.configService.get('AGORA_CUSTOMER_ID');
-  //   const customerSecret = this.configService.get('AGORA_CUSTOMER_SECRET');
-  //   const appId = this.configService.get('AGORA_APP_ID');
-  //   const Authorization = `Basic ${Buffer.from(`${customerId}:${customerSecret}`).toString('base64')}`;
-  //   const url = `https://api.agora.io/v1/apps/${appId}/cloud_recording/resourceid/${resourceId}/sid/${sid}/mode/mix/stop`;
-  //   const body = { cname: channelName, uid, clientRequest: {} };
-  //   const options = { headers: { Authorization } };
-  //   try {
-  //     const stop = await this.httpService.axiosRef.post(url, body, options);
-  //     return stop.data;
-  //   } catch (error) {
-  //     console.log(error);
-  //   }
-  // }
 }

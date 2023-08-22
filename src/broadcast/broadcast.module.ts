@@ -5,9 +5,10 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { Broadcast, BroadcastSchema } from './broadcast.schema';
 import { SocketGateway } from 'src/helpers';
 import { HttpModule } from '@nestjs/axios';
+import { PostsModule } from 'src/posts/posts.module';
 
 @Module({
-  imports: [MongooseModule.forFeature([{ name: Broadcast.name, schema: BroadcastSchema }]), HttpModule],
+  imports: [MongooseModule.forFeature([{ name: Broadcast.name, schema: BroadcastSchema }]), HttpModule, PostsModule],
   controllers: [BroadcastController],
   providers: [BroadcastService, SocketGateway],
 })

@@ -128,9 +128,6 @@ export class Product {
 
   @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Track' }] })
   tracks: Track[];
-
-  @Prop({ default: false })
-  isWebSeriesCompleted: boolean;
 }
 
 export const ProductSchema = SchemaFactory.createForClass(Product);

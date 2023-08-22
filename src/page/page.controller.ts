@@ -3,7 +3,7 @@ import { PageService } from './page.service';
 import { CreatePageDto } from './dto/create-page.dto';
 import { UpdatePageDto } from './dto/update-page.dto';
 import { GetUser, makeQuery, PaginationDto, ParseObjectId } from 'src/helpers';
-import { UserDocument } from 'src/users/users.schema';
+import { User, UserDocument } from 'src/users/users.schema';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { PostsService } from 'src/posts/posts.service';
 import { FindAllPagesQueryDto } from './dto/find-all-pages.query.dto';
@@ -31,11 +31,11 @@ export class PageController {
 
   @Get('find-all')
   @UsePipes(new ValidationPipe({ transform: true }))
-  async findAll(@Query() { filter, query, limit, page }: FindAllPagesQueryDto) {
+  async findAll(@Query() { filter, query, limit, page }: FindAllPagesQueryDto, @GetUser() user: UserDocument) {
     const $q = makeQuery({ page, limit });
     const options = { limit: $q.limit, sort: $q.sort };
     if (filter === PageFilter.ALL) {
-      const condition = { name: { $regex: query, $options: 'i' } };
+      const condition = { name: { $regex: query, $options: 'i' }, creator: { $ne: user._id } };
       const total = await this.pageService.countRecords(condition);
       const pages = await this.pageService.findAllRecords(condition, options);
       return {
@@ -48,7 +48,7 @@ export class PageController {
     }
 
     if (filter === PageFilter.POPULAR) {
-      const condition = { name: { $regex: query, $options: 'i' } };
+      const condition = { name: { $regex: query, $options: 'i' }, creator: { $ne: user._id } };
       const total = await this.pageService.countRecords(condition);
       const pages = await this.pageService.findAllRecords(condition, options);
       return {
@@ -61,7 +61,7 @@ export class PageController {
     }
 
     if (filter === PageFilter.LATEST) {
-      const condition = { name: { $regex: query, $options: 'i' } };
+      const condition = { name: { $regex: query, $options: 'i' }, creator: { $ne: user._id } };
       const total = await this.pageService.countRecords(condition);
       const pages = await this.pageService.findAllRecords(condition, options);
       return {
@@ -74,7 +74,7 @@ export class PageController {
     }
 
     if (filter === PageFilter.SUGGESTED) {
-      const condition = { name: { $regex: query, $options: 'i' } };
+      const condition = { name: { $regex: query, $options: 'i' }, creator: { $ne: user._id } };
       const total = await this.pageService.countRecords(condition);
       const pages = await this.pageService.findAllRecords(condition, options);
       return {

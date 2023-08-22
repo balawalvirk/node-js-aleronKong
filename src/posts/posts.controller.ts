@@ -25,7 +25,7 @@ import { makeQuery, ParseObjectId, Roles } from 'src/helpers';
 import { GetUser } from 'src/helpers/decorators/user.decorator';
 import { NotificationService } from 'src/notification/notification.service';
 import { ReportService } from 'src/report/report.service';
-import { MediaType, NotificationType, PostPrivacy, PostStatus, ReportType, UserRoles } from 'src/types';
+import { EngagedPostFilter, NotificationType, PostPrivacy, PostStatus, ReportType, UserRoles } from 'src/types';
 import { UserDocument } from 'src/users/users.schema';
 import { UsersService } from 'src/users/users.service';
 import { CommentService } from './comment.service';
@@ -34,6 +34,7 @@ import { CreateCommentDto } from './dtos/create-comment';
 import { FeatureUnFeatureDto } from './dtos/feature-unfeature.dto';
 import { FindAllCommentQueryDto } from './dtos/find-all-comments.query.dto';
 import { FindAllPostQuery } from './dtos/find-all-post.query.dto';
+import { FindEngagedPostQuery } from './dtos/find-engaged-posts.query.dto';
 import { FindHomePostQueryDto } from './dtos/find-home-post.query.dto';
 import { PinUnpinDto } from './dtos/pin-unpin-post.dto';
 import { UpdateCommentDto } from './dtos/update-comment.dto';
@@ -393,5 +394,39 @@ export class PostsController {
   async findPostAssets(@GetUser() user: UserDocument, @Query('type') type: string) {
     const condition = { creator: user._id };
     return await this.postsService.findPostMedia(condition, type);
+  }
+
+  @Get('engaged/find-all')
+  @UsePipes(new ValidationPipe({ transform: true }))
+  async findEngagedPosts(@Query() { limit, page, filter }: FindEngagedPostQuery, @GetUser() user: UserDocument) {
+    const $q = makeQuery({ page, limit });
+    const options = { limit: $q.limit, skip: $q.skip, sort: $q.sort };
+    let posts = [];
+    let total = 0;
+    if (filter === EngagedPostFilter.ALL) {
+      const comments = (await this.commentService.findAllRecords({ creator: user._id }).select('_id')).map((comment) => comment._id);
+      const reactions = (await this.reactionService.findAllRecords({ user: user._id }).select('_id')).map((reaction) => reaction._id);
+      const condition = { $or: [{ reactions: { $in: [reactions] } }, { comments: { $in: comments } }] };
+      posts = await this.postsService.find(condition, options);
+      total = await this.postsService.countRecords(condition);
+    } else if (filter === EngagedPostFilter.LIKED) {
+      const reactions = (await this.reactionService.findAllRecords({ user: user._id }).select('_id')).map((reaction) => reaction._id);
+      const condition = { $or: [{ reactions: { $in: [reactions] } }] };
+      posts = await this.postsService.find(condition);
+      total = await this.postsService.countRecords(condition);
+    } else if (filter === EngagedPostFilter.COMMENTED) {
+      const comments = (await this.commentService.findAllRecords({ creator: user._id }).select('_id')).map((comment) => comment._id);
+      const condition = { comments: { $in: comments } };
+      posts = await this.postsService.find(condition);
+      total = await this.postsService.countRecords(condition);
+    }
+
+    return {
+      total: total,
+      pages: Math.ceil(total / $q.limit),
+      page: $q.page,
+      limit: $q.limit,
+      data: posts,
+    };
   }
 }
