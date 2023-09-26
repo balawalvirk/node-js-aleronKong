@@ -41,5 +41,5 @@ yarn.lock
 .env.dev
 .env.stag
 .env.prod
-firebase.ts
+# firebase.ts
 
