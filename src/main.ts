@@ -1,3 +1,9 @@
+
+
+
+require('module-alias/register');
+
+
 import { NestFactory } from '@nestjs/core';
 import { ValidationPipe, VersioningType } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';

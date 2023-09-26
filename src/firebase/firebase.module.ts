@@ -1,6 +1,6 @@
 import { Module } from '@nestjs/common';
 import admin from 'firebase-admin';
-import { firebaseCredientals } from 'firebase';
+import { firebaseCredientals } from 'src/config/firebase';
 import { FirebaseService } from './firebase.service';
 
 @Module({

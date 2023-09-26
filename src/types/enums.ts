@@ -88,6 +88,8 @@ export enum NotificationType {
   POST_REACTED = 'postReacted',
   COMMENT_REACTED = 'commentReacted',
   GROUP_INVITATION = 'groupInvitation',
+  PAGE_INVITATION = 'pageInvitation',
+  PAGE_JOIN_REQUEST = 'pageJoinRequest',
   FRIEND_REQUEST = 'friendRequest',
   COMMENT_REPLIED = 'commentReplied',
 }
