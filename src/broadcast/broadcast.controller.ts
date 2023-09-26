@@ -65,11 +65,12 @@ export class BroadcastController {
             {$set: {recording: {uid, resourceId, sid}}}
         );
 
-        const postData={privacy: PostPrivacy.PUBLIC, creator: user._id,page};
-        const createPost:any = await this.postService.createRecord(postData);
-        await this.cacheManager.set((broadcast._id).toString(),createPost._id.toString(), {ttl:86400});
+        const postId=new mongoose.Types.ObjectId();
+        const postData={_id:postId,privacy: PostPrivacy.PUBLIC, creator: user._id,page};
+        //const createPost:any = await this.postService.createRecord(postData);
+        await this.cacheManager.set((broadcast._id).toString(),JSON.stringify(postData), {ttl:86400});
 
-        return {...updatedBroadcast._doc,post:createPost._doc};
+        return {...updatedBroadcast._doc,post:postData};
     }
 
     @Get('find-all')
@@ -95,10 +96,11 @@ export class BroadcastController {
             url = `${prefix}${stop.serverResponse.fileList[0].fileName}`;
         }
 
-        const postId=await this.cacheManager.get(id);
+        const postData=await this.cacheManager.get(id);
 
-        if(postId){
-            await this.postService.findOneRecordAndUpdate({_id:new mongoose.Types.ObjectId(postId)},{videos: [url]});
+        if(postData){
+            const createPost:any = await this.postService.createRecord(JSON.parse(postData));
+            //await this.postService.findOneRecordAndUpdate({_id:new mongoose.Types.ObjectId(postId)},{videos: [url]});
             await this.cacheManager.del(id)
         }
 
