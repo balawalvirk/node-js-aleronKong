@@ -92,6 +92,9 @@ export enum NotificationType {
   PAGE_JOIN_REQUEST = 'pageJoinRequest',
   FRIEND_REQUEST = 'friendRequest',
   COMMENT_REPLIED = 'commentReplied',
+  PAGE_JOIN_REQUEST_APPROVED = 'pageJoinRequestApproved',
+  PAGE_JOIN_REQUEST_REJECTED = 'pageJoinRequestRejected',
+
 }
 
 export enum ReportType {

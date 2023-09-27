@@ -261,6 +261,8 @@ export class PageController {
         if (invitationFound) throw new BadRequestException('Page invitation request already exists.');
         const invitation = await this.invitationService.create({user: user._id, page, friend});
 
+        console.log()
+
         await this.notificationService.createRecord({
             type: NotificationType.PAGE_INVITATION,
             //@ts-ignore
@@ -275,7 +277,8 @@ export class PageController {
             token: invitation.friend.fcmToken,
             notification: {title: `${user.firstName} ${user.lastName} has sent you a group invitation request.`},
             //@ts-ignore
-            data: {page: invitation.page._id.toString(), type: NotificationType.PAGE_INVITATION},
+            data: {page: invitation.page._id.toString(), type: NotificationType.PAGE_INVITATION,
+                invitation:(invitation._id).toString()},
         });
 
         return invitation;
@@ -312,12 +315,111 @@ export class PageController {
                 token: invitation.page.creator.fcmToken,
                 notification: {title: `${user.firstName} ${user.lastName} has sent a join request for ${invitation.page.name} page`},
                 // @ts-ignore
-                data: {page: invitation.page._id.toString(), type: NotificationType.PAGE_JOIN_REQUEST},
+                data: {page: invitation.page._id.toString(), type: NotificationType.PAGE_JOIN_REQUEST,
+                    invitation:invitation._id.toString()},
             });
             await this.pageService.findOneRecordAndUpdate({_id: invitation.page}, {$push: {requests: user._id}});
         }
         return invitation;
     }
 
+
+
+    @Put('request/:id/:userId')
+    async approveRejectRequest(
+        @Query('isApproved', new ParseBoolPipe()) isApproved: boolean,
+        @Param('id', ParseObjectId) id: string,
+        @Param('userId', ParseObjectId) userId: string,
+        @GetUser() user: UserDocument
+    ) {
+        const page = await this.pageService.findOneRecord({ _id: id });
+        if (!page) throw new HttpException('Page does not exist.', HttpStatus.BAD_REQUEST);
+
+        if (page.creator.toString() == user._id) {
+            if (isApproved) {
+                await this.pageService.findOneRecordAndUpdate({ _id: id }, { $pull: { requests: userId }, $push: { members: { member: userId } } });
+                await this.notificationService.createRecord({
+                    page: page._id,
+                    sender: user._id,
+                    receiver: userId,
+                    message: `Your request to join page is approved`,
+                    type: NotificationType.PAGE_JOIN_REQUEST_APPROVED,
+                });
+
+                if (page.creator.fcmToken) {
+                    await this.firebaseService.sendNotification({
+                        token: page.creator.fcmToken,
+                        notification: { title: `Your request to join group is approved` },
+                        data: { page: page._id.toString(), type: NotificationType.PAGE_JOIN_REQUEST_APPROVED },
+                    });
+                }
+                return 'Request approved successfully.';
+            } else {
+                await this.pageService.findOneRecordAndUpdate({ _id: id }, { $pull: { requests: userId } });
+
+                await this.notificationService.createRecord({
+                    page: page._id,
+                    sender: user._id,
+                    receiver: userId,
+                    message: `Your request to join group is rejected`,
+                    type: NotificationType.PAGE_JOIN_REQUEST_REJECTED,
+                });
+
+                if (page.creator.fcmToken) {
+                    await this.firebaseService.sendNotification({
+                        token: page.creator.fcmToken,
+                        notification: { title: `Your request to join group is rejected` },
+                        data: { page: page._id.toString(), type: NotificationType.PAGE_JOIN_REQUEST_REJECTED },
+                    });
+                }
+
+                return 'Request rejected successfully.';
+            }
+        } else {
+            const moderator = await this.moderatorService.findOneRecord({ group: id, user: user._id });
+            if (!moderator) throw new UnauthorizedException();
+
+            if (isApproved) {
+                await this.pageService.findOneRecordAndUpdate({ _id: id }, { $pull: { requests: userId }, $push: { members: { member: userId } } });
+
+                await this.notificationService.createRecord({
+                    page: page._id,
+                    sender: user._id,
+                    receiver: userId,
+                    message: `Your request to join page is approved`,
+                    type: NotificationType.PAGE_JOIN_REQUEST_APPROVED,
+                });
+
+                if (page.creator.fcmToken) {
+                    await this.firebaseService.sendNotification({
+                        token: page.creator.fcmToken,
+                        notification: { title: `Your request to join page is approved` },
+                        data: { page: page._id.toString(), type: NotificationType.GROUP_JOIN_REQUEST_APPROVED },
+                    });
+                }
+
+                return 'Request approved successfully.';
+            } else {
+                await this.pageService.findOneRecordAndUpdate({ _id: id }, { $pull: { requests: userId } });
+                await this.notificationService.createRecord({
+                    page: page._id,
+                    sender: user._id,
+                    receiver: userId,
+                    message: `Your request to join page is rejected`,
+                    type: NotificationType.PAGE_JOIN_REQUEST_REJECTED,
+                });
+
+                if (page.creator.fcmToken) {
+                    await this.firebaseService.sendNotification({
+                        token: page.creator.fcmToken,
+                        notification: { title: `Your request to join group is rejected` },
+                        data: { page: page._id.toString(), type: NotificationType.PAGE_JOIN_REQUEST_REJECTED },
+                    });
+                }
+
+                return 'Request rejected successfully.';
+            }
+        }
+    }
 
 }
