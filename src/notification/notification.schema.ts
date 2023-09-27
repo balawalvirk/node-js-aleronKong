@@ -8,6 +8,7 @@ import {Product} from 'src/product/product.schema';
 import {NotificationType} from 'src/types';
 import {User} from 'src/users/users.schema';
 import {Page} from "src/page/page.schema";
+import {PageInvitation} from "src/page/invitation.schema";
 
 export type NotificationDocument = Notification & mongoose.Document;
 
@@ -35,6 +36,12 @@ export class Notification {
 
     @Prop({type: mongoose.Schema.Types.ObjectId, ref: 'Posts'})
     post: Posts;
+
+
+    @Prop({type: mongoose.Schema.Types.ObjectId, ref: 'PageInvitation'})
+    invitation: PageInvitation;
+
+
 
     @Prop({type: mongoose.Schema.Types.ObjectId, ref: 'User'})
     user: User;

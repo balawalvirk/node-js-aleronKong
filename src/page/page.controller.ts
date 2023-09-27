@@ -271,6 +271,7 @@ export class PageController {
             sender: user._id,
             //@ts-ignore
             receiver: invitation.friend._id,
+            invitation:invitation._id
         });
 
         await this.firebaseService.sendNotification({
@@ -308,6 +309,7 @@ export class PageController {
                 sender: user._id,
                 //@ts-ignore
                 receiver: invitation.user,
+                invitation:invitation._id
             });
             //@ts-ignore
 
