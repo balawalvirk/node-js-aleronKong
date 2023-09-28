@@ -179,6 +179,9 @@ export enum PageFilter {
   POPULAR = 'popular',
   SUGGESTED = 'suggested',
   LATEST = 'latest',
+  CREATED='created',
+  MODERATING='moderating',
+  FOLLOWING='following'
 }
 
 export enum MediaType {

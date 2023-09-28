@@ -63,11 +63,29 @@ export class PageController {
         return await this.pageService.findOneRecordAndUpdate({_id: id}, updatePageDto);
     }
 
-    @Get('find-all')
+    @Get('/find-all')
     @UsePipes(new ValidationPipe({transform: true}))
-    async findAll(@Query() {filter, query, limit, page}: FindAllPagesQueryDto, @GetUser() user: UserDocument) {
+    async findAll(@Query() {filter, query, limit, page,created,moderating,following}: FindAllPagesQueryDto, @GetUser() user: UserDocument) {
         const $q = makeQuery({page, limit});
         const options = {limit: $q.limit, sort: $q.sort};
+
+        let multipleQuery=[];
+
+        if(created){
+            multipleQuery.push({creator:user._id});
+        }
+
+
+        if(moderating){
+            multipleQuery.push({moderators: {$in:[user._id]}});
+        }
+
+        if(following){
+            multipleQuery.push({'followers.follower': {$in:[user._id]}});
+        }
+
+
+
         if (filter === PageFilter.ALL) {
             const condition = {name: {$regex: query, $options: 'i'}, creator: {$ne: user._id}};
             const total = await this.pageService.countRecords(condition);
@@ -119,6 +137,21 @@ export class PageController {
                 data: pages,
             };
         }
+
+
+        if(multipleQuery.length > 0){
+            const condition = {$or:multipleQuery};
+            const total = await this.pageService.countRecords(condition);
+            const pages = await this.pageService.findAllRecords(condition, options);
+            return {
+                total,
+                pages: Math.floor(total / $q.limit),
+                page: $q.page,
+                limit: $q.limit,
+                data: pages,
+            };
+        }
+
     }
 
     //find pages of a specific user
@@ -339,7 +372,7 @@ export class PageController {
 
         if (page.creator.toString() == user._id) {
             if (isApproved) {
-                await this.pageService.findOneRecordAndUpdate({ _id: id }, { $pull: { requests: userId }, $push: { members: { member: userId } } });
+                await this.pageService.findOneRecordAndUpdate({ _id: id }, { $pull: { requests: userId }, $push: { followers: { follower: userId } } });
                 await this.notificationService.createRecord({
                     page: page._id,
                     sender: user._id,
@@ -351,7 +384,7 @@ export class PageController {
                 if (page.creator.fcmToken) {
                     await this.firebaseService.sendNotification({
                         token: page.creator.fcmToken,
-                        notification: { title: `Your request to join group is approved` },
+                        notification: { title: `Your request to join page is approved` },
                         data: { page: page._id.toString(), type: NotificationType.PAGE_JOIN_REQUEST_APPROVED },
                     });
                 }
@@ -363,14 +396,14 @@ export class PageController {
                     page: page._id,
                     sender: user._id,
                     receiver: userId,
-                    message: `Your request to join group is rejected`,
+                    message: `Your request to join page is rejected`,
                     type: NotificationType.PAGE_JOIN_REQUEST_REJECTED,
                 });
 
                 if (page.creator.fcmToken) {
                     await this.firebaseService.sendNotification({
                         token: page.creator.fcmToken,
-                        notification: { title: `Your request to join group is rejected` },
+                        notification: { title: `Your request to join page is rejected` },
                         data: { page: page._id.toString(), type: NotificationType.PAGE_JOIN_REQUEST_REJECTED },
                     });
                 }
@@ -382,7 +415,7 @@ export class PageController {
             if (!moderator) throw new UnauthorizedException();
 
             if (isApproved) {
-                await this.pageService.findOneRecordAndUpdate({ _id: id }, { $pull: { requests: userId }, $push: { members: { member: userId } } });
+                await this.pageService.findOneRecordAndUpdate({ _id: id }, { $pull: { requests: userId }, $push: { followers: { follower: userId } } });
 
                 await this.notificationService.createRecord({
                     page: page._id,
@@ -396,7 +429,7 @@ export class PageController {
                     await this.firebaseService.sendNotification({
                         token: page.creator.fcmToken,
                         notification: { title: `Your request to join page is approved` },
-                        data: { page: page._id.toString(), type: NotificationType.GROUP_JOIN_REQUEST_APPROVED },
+                        data: { page: page._id.toString(), type: NotificationType.PAGE_JOIN_REQUEST_APPROVED },
                     });
                 }
 
@@ -414,7 +447,7 @@ export class PageController {
                 if (page.creator.fcmToken) {
                     await this.firebaseService.sendNotification({
                         token: page.creator.fcmToken,
-                        notification: { title: `Your request to join group is rejected` },
+                        notification: { title: `Your request to join page is rejected` },
                         data: { page: page._id.toString(), type: NotificationType.PAGE_JOIN_REQUEST_REJECTED },
                     });
                 }
