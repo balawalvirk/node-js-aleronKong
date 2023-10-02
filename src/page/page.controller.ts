@@ -55,7 +55,8 @@ export class PageController {
 
     @Get(':id/find-one')
     async findOne(@Param('id', ParseObjectId) id: string) {
-        return await this.pageService.findOneRecord({_id: id});
+        return await this.pageService.findOneRecord({_id: id})
+            .populate({ path: 'moderators', select: 'firstName lastName avatar' });
     }
 
     @Put(':id/update')

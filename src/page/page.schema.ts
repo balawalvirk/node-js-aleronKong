@@ -44,7 +44,7 @@ export class Page {
     requests: User[];
 
 
-    @Prop({type: [{type: mongoose.Schema.Types.ObjectId, ref: 'Moderator'}], required: true})
+    @Prop({type: [{type: mongoose.Schema.Types.ObjectId, ref: 'User'}], required: true})
     moderators: Moderator[];
 
 
