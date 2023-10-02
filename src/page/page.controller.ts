@@ -329,7 +329,7 @@ export class PageController {
         @Param('id', ParseObjectId) id: string,
         @GetUser() user: UserDocument
     ) {
-        const invitation = await this.invitationService.findOne({_id: id});
+        let invitation = await this.invitationService.findOne({_id: id});
         if (!invitation) throw new BadRequestException('Page invitation does not exists.');
         await this.invitationService.deleteSingleRecord({_id: id});
 
@@ -353,8 +353,10 @@ export class PageController {
                 data: {page: invitation.page._id.toString(), type: NotificationType.PAGE_JOIN_REQUEST,
                     invitation:invitation._id.toString()},
             });
-            await this.pageService.findOneRecordAndUpdate({_id: invitation.page}, {$push: {requests: user._id}});
+           const page= await this.pageService.findOneRecordAndUpdate({ _id: invitation.page }, { $pull: { requests: user._id }, $push: { followers: { follower: user._id } } });
+           invitation.page=page;
         }
+
         return invitation;
     }
 

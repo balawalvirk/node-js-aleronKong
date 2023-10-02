@@ -22,6 +22,11 @@ export class SocketGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 
   handleDisconnect(socket: Socket) {
     this.logger.log(`client disconnected: ${socket.id}`);
+    const user=this.onlineUsers.filter((user)=>user.socketId===socket.id);
+    if(user){
+
+    }
+
     this.onlineUsers = this.onlineUsers.filter((user) => user.socketId !== socket.id);
     this.wss.emit('check-status', this.onlineUsers);
   }
@@ -54,6 +59,9 @@ export class SocketGateway implements OnGatewayInit, OnGatewayConnection, OnGate
     this.onlineUsers = this.onlineUsers.filter((user) => user.socketId !== socket.id);
     this.wss.emit('check-status', this.onlineUsers);
   }
+
+
+
 
   triggerMessage(event: string, payload: any) {
     this.wss.emit(event, payload);
