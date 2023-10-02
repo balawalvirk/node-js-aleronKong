@@ -257,7 +257,7 @@ export class PageController {
         if (page.moderators.includes(createModeratorDto.user)) throw new BadRequestException('This moderator already exists in this page.');
         if (page.creator.toString() != user._id) throw new UnauthorizedException();
         const moderator = await this.moderatorService.create(createModeratorDto);
-        await this.pageService.findOneRecordAndUpdate({_id: createModeratorDto.page}, {$push: {moderators: moderator._id}});
+        await this.pageService.findOneRecordAndUpdate({_id: createModeratorDto.page}, {$push: {moderators: createModeratorDto.user}});
         return moderator;
     }
 
