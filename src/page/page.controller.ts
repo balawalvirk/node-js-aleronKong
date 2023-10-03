@@ -303,7 +303,10 @@ export class PageController {
 
         // check if user is already a moderator in this group
         // @ts-ignore
-        if (page.moderators.includes(createModeratorDto.user)) throw new BadRequestException('This moderator already exists in this page.');
+
+        const findIndex=(page.moderators).findIndex((moderator)=>(moderator.user).toString()===createModeratorDto.user)
+
+        if (findIndex!==-1) throw new BadRequestException('This moderator already exists in this page.');
         if (page.creator.toString() != user._id) throw new UnauthorizedException();
         const saveModerator = await this.moderatorService.create(createModeratorDto);
         await this.pageService.findOneRecordAndUpdate({_id: createModeratorDto.page},
