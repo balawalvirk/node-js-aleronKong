@@ -81,7 +81,11 @@ export declare enum NotificationType {
     FRIEND_REQUEST = "friendRequest",
     COMMENT_REPLIED = "commentReplied",
     PAGE_JOIN_REQUEST_APPROVED = "pageJoinRequestApproved",
-    PAGE_JOIN_REQUEST_REJECTED = "pageJoinRequestRejected"
+    PAGE_JOIN_REQUEST_REJECTED = "pageJoinRequestRejected",
+    PAGE_FOLLOW_ACCEPTED = "pageFollows",
+    PAGE_MODERATOR = "\u2019pageModerator\u2019",
+    PAGE_COMMENTED = "pageCommented",
+    PAGE_REACTED = "pageReacted"
 }
 export declare enum ReportType {
     GROUP = "group",

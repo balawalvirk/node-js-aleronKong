@@ -98,6 +98,10 @@ var NotificationType;
     NotificationType["COMMENT_REPLIED"] = "commentReplied";
     NotificationType["PAGE_JOIN_REQUEST_APPROVED"] = "pageJoinRequestApproved";
     NotificationType["PAGE_JOIN_REQUEST_REJECTED"] = "pageJoinRequestRejected";
+    NotificationType["PAGE_FOLLOW_ACCEPTED"] = "pageFollows";
+    NotificationType["PAGE_MODERATOR"] = "\u2019pageModerator\u2019";
+    NotificationType["PAGE_COMMENTED"] = "pageCommented";
+    NotificationType["PAGE_REACTED"] = "pageReacted";
 })(NotificationType = exports.NotificationType || (exports.NotificationType = {}));
 var ReportType;
 (function (ReportType) {

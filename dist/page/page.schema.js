@@ -9,10 +9,11 @@ var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.PageSchema = exports.Page = exports.Follower = void 0;
+exports.PageSchema = exports.Page = exports.Moderators = exports.Follower = void 0;
 const mongoose_1 = require("@nestjs/mongoose");
 const mongoose = require("mongoose");
 const users_schema_1 = require("../users/users.schema");
+const moderator_schema_1 = require("../group/moderator.schema");
 let Follower = class Follower {
 };
 __decorate([
@@ -27,7 +28,22 @@ Follower = __decorate([
     (0, mongoose_1.Schema)({ timestamps: true, versionKey: false, _id: false })
 ], Follower);
 exports.Follower = Follower;
+let Moderators = class Moderators {
+};
+__decorate([
+    (0, mongoose_1.Prop)({ type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true }),
+    __metadata("design:type", users_schema_1.User)
+], Moderators.prototype, "user", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ type: mongoose.Schema.Types.ObjectId, ref: 'PageModerator', required: true }),
+    __metadata("design:type", moderator_schema_1.Moderator)
+], Moderators.prototype, "moderator", void 0);
+Moderators = __decorate([
+    (0, mongoose_1.Schema)({ timestamps: true, versionKey: false, _id: false })
+], Moderators);
+exports.Moderators = Moderators;
 const FollowerSchema = mongoose_1.SchemaFactory.createForClass(Follower);
+const ModeratorSchema = mongoose_1.SchemaFactory.createForClass(Moderators);
 let Page = class Page {
 };
 __decorate([
@@ -63,9 +79,17 @@ __decorate([
     __metadata("design:type", Array)
 ], Page.prototype, "requests", void 0);
 __decorate([
-    (0, mongoose_1.Prop)({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Moderator' }], required: true }),
+    (0, mongoose_1.Prop)({ type: [ModeratorSchema] }),
     __metadata("design:type", Array)
 ], Page.prototype, "moderators", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'PageReaction' }] }),
+    __metadata("design:type", Array)
+], Page.prototype, "reactions", void 0);
+__decorate([
+    (0, mongoose_1.Prop)({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'PageComment' }] }),
+    __metadata("design:type", Array)
+], Page.prototype, "comments", void 0);
 Page = __decorate([
     (0, mongoose_1.Schema)({ timestamps: true })
 ], Page);

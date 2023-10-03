@@ -24,7 +24,8 @@ let PageInvitationService = class PageInvitationService extends base_service_1.B
         this.pageInvitationModel = pageInvitationModel;
     }
     getPopulateFields() {
-        return [{ path: 'page' }, { path: 'friend', select: 'firstName lastName avatar fcmToken' }];
+        return [{ path: 'page' }, { path: 'friend', select: '_id firstName lastName avatar fcmToken' },
+            { path: 'user', select: '_id firstName lastName avatar fcmToken' }];
     }
     async create(query) {
         return await (await this.pageInvitationModel.create(query)).populate(this.getPopulateFields());

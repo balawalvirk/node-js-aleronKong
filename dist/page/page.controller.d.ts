@@ -26,7 +26,7 @@
 import { PageService } from './page.service';
 import { CreatePageDto } from './dto/create-page.dto';
 import { UpdatePageDto } from './dto/update-page.dto';
-import { PaginationDto } from 'src/helpers';
+import { PaginationDto, SocketGateway } from 'src/helpers';
 import { User, UserDocument } from 'src/users/users.schema';
 import { PostsService } from 'src/posts/posts.service';
 import { FindAllPagesQueryDto } from './dto/find-all-pages.query.dto';
@@ -37,6 +37,14 @@ import { CreateInvitationDto } from "src/page/dto/create-invitation.dto";
 import { PageModeratorService } from "src/page/moderator.service";
 import { CreatePageModeratorDto } from "src/page/dto/create-page-moderator.dto";
 import { UpdatePageModeratorDto } from "src/page/dto/update-page-moderator.dto";
+import { UsersService } from "src/users/users.service";
+import { CreateCommentDto } from "src/posts/dtos/create-comment";
+import { FindAllCommentQueryDto } from "src/posts/dtos/find-all-comments.query.dto";
+import { PageReactionService } from "src/page/reaction.service";
+import { PageCommentService } from "src/page/comment.service";
+import { AddReactionsDto } from "src/posts/dtos/add-reactions.dto";
+import { UpdateReactionsDto } from "src/posts/dtos/update-reaction.dto";
+import { UpdatePageCommentDto } from "src/page/dto/update-comment.dto";
 export declare class PageController {
     private readonly pageService;
     private readonly postService;
@@ -44,8 +52,15 @@ export declare class PageController {
     private readonly notificationService;
     private readonly firebaseService;
     private readonly moderatorService;
-    constructor(pageService: PageService, postService: PostsService, invitationService: PageInvitationService, notificationService: NotificationService, firebaseService: FirebaseService, moderatorService: PageModeratorService);
+    private readonly usersService;
+    private readonly commentService;
+    private readonly reactionService;
+    private readonly socketService;
+    constructor(pageService: PageService, postService: PostsService, invitationService: PageInvitationService, notificationService: NotificationService, firebaseService: FirebaseService, moderatorService: PageModeratorService, usersService: UsersService, commentService: PageCommentService, reactionService: PageReactionService, socketService: SocketGateway);
     create(createPageDto: CreatePageDto, user: UserDocument): Promise<import("./page.schema").Page & import("mongoose").Document<any, any, any> & {
+        _id: import("mongoose").Types.ObjectId;
+    }>;
+    updateComment({ commentId, pageId, ...rest }: UpdatePageCommentDto): Promise<import("./comment.schema").PageComment & import("mongoose").Document<any, any, any> & {
         _id: import("mongoose").Types.ObjectId;
     }>;
     findOne(id: string): Promise<import("./page.schema").Page & import("mongoose").Document<any, any, any> & {
@@ -59,9 +74,9 @@ export declare class PageController {
         pages: number;
         page: number;
         limit: number;
-        data: (import("./page.schema").Page & import("mongoose").Document<any, any, any> & {
+        data: Omit<Omit<import("./page.schema").Page & import("mongoose").Document<any, any, any> & {
             _id: import("mongoose").Types.ObjectId;
-        })[];
+        }, never>, never>[];
     }>;
     findUserPages(id: string, { page, limit }: PaginationDto): Promise<{
         total: number;
@@ -167,8 +182,28 @@ export declare class PageController {
     findAllInvitations(user: UserDocument): Promise<Omit<import("./invitation.schema").PageInvitation & import("mongoose").Document<any, any, any> & {
         _id: import("mongoose").Types.ObjectId;
     }, never>[]>;
-    acceptRejectInvitations(isApproved: boolean, id: string, user: UserDocument): Promise<import("./invitation.schema").PageInvitation & import("mongoose").Document<any, any, any> & {
+    acceptRejectInvitations(isApproved: boolean, id: string, user: UserDocument): Promise<any>;
+    approveRejectRequest(isApproved: boolean, id: string, userId: string, user: UserDocument): Promise<"Request approved successfully." | "Request rejected successfully.">;
+    createComment(id: string, user: UserDocument, createCommentDto: CreateCommentDto): Promise<any>;
+    findAllComments(id: string, { page, limit }: FindAllCommentQueryDto): Promise<{
+        total: number;
+        pages: number;
+        page: number;
+        limit: number;
+        data: Omit<import("./comment.schema").PageComment & import("mongoose").Document<any, any, any> & {
+            _id: import("mongoose").Types.ObjectId;
+        }, never>[];
+    }>;
+    deleteComment(id: string, pageId: string, user: UserDocument): Promise<{
+        message: string;
+    }>;
+    addReactions(addReactionsDto: AddReactionsDto, user: UserDocument): Promise<Omit<import("./reaction.schema").PageReaction & import("mongoose").Document<any, any, any> & {
+        _id: import("mongoose").Types.ObjectId;
+    }, never>>;
+    deleteReaction(id: string): Promise<import("./reaction.schema").PageReaction & import("mongoose").Document<any, any, any> & {
         _id: import("mongoose").Types.ObjectId;
     }>;
-    approveRejectRequest(isApproved: boolean, id: string, userId: string, user: UserDocument): Promise<"Request approved successfully." | "Request rejected successfully.">;
+    updateReaction(id: string, updateReactionsDto: UpdateReactionsDto): Promise<import("./reaction.schema").PageReaction & import("mongoose").Document<any, any, any> & {
+        _id: import("mongoose").Types.ObjectId;
+    }>;
 }

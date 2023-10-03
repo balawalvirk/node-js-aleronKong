@@ -313,7 +313,7 @@ export class PageController {
         await this.notificationService.createRecord({
             type: NotificationType.PAGE_MODERATOR,
             //@ts-ignore
-            page: invitation.page._id,
+            page: page._id,
             message: `${user.firstName} ${user.lastName} has added you as moderator.`,
             sender: user._id,
             //@ts-ignore

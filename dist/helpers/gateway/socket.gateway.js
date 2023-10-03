@@ -24,6 +24,9 @@ let SocketGateway = SocketGateway_1 = class SocketGateway {
     }
     handleDisconnect(socket) {
         this.logger.log(`client disconnected: ${socket.id}`);
+        const user = this.onlineUsers.filter((user) => user.socketId === socket.id);
+        if (user) {
+        }
         this.onlineUsers = this.onlineUsers.filter((user) => user.socketId !== socket.id);
         this.wss.emit('check-status', this.onlineUsers);
     }
