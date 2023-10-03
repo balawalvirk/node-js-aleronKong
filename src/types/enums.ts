@@ -96,6 +96,8 @@ export enum NotificationType {
   PAGE_JOIN_REQUEST_REJECTED = 'pageJoinRequestRejected',
   PAGE_FOLLOW_ACCEPTED = 'pageFollows',
   PAGE_MODERATOR = '’pageModerator’',
+  PAGE_COMMENTED = 'pageCommented',
+  PAGE_REACTED = 'pageReacted',
 
 }
 

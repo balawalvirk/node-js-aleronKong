@@ -16,7 +16,7 @@ import {
 import {PageService} from './page.service';
 import {CreatePageDto} from './dto/create-page.dto';
 import {UpdatePageDto} from './dto/update-page.dto';
-import {GetUser, makeQuery, PaginationDto, ParseObjectId} from 'src/helpers';
+import {GetUser, makeQuery, PaginationDto, ParseObjectId, SocketGateway} from 'src/helpers';
 import {User, UserDocument} from 'src/users/users.schema';
 import {JwtAuthGuard} from 'src/auth/jwt-auth.guard';
 import {PostsService} from 'src/posts/posts.service';
@@ -34,6 +34,14 @@ import {PageModeratorService} from "src/page/moderator.service";
 import {CreatePageModeratorDto} from "src/page/dto/create-page-moderator.dto";
 import {UpdatePageModeratorDto} from "src/page/dto/update-page-moderator.dto";
 import {UsersService} from "src/users/users.service";
+import {CreateCommentDto} from "src/posts/dtos/create-comment";
+import {FindAllCommentQueryDto} from "src/posts/dtos/find-all-comments.query.dto";
+import {UpdateCommentDto} from "src/posts/dtos/update-comment.dto";
+import {PageReactionService} from "src/page/reaction.service";
+import {PageCommentService} from "src/page/comment.service";
+import {AddReactionsDto} from "src/posts/dtos/add-reactions.dto";
+import {UpdateReactionsDto} from "src/posts/dtos/update-reaction.dto";
+import {UpdatePageCommentDto} from "src/page/dto/update-comment.dto";
 
 @Controller('page')
 @UseGuards(JwtAuthGuard)
@@ -46,6 +54,9 @@ export class PageController {
         private readonly firebaseService: FirebaseService,
         private readonly moderatorService: PageModeratorService,
         private readonly usersService: UsersService,
+        private readonly commentService: PageCommentService,
+        private readonly reactionService: PageReactionService,
+        private readonly socketService: SocketGateway,
 
     ) {
     }
@@ -54,6 +65,13 @@ export class PageController {
     async create(@Body() createPageDto: CreatePageDto, @GetUser() user: UserDocument) {
         return await this.pageService.createRecord({...createPageDto, creator: user._id});
     }
+
+
+    @Put('comment/update')
+    async updateComment(@Body() { commentId, pageId, ...rest }: UpdatePageCommentDto) {
+        return await this.commentService.update({ _id: commentId }, rest);
+    }
+
 
     @Get(':id/find-one')
     async findOne(@Param('id', ParseObjectId) id: string) {
@@ -510,5 +528,174 @@ export class PageController {
             }
         }
     }
+
+
+
+
+    @Post('/:id/comment')
+    async createComment(@Param('id') id: string, @GetUser() user: UserDocument, @Body() createCommentDto: CreateCommentDto) {
+        const page = await this.pageService.findOneRecord({ _id: id }).populate('creator');
+        if (!page) throw new BadRequestException('Page does not exists.');
+        let comment;
+        if (createCommentDto.comment) {
+            comment = await this.commentService.create({ creator: user._id, post: id, ...createCommentDto });
+            const updatedComment:any = await this.commentService
+                .findOneRecordAndUpdate({ _id: createCommentDto.comment }, { $push: { replies: comment._id } })
+                .populate('creator');
+
+            await this.notificationService.createRecord({
+                page: page._id,
+                message: 'replied to you comment.',
+                type: NotificationType.COMMENT_REPLIED,
+                sender: user._id,
+                //@ts-ignore
+                receiver: updatedComment.creator._id,
+            });
+
+            await this.firebaseService.sendNotification({
+                token: updatedComment.creator.fcmToken,
+                notification: { title: `${user.firstName} ${user.lastName} replied to you comment.` },
+                data: { page: page._id.toString(), type: NotificationType.COMMENT_REPLIED },
+            });
+
+            this.socketService.triggerMessage(`page-comment-reply-${(page._id).toString()}`, comment);
+
+
+        } else {
+            comment = await this.commentService.create({ creator: user._id, post: id, root: true, ...createCommentDto });
+            await this.pageService.findOneRecordAndUpdate({ _id: id }, { $push: { comments: comment._id } });
+
+            //@ts-ignore
+            if (user._id != page.creator._id.toString()) {
+                await this.notificationService.createRecord({
+                    post: page._id,
+                    message: 'commented on your page.',
+                    type: NotificationType.PAGE_COMMENTED,
+                    sender: user._id,
+                    //@ts-ignore
+                    receiver: post.creator._id,
+                });
+                // check if user has fcm token then send notification to that user.
+                if (page.creator.fcmToken) {
+                    await this.firebaseService.sendNotification({
+                        token: page.creator.fcmToken,
+                        notification: { title: `${user.firstName} ${user.lastName} commented on your post.` },
+                        data: { post: page._id.toString(), type: NotificationType.PAGE_COMMENTED },
+                    });
+                }
+
+
+                this.socketService.triggerMessage(`page-comment-${(page._id).toString()}`, comment);
+
+
+            }
+        }
+
+        return comment;
+    }
+
+    @Get(':id/comment/find-all')
+    async findAllComments(@Param('id', ParseObjectId) id: string, @Query() { page, limit }: FindAllCommentQueryDto) {
+        const $q = makeQuery({ page, limit });
+        const options = { limit: $q.limit, skip: $q.skip, sort: $q.sort };
+        const condition = { post: id, root: true };
+        const comments = await this.commentService.find(condition, options);
+        const total = await this.commentService.countRecords({ post: id });
+        const paginated = {
+            total: total,
+            pages: Math.ceil(total / $q.limit),
+            page: $q.page,
+            limit: $q.limit,
+            data: comments,
+        };
+        return paginated;
+    }
+
+
+    @Delete(':pageId/comment/:id/delete')
+    async deleteComment(@Param('id', ParseObjectId) id: string, @Param('pageId', ParseObjectId) pageId: string, @GetUser() user: UserDocument) {
+        const comment = await this.commentService.findOneRecord({ _id: id });
+        if (!comment) throw new HttpException('Comment does not exist.', HttpStatus.BAD_REQUEST);
+        if (comment.creator.toString() == user._id) {
+            const deletedComment = await this.commentService.deleteSingleRecord({ _id: id });
+            if (deletedComment.comment) {
+                await this.commentService.findOneRecordAndUpdate({ _id: deletedComment.comment }, { $pull: { replies: deletedComment._id } });
+            } else {
+                await this.pageService.findOneRecordAndUpdate({ _id: deletedComment.page }, { $pull: { comments: deletedComment._id } });
+            }
+            return { message: 'Comment deleted successfully.' };
+        } else {
+            const page=await this.pageService.findOneRecord({_id:comment.page})
+            const moderator = (page.moderators).findIndex((moderator)=>(moderator.user).toString()===(user._id).toString());
+            if (moderator===-1) throw new UnauthorizedException();
+            const deletedComment = await this.commentService.deleteSingleRecord({ _id: id });
+            if (deletedComment.comment) {
+                await this.commentService.findOneRecordAndUpdate({ _id: deletedComment.comment }, { $pull: { replies: deletedComment._id } });
+            } else {
+                await this.pageService.findOneRecordAndUpdate({ _id: deletedComment.page }, { $pull: { comments: deletedComment._id } });
+            }
+            return { message: 'Comment deleted successfully.' };
+        }
+    }
+
+
+
+
+    @Post('reaction/create')
+    async addReactions(@Body() addReactionsDto: AddReactionsDto, @GetUser() user: UserDocument) {
+        // check if user is adding reaction in comment
+        if (addReactionsDto.comment) {
+            const comment = await this.commentService.findOneRecord({ _id: addReactionsDto.comment }).populate('creator');
+            if (!comment) throw new BadRequestException('Comment does not exist.');
+            const reaction = await this.reactionService.create({ user: user._id, emoji: addReactionsDto.emoji, comment: comment._id });
+            await this.commentService.findOneRecordAndUpdate({ _id: comment._id }, { $push: { reactions: reaction._id } });
+            return reaction;
+        } else {
+            const page = await this.pageService.findOneRecord({ _id: addReactionsDto.post }).populate('creator');
+            if (!page) throw new HttpException('Page does not exists', HttpStatus.BAD_REQUEST);
+            const reaction = await this.reactionService.create({ user: user._id, emoji: addReactionsDto.emoji, page: page._id });
+            await this.pageService.findOneRecordAndUpdate({ _id: page._id }, { $push: { reactions: reaction._id } });
+            //@ts-ignore
+            if (user._id != post.creator._id.toString()) {
+                await this.notificationService.createRecord({
+                    page: page._id,
+                    message: 'reacted to your page.',
+                    type: NotificationType.PAGE_REACTED,
+                    sender: user._id,
+                    //@ts-ignore
+                    receiver: post.creator._id,
+                });
+
+                if (page.creator.fcmToken) {
+                    await this.firebaseService.sendNotification({
+                        token: page.creator.fcmToken,
+                        notification: { title: `${user.firstName} ${user.lastName} reacted on your page.` },
+                        data: { post: page._id.toString(), type: NotificationType.PAGE_REACTED },
+                    });
+                }
+            }
+            return reaction;
+        }
+    }
+
+    @Delete('reaction/:id/delete')
+    async deleteReaction(@Param('id', ParseObjectId) id: string) {
+        const reaction = await this.reactionService.deleteSingleRecord({ _id: id });
+        if (!reaction) throw new HttpException('Reaction does not exists', HttpStatus.BAD_REQUEST);
+        if (reaction.page) await this.pageService.findOneRecordAndUpdate({ _id: reaction.page },
+            { $pull: { reactions: reaction._id } });
+        else if (reaction.comment) await this.commentService.findOneRecordAndUpdate({ _id: reaction.comment },
+            { $pull: { reactions: reaction._id } });
+        return reaction;
+    }
+
+    @Put('reaction/:id/update')
+    async updateReaction(@Param('id', ParseObjectId) id: string, @Body() updateReactionsDto: UpdateReactionsDto) {
+        return await this.reactionService.update({ _id: id }, { emoji: updateReactionsDto.emoji });
+    }
+
+
+
+
 
 }

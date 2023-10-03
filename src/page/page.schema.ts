@@ -3,6 +3,8 @@ import * as mongoose from 'mongoose';
 import {Posts} from 'src/posts/posts.schema';
 import {User} from 'src/users/users.schema';
 import {Moderator} from "src/group/moderator.schema";
+import {Reaction} from "src/posts/reaction.schema";
+import {Comment} from "src/posts/comment.schema";
 
 export type PageDocument = Page & mongoose.Document;
 
@@ -60,6 +62,12 @@ export class Page {
     @Prop({type: [ModeratorSchema]})
     moderators:Moderators[];
 
+
+    @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'PageReaction' }] })
+    reactions: Reaction[];
+
+    @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'PageComment' }] })
+    comments: Comment[];
 
 }
 

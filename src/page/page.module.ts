@@ -12,7 +12,11 @@ import {PageModerator, PageModeratorSchema} from "src/page/moderator.schema";
 import {PageModeratorService} from "src/page/moderator.service";
 import {UsersService} from "src/users/users.service";
 import {User, UserSchema} from "src/users/users.schema";
-import {StripeService} from "src/helpers";
+import {SocketGateway, StripeService} from "src/helpers";
+import {PageComment, PageCommentSchema} from "src/page/comment.schema";
+import {PageReaction, PageReactionSchema} from "src/page/reaction.schema";
+import {PageReactionService} from "src/page/reaction.service";
+import {PageCommentService} from "src/page/comment.service";
 
 @Module({
   imports: [
@@ -20,12 +24,15 @@ import {StripeService} from "src/helpers";
       MongooseModule.forFeature([{ name: PageInvitation.name, schema: PageInvitationSchema }]),
       MongooseModule.forFeature([{ name: PageModerator.name, schema: PageModeratorSchema }]),
       MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
+      MongooseModule.forFeature([{ name: PageComment.name, schema: PageCommentSchema }]),
+      MongooseModule.forFeature([{ name: PageReaction.name, schema: PageReactionSchema }]),
       PostsModule,
       NotificationModule,
       FirebaseModule,
   ],
   controllers: [PageController],
-  providers: [PageService,PageInvitationService,PageModeratorService,UsersService,StripeService],
+  providers: [PageService,PageInvitationService,PageModeratorService,UsersService,StripeService,PageReactionService,PageCommentService,
+      SocketGateway],
   exports: [PageService],
 })
 export class PageModule {}
