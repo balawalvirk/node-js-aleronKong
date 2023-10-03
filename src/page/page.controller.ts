@@ -297,7 +297,7 @@ export class PageController {
         const page = await this.pageService.findOneRecord({_id: createModeratorDto.page});
         const moderator=await this.usersService.findOne({_id:createModeratorDto.user})
 
-        if (!page) throw new HttpException('Moderator does not exists.', HttpStatus.BAD_REQUEST);
+        if (!moderator) throw new HttpException('Moderator does not exists.', HttpStatus.BAD_REQUEST);
 
         if (!page) throw new HttpException('Page does not exists.', HttpStatus.BAD_REQUEST);
 
@@ -310,7 +310,7 @@ export class PageController {
         if (page.creator.toString() != user._id) throw new UnauthorizedException();
         const saveModerator = await this.moderatorService.create(createModeratorDto);
         await this.pageService.findOneRecordAndUpdate({_id: createModeratorDto.page},
-            {$push: {moderators: {user:createModeratorDto.user,moderator:moderator._id}}});
+            {$push: {moderators: {user:createModeratorDto.user,moderator:saveModerator._id}}});
 
 
         await this.notificationService.createRecord({
@@ -346,7 +346,16 @@ export class PageController {
         if (!moderator) throw new HttpException('Moderator does not exists.', HttpStatus.BAD_REQUEST);
         if (moderator.user.toString() == user._id || moderator.page.creator.toString() == user._id) {
             await this.moderatorService.deleteSingleRecord({_id: id});
-            await this.pageService.findOneRecordAndUpdate({_id: moderator.page}, {$pull: {moderators: moderator._id}});
+            const page = await this.pageService.findOneRecord({_id:moderator.page});
+            const findIndex=(page.moderators).findIndex((m)=>(m.moderator).toString()===(moderator._id).toString());
+
+            if(findIndex===-1){
+                throw new HttpException('Moderator does not exists.', HttpStatus.BAD_REQUEST);
+            }
+            (page.moderators).splice(findIndex,1);
+            await page.save();
+
+            //await this.pageService.findOneRecordAndUpdate({_id: moderator.page}, {$pull: {"moderators.m": moderator._id}});
             return moderator;
         } else throw new ForbiddenException();
     }
