@@ -11,7 +11,8 @@ export class PageInvitationService extends BaseService<PageInvitationDocument> {
   }
 
   getPopulateFields() {
-    return [{ path: 'page' }, { path: 'friend', select: 'firstName lastName avatar fcmToken' }];
+    return [{ path: 'page' }, { path: 'friend', select: '_id firstName lastName avatar fcmToken' },
+        { path: 'user', select: '_id firstName lastName avatar fcmToken' }];
   }
 
   async create(query: FilterQuery<PageInvitationDocument>) {

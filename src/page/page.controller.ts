@@ -33,6 +33,7 @@ import {ModeratorService} from "src/group/moderator.service";
 import {PageModeratorService} from "src/page/moderator.service";
 import {CreatePageModeratorDto} from "src/page/dto/create-page-moderator.dto";
 import {UpdatePageModeratorDto} from "src/page/dto/update-page-moderator.dto";
+import {UsersService} from "src/users/users.service";
 
 @Controller('page')
 @UseGuards(JwtAuthGuard)
@@ -44,6 +45,7 @@ export class PageController {
         private readonly notificationService: NotificationService,
         private readonly firebaseService: FirebaseService,
         private readonly moderatorService: PageModeratorService,
+        private readonly usersService: UsersService,
 
     ) {
     }
@@ -56,7 +58,8 @@ export class PageController {
     @Get(':id/find-one')
     async findOne(@Param('id', ParseObjectId) id: string) {
         return await this.pageService.findOneRecord({_id: id})
-            .populate({ path: 'moderators', select: 'firstName lastName avatar' });
+            .populate({ path: 'moderators.user', select: 'firstName lastName avatar' })
+            .populate("moderators.moderator","createPost engageAsPage deletePage editPage");
     }
 
     @Put(':id/update')
@@ -78,7 +81,7 @@ export class PageController {
 
 
         if(moderating){
-            multipleQuery.push({moderators: {$in:[user._id]}});
+            multipleQuery.push({'moderators.user': {$in:[user._id]}});
         }
 
         if(following){
@@ -143,7 +146,9 @@ export class PageController {
         if(multipleQuery.length > 0){
             const condition = {$or:multipleQuery};
             const total = await this.pageService.countRecords(condition);
-            const pages = await this.pageService.findAllRecords(condition, options);
+            const pages = await this.pageService.findAllRecords(condition, options)
+                .populate("moderators.user","firstName lastName avatar")
+                .populate("moderators.moderator","createPost engageAsPage deletePage editPage");
             return {
                 total,
                 pages: Math.floor(total / $q.limit),
@@ -175,13 +180,34 @@ export class PageController {
 
     @Put(':id/follow')
     async follow(@Param('id', ParseObjectId) id: string, @GetUser() user: UserDocument) {
-        const page = await this.pageService.findOneRecord({_id: id});
+        const page = await this.pageService.findOneRecord({_id: id})
+            .populate("creator")
         if (!page) throw new BadRequestException('Page does not exists.');
 
         //check if user is already a follower of this page
         //@ts-ignore
         const followerFound = page.followers.find((follower) => follower.follower.equals(user._id));
         if (followerFound) throw new BadRequestException('You are already a follower of this page.');
+
+
+        await this.notificationService.createRecord({
+            type: NotificationType.PAGE_FOLLOW_ACCEPTED,
+            // @ts-ignore
+            page: id,
+            message: `${user.firstName} ${user.lastName} has started following the ${page.name} page`,
+            sender: user._id,
+            //@ts-ignore
+            receiver: page.creator._id
+        });
+        //@ts-ignore
+
+        await this.firebaseService.sendNotification({
+            token: page.creator.fcmToken,
+            notification: {title: `${user.firstName} ${user.lastName} has started following the ${page.name} page`},
+            // @ts-ignore
+            data: {page: id.toString(), type: NotificationType.PAGE_FOLLOW_ACCEPTED},
+        });
+
         return await this.pageService.findOneRecordAndUpdate({_id: id}, {$push: {followers: {follower: user._id}}});
     }
 
@@ -251,15 +277,40 @@ export class PageController {
     @Post('moderator/create')
     async createModerator(@Body() createModeratorDto: CreatePageModeratorDto, @GetUser() user: UserDocument) {
         const page = await this.pageService.findOneRecord({_id: createModeratorDto.page});
+        const moderator=await this.usersService.findOne({_id:createModeratorDto.user})
+
+        if (!page) throw new HttpException('Moderator does not exists.', HttpStatus.BAD_REQUEST);
+
         if (!page) throw new HttpException('Page does not exists.', HttpStatus.BAD_REQUEST);
 
         // check if user is already a moderator in this group
         // @ts-ignore
         if (page.moderators.includes(createModeratorDto.user)) throw new BadRequestException('This moderator already exists in this page.');
         if (page.creator.toString() != user._id) throw new UnauthorizedException();
-        const moderator = await this.moderatorService.create(createModeratorDto);
-        await this.pageService.findOneRecordAndUpdate({_id: createModeratorDto.page}, {$push: {moderators: createModeratorDto.user}});
-        return moderator;
+        const saveModerator = await this.moderatorService.create(createModeratorDto);
+        await this.pageService.findOneRecordAndUpdate({_id: createModeratorDto.page},
+            {$push: {moderators: {user:createModeratorDto.user,moderator:moderator._id}}});
+
+
+        await this.notificationService.createRecord({
+            type: NotificationType.PAGE_MODERATOR,
+            //@ts-ignore
+            page: invitation.page._id,
+            message: `${user.firstName} ${user.lastName} has added you as moderator.`,
+            sender: user._id,
+            //@ts-ignore
+            receiver:createModeratorDto.user
+        });
+
+        await this.firebaseService.sendNotification({
+            token: moderator.fcmToken,
+            notification: {title: `${user.firstName} ${user.lastName} has added you as moderator.`},
+            //@ts-ignore
+            data: {page: createModeratorDto.page, type: NotificationType.PAGE_MODERATOR},
+        });
+
+
+        return saveModerator;
     }
 
     // find all moderators of specfic group
@@ -310,7 +361,7 @@ export class PageController {
 
         await this.firebaseService.sendNotification({
             token: invitation.friend.fcmToken,
-            notification: {title: `${user.firstName} ${user.lastName} has sent you a group invitation request.`},
+            notification: {title: `${user.firstName} ${user.lastName} has sent you a page invitation request.`},
             //@ts-ignore
             data: {page: invitation.page._id.toString(), type: NotificationType.PAGE_INVITATION,
                 invitation:(invitation._id).toString()},
@@ -330,31 +381,31 @@ export class PageController {
         @Param('id', ParseObjectId) id: string,
         @GetUser() user: UserDocument
     ) {
-        let invitation = await this.invitationService.findOne({_id: id});
+        let invitation:any = await this.invitationService.findOne({_id: id});
         if (!invitation) throw new BadRequestException('Page invitation does not exists.');
         await this.invitationService.deleteSingleRecord({_id: id});
 
         if (isApproved) {
             await this.notificationService.createRecord({
-                type: NotificationType.PAGE_JOIN_REQUEST,
+                type: NotificationType.PAGE_FOLLOW_ACCEPTED,
                 // @ts-ignore
                 page: invitation.page._id,
-                message: `has sent a join request for ${invitation.page.name} page`,
+                message: `${user.firstName} ${user.lastName} has accepted the ${invitation.page.name} page follow request`,
                 sender: user._id,
                 //@ts-ignore
-                receiver: invitation.user,
+                receiver: invitation.user._id,
                 invitation:invitation._id
             });
             //@ts-ignore
 
             await this.firebaseService.sendNotification({
-                token: invitation.page.creator.fcmToken,
-                notification: {title: `${user.firstName} ${user.lastName} has sent a join request for ${invitation.page.name} page`},
+                token: invitation.user.fcmToken,
+                notification: {title: `${user.firstName} ${user.lastName} has accepted the ${invitation.page.name} page follow request`},
                 // @ts-ignore
-                data: {page: invitation.page._id.toString(), type: NotificationType.PAGE_JOIN_REQUEST,
+                data: {page: invitation.page._id.toString(), type: NotificationType.PAGE_FOLLOW_ACCEPTED,
                     invitation:invitation._id.toString()},
             });
-           const page= await this.pageService.findOneRecordAndUpdate({ _id: invitation.page }, { $pull: { requests: user._id }, $push: { followers: { follower: user._id } } });
+           const page= await this.pageService.findOneRecordAndUpdate({ _id: invitation.page._id }, { $pull: { requests: user._id }, $push: { followers: { follower: user._id } } });
            invitation.page=page;
         }
 
