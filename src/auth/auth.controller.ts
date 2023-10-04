@@ -121,7 +121,7 @@ export class AuthController {
         newUser: true,
       };
     } else {
-      if (userFound.authType !== socialLoginDto.authType) throw new BadRequestException('User already exists with this email.');
+      //if (userFound.authType !== socialLoginDto.authType) throw new BadRequestException('User already exists with this email.');
       let paymentMethod = null;
       const { access_token } = await this.authService.login(userFound.userName, userFound._id);
       const { unReadMessages, unReadNotifications } = await this.authService.findNotifications(userFound._id);
