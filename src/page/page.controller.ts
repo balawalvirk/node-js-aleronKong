@@ -376,13 +376,12 @@ export class PageController {
         if (invitationFound) throw new BadRequestException('Page invitation request already exists.');
         const invitation = await this.invitationService.create({user: user._id, page, friend});
 
-        console.log()
 
         await this.notificationService.createRecord({
             type: NotificationType.PAGE_INVITATION,
             //@ts-ignore
             page: invitation.page._id,
-            message: `has sent you a page invitation request.`,
+            message: `${user.firstName} ${user.lastName} has invited you to follow ${invitation.page.name} Page.`,
             sender: user._id,
             //@ts-ignore
             receiver: invitation.friend._id,
