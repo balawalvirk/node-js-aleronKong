@@ -58,7 +58,7 @@ export class BroadcastController {
         );
 
         const postId=new mongoose.Types.ObjectId();
-        const postData={_id:postId,privacy: PostPrivacy.PUBLIC, creator: user._id};
+        const postData={_id:postId,privacy: PostPrivacy.PUBLIC, creator: user._id,page};
         //const createPost:any = await this.postService.createRecord(postData);
 
 
