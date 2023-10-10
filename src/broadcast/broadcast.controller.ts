@@ -72,6 +72,7 @@ export class BroadcastController {
         );
 
         await this.cacheManager.set((broadcast._id).toString(),JSON.stringify(postData), {ttl:86400});
+        await this.cacheManager.set((postId).toString(),JSON.stringify(postData), {ttl:86400});
 
         return {...updatedBroadcast._doc,post:postData,page};
     }
