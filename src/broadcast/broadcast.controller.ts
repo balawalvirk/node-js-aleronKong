@@ -62,13 +62,13 @@ export class BroadcastController {
         //const createPost:any = await this.postService.createRecord(postData);
 
 
-        const broadcast = await this.broadcastService.create({token, channel, user: user._id});
+        const broadcast = await this.broadcastService.create({token, channel, user: user._id,post:postId,page});
         this.socketService.triggerMessage('new-broadcast', broadcast);
         const {cname, uid, resourceId} = await this.broadcastService.acquireRecording(broadcast.channel);
         const {sid} = await this.broadcastService.startRecording(resourceId, cname, broadcast.token);
         const updatedBroadcast:any = await this.broadcastService.findOneRecordAndUpdate(
             {_id: broadcast._id},
-            {$set: {recording: {uid, resourceId, sid},post:postId,page}}
+            {$set: {recording: {uid, resourceId, sid}}}
         );
 
         await this.cacheManager.set((broadcast._id).toString(),JSON.stringify(postData), {ttl:86400});
@@ -103,9 +103,10 @@ export class BroadcastController {
         }
 
         const postData=await this.cacheManager.get(id);
-
         if(postData){
-            const createPost:any = await this.postService.createRecord(JSON.parse(postData));
+
+            const createPost:any = await this.postService.createRecord(
+                {...JSON.parse(postData),videos:[url],live:true});
             //await this.postService.findOneRecordAndUpdate({_id:new mongoose.Types.ObjectId(postId)},{videos: [url]});
             await this.cacheManager.del(id)
         }
