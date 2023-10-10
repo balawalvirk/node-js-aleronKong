@@ -381,7 +381,7 @@ export class PageController {
             type: NotificationType.PAGE_INVITATION,
             //@ts-ignore
             page: invitation.page._id,
-            message: `${user.firstName} ${user.lastName} has invited you to follow ${invitation.page.name} Page.`,
+            message: `has invited you to follow ${invitation.page.name} Page.`,
             sender: user._id,
             //@ts-ignore
             receiver: invitation.friend._id,
@@ -390,7 +390,7 @@ export class PageController {
 
         await this.firebaseService.sendNotification({
             token: invitation.friend.fcmToken,
-            notification: {title: `${user.firstName} ${user.lastName} has sent you a page invitation request.`},
+            notification: {title: `has sent you a page invitation request.`},
             //@ts-ignore
             data: {page: invitation.page._id.toString(), type: NotificationType.PAGE_INVITATION,
                 invitation:(invitation._id).toString()},
