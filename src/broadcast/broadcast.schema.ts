@@ -1,34 +1,44 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import {Prop, Schema, SchemaFactory} from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
-import { User } from 'src/users/users.schema';
+import {User} from 'src/users/users.schema';
+import {Posts} from "src/posts/posts.schema";
+import {Page} from "src/page/page.schema";
 
 export type BroadcastDocument = Broadcast & mongoose.Document;
 
-@Schema({ timestamps: false, versionKey: false })
+@Schema({timestamps: false, versionKey: false})
 class Recording {
-  @Prop()
-  sid: string;
+    @Prop()
+    sid: string;
 
-  @Prop()
-  resourceId: string;
+    @Prop()
+    resourceId: string;
 
-  @Prop()
-  uid: string;
+    @Prop()
+    uid: string;
 }
 
-@Schema({ timestamps: true })
+@Schema({timestamps: true})
 export class Broadcast {
-  @Prop({ required: true })
-  channel: string;
+    @Prop({required: true})
+    channel: string;
 
-  @Prop({ required: true })
-  token: string;
+    @Prop({required: true})
+    token: string;
 
-  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true })
-  user: User;
+    @Prop({type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true})
+    user: User;
 
-  @Prop({ type: Recording })
-  recording: Recording;
+    @Prop({type: mongoose.Schema.Types.ObjectId, ref: 'Post'})
+    post: Posts;
+
+
+    @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Page' })
+    page: Page;
+
+
+    @Prop({type: Recording})
+    recording: Recording;
 }
 
 export const BroadcastSchema = SchemaFactory.createForClass(Broadcast);

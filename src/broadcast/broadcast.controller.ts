@@ -56,26 +56,31 @@ export class BroadcastController {
             expirationTime,
             privilegeExpiredTs
         );
+
+        const postId=new mongoose.Types.ObjectId();
+        const postData={_id:postId,privacy: PostPrivacy.PUBLIC, creator: user._id};
+        //const createPost:any = await this.postService.createRecord(postData);
+
+
         const broadcast = await this.broadcastService.create({token, channel, user: user._id});
         this.socketService.triggerMessage('new-broadcast', broadcast);
         const {cname, uid, resourceId} = await this.broadcastService.acquireRecording(broadcast.channel);
         const {sid} = await this.broadcastService.startRecording(resourceId, cname, broadcast.token);
         const updatedBroadcast:any = await this.broadcastService.findOneRecordAndUpdate(
             {_id: broadcast._id},
-            {$set: {recording: {uid, resourceId, sid}}}
+            {$set: {recording: {uid, resourceId, sid},post:postId,page}}
         );
 
-        const postId=new mongoose.Types.ObjectId();
-        const postData={_id:postId,privacy: PostPrivacy.PUBLIC, creator: user._id,page};
-        //const createPost:any = await this.postService.createRecord(postData);
         await this.cacheManager.set((broadcast._id).toString(),JSON.stringify(postData), {ttl:86400});
 
-        return {...updatedBroadcast._doc,post:postData};
+        return {...updatedBroadcast._doc,post:postData,page};
     }
 
     @Get('find-all')
     async findAll() {
-        return await this.broadcastService.findAllRecords().sort({createdAt: -1}).populate('user');
+        return await this.broadcastService.findAllRecords().sort({createdAt: -1})
+            .populate('user')
+            .populate("page");
     }
 
     @Get(':id/find-one')

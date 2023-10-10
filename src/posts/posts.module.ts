@@ -13,6 +13,7 @@ import { PostSchema, Posts } from './posts.schema';
 import { PostsService } from './posts.service';
 import { Reaction, ReactionSchema } from './reaction.schema';
 import { ReactionService } from './reaction.service';
+import {SocketGateway} from "src/helpers";
 
 @Module({
   imports: [
@@ -26,7 +27,7 @@ import { ReactionService } from './reaction.service';
     ReportModule,
   ],
   controllers: [PostsController],
-  providers: [PostsService, CommentService, ReactionService],
+  providers: [PostsService, CommentService, ReactionService,SocketGateway],
   exports: [PostsService],
 })
 export class PostsModule {}

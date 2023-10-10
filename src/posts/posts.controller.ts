@@ -21,7 +21,7 @@ import { RolesGuard } from 'src/auth/role.guard';
 import { FirebaseService } from 'src/firebase/firebase.service';
 import { GroupService } from 'src/group/group.service';
 import { ModeratorService } from 'src/group/moderator.service';
-import { makeQuery, ParseObjectId, Roles } from 'src/helpers';
+import {makeQuery, ParseObjectId, Roles, SocketGateway} from 'src/helpers';
 import { GetUser } from 'src/helpers/decorators/user.decorator';
 import { NotificationService } from 'src/notification/notification.service';
 import { ReportService } from 'src/report/report.service';
@@ -55,7 +55,9 @@ export class PostsController {
     private readonly reactionService: ReactionService,
     private readonly groupService: GroupService,
     private readonly moderatorService: ModeratorService,
-    private readonly reportService: ReportService
+    private readonly reportService: ReportService,
+    private readonly socketService: SocketGateway,
+
   ) {}
 
   @Roles(UserRoles.ADMIN)
@@ -210,6 +212,11 @@ export class PostsController {
         notification: { title: `${user.firstName} ${user.lastName} replied to you comment.` },
         data: { post: post._id.toString(), type: NotificationType.COMMENT_REPLIED },
       });
+
+
+        this.socketService.triggerMessage(`post-comment-reply-${(post._id).toString()}`, comment);
+
+
     } else {
       comment = await this.commentService.create({ creator: user._id, post: id, root: true, ...createCommentDto });
       await this.postsService.findOneRecordAndUpdate({ _id: id }, { $push: { comments: comment._id } });
@@ -232,6 +239,10 @@ export class PostsController {
             data: { post: post._id.toString(), type: NotificationType.POST_COMMENTED },
           });
         }
+
+          this.socketService.triggerMessage(`post-comment-${(post._id).toString()}`, comment);
+
+
       }
     }
 
