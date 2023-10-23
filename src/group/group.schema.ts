@@ -1,54 +1,67 @@
-import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
+import {Prop, Schema, SchemaFactory} from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
-import { Mute } from 'src/mute/mute.schema';
-import { Posts } from 'src/posts/posts.schema';
-import { GroupPrivacy } from 'src/types';
-import { User } from 'src/users/users.schema';
-import { Member, MemberSchema } from './member.schema';
-import { Moderator } from './moderator.schema';
-import { Report, ReportSchema } from './report.schema';
+import {Mute} from 'src/mute/mute.schema';
+import {Posts} from 'src/posts/posts.schema';
+import {GroupPrivacy} from 'src/types';
+import {User} from 'src/users/users.schema';
+import {Member, MemberSchema} from './member.schema';
+import {Moderator} from './moderator.schema';
+import {Report, ReportSchema} from './report.schema';
+import {Page} from "src/page/page.schema";
+import {PageMember, PageMemberSchema} from "src/group/member_page.schema";
 
 export type GroupDocument = Group & mongoose.Document;
-@Schema({ timestamps: true })
+
+@Schema({timestamps: true})
 export class Group {
-  @Prop({ required: true })
-  coverPhoto: string;
+    @Prop({required: true})
+    coverPhoto: string;
 
-  @Prop({ required: true })
-  profilePhoto: string;
+    @Prop({required: true})
+    profilePhoto: string;
 
-  @Prop({ required: true })
-  description: string;
+    @Prop({required: true})
+    description: string;
 
-  @Prop({ required: true, unique: true })
-  name: string;
+    @Prop({required: true, unique: true})
+    name: string;
 
-  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true })
-  creator: User;
+    @Prop({type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true})
+    creator: User;
 
-  @Prop({ enum: GroupPrivacy, required: true })
-  privacy: string;
+    @Prop({enum: GroupPrivacy, required: true})
+    privacy: string;
 
-  @Prop({ type: [MemberSchema] })
-  members: Member[];
+    @Prop({type: [MemberSchema]})
+    members: Member[];
 
-  @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Posts' }] })
-  posts: Posts[];
 
-  @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'User' }], required: true })
-  requests: User[];
+    @Prop({type: [PageMemberSchema]})
+    page_members: PageMember[];
 
-  @Prop({ type: [ReportSchema] })
-  reports: Report[];
 
-  @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Moderator' }], required: true })
-  moderators: Moderator[];
+    @Prop({type: [{type: mongoose.Schema.Types.ObjectId, ref: 'Posts'}]})
+    posts: Posts[];
 
-  @Prop()
-  rules: string;
+    @Prop({type: [{type: mongoose.Schema.Types.ObjectId, ref: 'User'}], required: true})
+    requests: User[];
 
-  @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'Mute' }], required: true })
-  mutes: Mute[];
+
+    @Prop({type: [{type: mongoose.Schema.Types.ObjectId, ref: 'Page'}], required: true})
+    pageRequests: Page[];
+
+
+    @Prop({type: [ReportSchema]})
+    reports: Report[];
+
+    @Prop({type: [{type: mongoose.Schema.Types.ObjectId, ref: 'Moderator'}], required: true})
+    moderators: Moderator[];
+
+    @Prop()
+    rules: string;
+
+    @Prop({type: [{type: mongoose.Schema.Types.ObjectId, ref: 'Mute'}], required: true})
+    mutes: Mute[];
 }
 
 export const GroupSchema = SchemaFactory.createForClass(Group);

@@ -87,7 +87,7 @@ export class PageController {
 
     @Get('/find-all')
     @UsePipes(new ValidationPipe({transform: true}))
-    async findAll(@Query() {filter, query, limit, page,created,moderating,following}: FindAllPagesQueryDto, @GetUser() user: UserDocument) {
+    async findAll(@Query() {filter, query, limit, page,created,moderating,following,pageId}: FindAllPagesQueryDto, @GetUser() user: UserDocument) {
         const $q = makeQuery({page, limit});
         const options = {limit: $q.limit, sort: $q.sort};
 
@@ -103,7 +103,11 @@ export class PageController {
         }
 
         if(following){
-            multipleQuery.push({'followers.follower': {$in:[user._id]}});
+            if(pageId){
+                multipleQuery.push({'pageFollwers.page': {$in:[pageId]}});
+            }else{
+                multipleQuery.push({'followers.follower': {$in:[user._id]}});
+            }
         }
 
 
@@ -229,15 +233,64 @@ export class PageController {
         return await this.pageService.findOneRecordAndUpdate({_id: id}, {$push: {followers: {follower: user._id}}});
     }
 
+
+    @Put(':id/followerPage/:followerPage/follow')
+    async followPage(@Param('id', ParseObjectId) id: string,@Param('followerPage', ParseObjectId) followerPage: string, @GetUser() user: UserDocument) {
+        const page = await this.pageService.findOneRecord({_id: id})
+            .populate("creator")
+        if (!page) throw new BadRequestException('Page does not exists.');
+
+        //check if user is already a follower of this page
+        //@ts-ignore
+        const followerFound = page.pageFollwers.find((follower) => follower.page.equals(followerPage));
+        if (followerFound) throw new BadRequestException('You are already a follower of this page.');
+
+
+        await this.notificationService.createRecord({
+            type: NotificationType.PAGE_FOLLOW_ACCEPTED,
+            // @ts-ignore
+            page: id,
+            message: `${user.firstName} ${user.lastName} has started following the ${page.name} page`,
+            sender: user._id,
+            //@ts-ignore
+            receiver: page.creator._id,
+        });
+        //@ts-ignore
+
+        await this.firebaseService.sendNotification({
+            token: page.creator.fcmToken,
+            notification: {title: `${user.firstName} ${user.lastName} has started following the ${page.name} page`},
+            // @ts-ignore
+            data: {page: id.toString(), type: NotificationType.PAGE_FOLLOW_ACCEPTED},
+        });
+
+        return await this.pageService.findOneRecordAndUpdate({_id: id}, {$push:
+                {pageFollwers: {page: followerPage}}});
+    }
+
+
+
     @Put(':id/un-follow')
     async unFollow(@GetUser() user: UserDocument, @Param('id', ParseObjectId) id: string) {
         return await this.pageService.findOneRecordAndUpdate({_id: id}, {$pull: {followers: {follower: user._id}}});
     }
 
+
+    @Put(':id/un-follow/un-followerPage/:un-followerPage/follow')
+    async unFollowPage(@GetUser() user: UserDocument, @Param('id', ParseObjectId) id: string,
+                       @Param('un-followerPage', ParseObjectId) unFollowPage: string) {
+        return await this.pageService.findOneRecordAndUpdate({_id: id}, {$pull: {pageFollwers:
+                    {page: unFollowPage}}});
+    }
+
+
     @Get('follow/find-all')
     async findAllfollowedPages(@GetUser() user: UserDocument) {
         return await this.pageService.findAllRecords({'followers.follower': user._id}).populate('creator');
     }
+
+
+
 
     // find all post of page that user follow
     @Get('follow/post/find-all')

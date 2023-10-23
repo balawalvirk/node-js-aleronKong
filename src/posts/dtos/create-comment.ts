@@ -1,19 +1,24 @@
-import { IsMongoId, IsOptional, IsString } from 'class-validator';
+import {IsMongoId, IsOptional, IsString} from 'class-validator';
 
 export class CreateCommentDto {
-  @IsOptional()
-  @IsString()
-  content?: string;
+    @IsOptional()
+    @IsString()
+    content?: string;
 
-  @IsOptional()
-  @IsMongoId()
-  comment?: string;
+    @IsOptional()
+    @IsString()
+    page?: string;
 
-  @IsOptional()
-  @IsMongoId({ each: true })
-  mentions?: string[];
 
-  @IsOptional()
-  @IsString()
-  gif?: string;
+    @IsOptional()
+    @IsMongoId()
+    comment?: string;
+
+    @IsOptional()
+    @IsMongoId({each: true})
+    mentions?: string[];
+
+    @IsOptional()
+    @IsString()
+    gif?: string;
 }

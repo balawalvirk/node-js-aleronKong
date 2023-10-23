@@ -29,8 +29,21 @@ export class Moderators {
 
 
 
+@Schema({timestamps: true, versionKey: false, _id: false})
+export class PageFollower {
+    @Prop({type: mongoose.Schema.Types.ObjectId, ref: 'Page', required: true})
+    page;
+
+    @Prop({dafault: false})
+    banned: boolean;
+}
+
+
+
+
 const FollowerSchema = SchemaFactory.createForClass(Follower);
 const ModeratorSchema = SchemaFactory.createForClass(Moderators);
+const PageFollowerSchema = SchemaFactory.createForClass(PageFollower);
 
 @Schema({timestamps: true})
 export class Page {
@@ -51,6 +64,10 @@ export class Page {
 
     @Prop({type: [FollowerSchema]})
     followers: Follower[];
+
+    @Prop({type: [PageFollowerSchema]})
+    pageFollwers: PageFollower[];
+
 
     @Prop({type: [{type: mongoose.Schema.Types.ObjectId, ref: 'Posts'}]})
     posts: Posts[];

@@ -1,9 +1,13 @@
-import { IsOptional } from 'class-validator';
+import {IsOptional} from 'class-validator';
 
 export class FindAllNotificationsQueryDto {
-  @IsOptional()
-  limit: string;
+    @IsOptional()
+    limit: string;
 
-  @IsOptional()
-  page: string;
+    @IsOptional()
+    page: string;
+
+
+    @IsOptional()
+    pageId: string;
 }

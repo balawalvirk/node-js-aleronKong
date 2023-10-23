@@ -29,4 +29,8 @@ export class FindAllPagesQueryDto {
     following: string;
 
 
+    @IsOptional()
+    pageId: string;
+
+
 }

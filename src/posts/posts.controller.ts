@@ -43,6 +43,7 @@ import {UpdateReactionsDto} from './dtos/update-reaction.dto';
 import {PostsService} from './posts.service';
 import {ReactionService} from './reaction.service';
 import Cache from 'cache-manager';
+import {PageService} from "src/page/page.service";
 
 @Controller('post')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -58,8 +59,8 @@ export class PostsController {
         private readonly moderatorService: ModeratorService,
         private readonly reportService: ReportService,
         private readonly socketService: SocketGateway,
+        private readonly pageService: PageService,
         @Inject(CACHE_MANAGER) private cacheManager: Cache
-
     ) {
     }
 
@@ -108,14 +109,26 @@ export class PostsController {
 
     @Get('home')
     @UsePipes(new ValidationPipe({transform: true}))
-    async findHomePosts(@GetUser() user: UserDocument, @Query() {limit, page, sort}: FindHomePostQueryDto) {
+    async findHomePosts(@GetUser() user: UserDocument, @Query() {limit, page, sort,pageId}: FindHomePostQueryDto) {
         const $q = makeQuery({page, limit});
         const options = {sort: this.postsService.getHomePostSort(sort), limit: $q.limit, skip: $q.skip};
         const followings = (await this.userService.findAllRecords({friends: {$in: [user._id]}}).select('_id')).map((user) => user._id);
+
+        let pageFollowings=[]
+        let groups=[];
+        let pageGroups=[];
+        let allGroups=[]
+        if(pageId && pageId.length>0){
+            pageFollowings = (await this.pageService.findAllRecords({followers: {$in: [pageId]}}).select('_id')).map((user) => user._id);
+            pageGroups = (await this.groupService.findAllRecords({'page_members.page': pageId})).map((group) => group._id);
+
+        }
+
         const reports = await this.reportService.findAllRecords({reporter: user._id, type: ReportType.USER});
         const reportedUsers = reports.map((report) => report.user);
         // find all groups that user has joined
-        const groups = (await this.groupService.findAllRecords({'members.member': user._id})).map((group) => group._id);
+        groups = (await this.groupService.findAllRecords({'members.member': user._id})).map((group) => group._id);
+        allGroups=pageGroups.concat(pageGroups);
         const condition = {
             creator: {$nin: [...user.blockedUsers, ...reportedUsers]},
             isBlocked: false,
@@ -125,14 +138,16 @@ export class PostsController {
                     {privacy: PostPrivacy.PUBLIC},
                     {privacy: PostPrivacy.FOLLOWERS, creator: {$in: followings}},
                     {privacy: PostPrivacy.GUILD_MEMBERS},
-                    {privacy: PostPrivacy.GROUP, group: {$in: groups}},
+                    {privacy: PostPrivacy.GROUP, group: {$in: allGroups}},
+                    {page: {$in: pageFollowings}},
                     {creator: user._id},
                 ]
                 : [
                     {privacy: PostPrivacy.PUBLIC},
                     {privacy: PostPrivacy.FOLLOWERS, creator: {$in: followings}},
                     {creator: user._id},
-                    {privacy: PostPrivacy.GROUP, group: {$in: groups}},
+                    {page: {$in: pageFollowings}},
+                    {privacy: PostPrivacy.GROUP, group: {$in: allGroups}},
                 ],
         };
 
@@ -155,6 +170,7 @@ export class PostsController {
         };
         return paginated;
     }
+
 
     @Post('like/:id')
     async addLike(@Param('id', ParseObjectId) id: string, @GetUser() user: UserDocument) {
@@ -193,20 +209,28 @@ export class PostsController {
     @Post('comment/:id')
     async createComment(@Param('id') id: string, @GetUser() user: UserDocument, @Body() createCommentDto: CreateCommentDto) {
 
-        let post:any = await this.postsService.findOneRecord({_id: id}).populate('creator');
+        let post: any = await this.postsService.findOneRecord({_id: id}).populate('creator');
+
+        let page;
+
+
+        if (createCommentDto.page) {
+            page = await this.pageService.findOneRecord({_id: createCommentDto.page})
+        }
 
         if (!post) {
-            const tempPost=await this.cacheManager.get(id);
-            if(!tempPost)
+            const tempPost = await this.cacheManager.get(id);
+            if (!tempPost)
                 throw new BadRequestException('Post does not exists.');
-            post=JSON.parse(tempPost);
-            post.creator={_id:post.creator};
+            post = JSON.parse(tempPost);
+            post.creator = {_id: post.creator};
         }
 
 
         let comment;
         if (createCommentDto.comment) {
-            comment = await this.commentService.create({creator: user._id, post: id, ...createCommentDto});
+            comment = await this.commentService.create({creator: user._id,
+                post: id, ...createCommentDto,page:page && page._id});
             const updatedComment = await this.commentService
                 .findOneRecordAndUpdate({_id: createCommentDto.comment}, {$push: {replies: comment._id}})
                 .populate('creator');
@@ -218,6 +242,7 @@ export class PostsController {
                 sender: user._id,
                 //@ts-ignore
                 receiver: updatedComment.creator._id,
+                page:page && page._id
             });
 
             await this.firebaseService.sendNotification({
@@ -231,7 +256,8 @@ export class PostsController {
 
 
         } else {
-            comment = await this.commentService.create({creator: user._id, post: id, root: true, ...createCommentDto});
+            comment = await this.commentService.create({creator: user._id,
+                post: id, root: true, ...createCommentDto,page:page && page._id});
             await this.postsService.findOneRecordAndUpdate({_id: id}, {$push: {comments: comment._id}});
 
             //@ts-ignore
@@ -243,6 +269,7 @@ export class PostsController {
                     sender: user._id,
                     //@ts-ignore
                     receiver: post.creator._id,
+                    page:page && page._id
                 });
                 // check if user has fcm token then send notification to that user.
                 if (post.creator.fcmToken) {
@@ -366,7 +393,8 @@ export class PostsController {
             const reaction = await this.reactionService.create({
                 user: user._id,
                 emoji: addReactionsDto.emoji,
-                comment: comment._id
+                comment: comment._id,
+                page:addReactionsDto.page
             });
             await this.commentService.findOneRecordAndUpdate({_id: comment._id}, {$push: {reactions: reaction._id}});
             return reaction;
@@ -376,7 +404,9 @@ export class PostsController {
             const reaction = await this.reactionService.create({
                 user: user._id,
                 emoji: addReactionsDto.emoji,
-                post: post._id
+                post: post._id,
+                page:addReactionsDto.page
+
             });
             await this.postsService.findOneRecordAndUpdate({_id: post._id}, {$push: {reactions: reaction._id}});
             //@ts-ignore
@@ -388,6 +418,7 @@ export class PostsController {
                     sender: user._id,
                     //@ts-ignore
                     receiver: post.creator._id,
+                    page:addReactionsDto.page
                 });
 
                 if (post.creator.fcmToken) {
