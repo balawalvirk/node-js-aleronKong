@@ -87,7 +87,7 @@ export class PageController {
 
     @Get('/find-all')
     @UsePipes(new ValidationPipe({transform: true}))
-    async findAll(@Query() {filter, query, limit, page,created,moderating,following,pageId}: FindAllPagesQueryDto, @GetUser() user: UserDocument) {
+    async findAll(@Query() {filter, query, limit, page,created,moderating,following,pageId}: any, @GetUser() user: UserDocument) {
         const $q = makeQuery({page, limit});
         const options = {limit: $q.limit, sort: $q.sort};
 
@@ -103,6 +103,7 @@ export class PageController {
         }
 
         if(following){
+
             if(pageId){
                 multipleQuery.push({'pageFollwers.page': {$in:[pageId]}});
             }else{
@@ -113,7 +114,7 @@ export class PageController {
 
 
         if (filter === PageFilter.ALL) {
-            const condition = {name: {$regex: query, $options: 'i'}, creator: {$ne: user._id}};
+            const condition = {name: {$regex: query||"", $options: 'i'}, creator: {$ne: user._id}};
             const total = await this.pageService.countRecords(condition);
             const pages = await this.pageService.findAllRecords(condition, options);
             return {
@@ -276,9 +277,9 @@ export class PageController {
     }
 
 
-    @Put(':id/un-follow/un-followerPage/:un-followerPage/follow')
+    @Put(':id/page/:page/un-follow')
     async unFollowPage(@GetUser() user: UserDocument, @Param('id', ParseObjectId) id: string,
-                       @Param('un-followerPage', ParseObjectId) unFollowPage: string) {
+                       @Param('page', ParseObjectId) unFollowPage: string) {
         return await this.pageService.findOneRecordAndUpdate({_id: id}, {$pull: {pageFollwers:
                     {page: unFollowPage}}});
     }

@@ -30,6 +30,7 @@ export class FindAllPagesQueryDto {
 
 
     @IsOptional()
+    @IsString()
     pageId: string;
 
 
