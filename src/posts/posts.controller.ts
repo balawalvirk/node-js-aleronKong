@@ -119,12 +119,7 @@ export class PostsController {
         let groups = [];
         let pageGroups = [];
         let allGroups = []
-        if (pageId && pageId.length > 0) {
-            pageFollowings = (await this.pageService.findAllRecords({'pageFollwers.page':
-                    {$in: [pageId]}}).select('_id')).map((user) => user._id);
-            pageGroups = (await this.groupService.findAllRecords({'page_members.page': pageId})).map((group) => group._id);
 
-        }
 
         const reports = await this.reportService.findAllRecords({reporter: user._id, type: ReportType.USER});
         const reportedUsers = reports.map((report) => report.user);
@@ -172,6 +167,58 @@ export class PostsController {
         };
         return paginated;
     }
+
+
+
+
+
+    @Get('home/page/:pageId')
+    @UsePipes(new ValidationPipe({transform: true}))
+    async findHomePagePosts(@Param('pageId', ParseObjectId) pageId: string,
+                            @GetUser() user: UserDocument, @Query() {limit, page, sort}: FindHomePostQueryDto) {
+        const $q = makeQuery({page, limit});
+        const options = {sort: this.postsService.getHomePostSort(sort), limit: $q.limit, skip: $q.skip};
+
+        let pageFollowings = []
+        let groups = [];
+        let pageGroups = [];
+        let allGroups = [];
+        pageFollowings = (await this.pageService.findAllRecords({'pageFollwers.page':
+                {$in: [pageId]}}).select('_id')).map((user) => user._id);
+        pageGroups = (await this.groupService.findAllRecords({'page_members.page': pageId})).map((group) => group._id);
+
+
+        // find all groups that user has joined
+        allGroups = pageGroups.concat(pageGroups);
+        const condition = {
+            isBlocked: false,
+            status: PostStatus.ACTIVE,
+            $or: [
+                    {page: {$in: pageFollowings}},
+                    {privacy: PostPrivacy.GROUP, group: {$in: allGroups}},
+                ],
+        };
+
+        const posts = await this.postsService.findHomePosts(condition, options);
+
+        const totalPosts = await Promise.all(
+            posts.map(async (post) => {
+                const totalComments = await this.commentService.countRecords({post: post._id});
+                return {...post, totalComments};
+            })
+        );
+
+        const total = await this.postsService.countRecords(condition);
+        const paginated = {
+            total,
+            pages: Math.ceil(total / $q.limit),
+            page: $q.page,
+            limit: $q.limit,
+            data: totalPosts,
+        };
+        return paginated;
+    }
+
 
 
     @Post('like/:id')
