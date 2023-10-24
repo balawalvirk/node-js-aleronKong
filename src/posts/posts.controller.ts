@@ -44,6 +44,7 @@ import {PostsService} from './posts.service';
 import {ReactionService} from './reaction.service';
 import Cache from 'cache-manager';
 import {PageService} from "src/page/page.service";
+import mongoose from "mongoose";
 
 @Controller('post')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -109,17 +110,18 @@ export class PostsController {
 
     @Get('home')
     @UsePipes(new ValidationPipe({transform: true}))
-    async findHomePosts(@GetUser() user: UserDocument, @Query() {limit, page, sort,pageId}: FindHomePostQueryDto) {
+    async findHomePosts(@GetUser() user: UserDocument, @Query() {limit, page, sort, pageId}: FindHomePostQueryDto) {
         const $q = makeQuery({page, limit});
         const options = {sort: this.postsService.getHomePostSort(sort), limit: $q.limit, skip: $q.skip};
         const followings = (await this.userService.findAllRecords({friends: {$in: [user._id]}}).select('_id')).map((user) => user._id);
 
-        let pageFollowings=[]
-        let groups=[];
-        let pageGroups=[];
-        let allGroups=[]
-        if(pageId && pageId.length>0){
-            pageFollowings = (await this.pageService.findAllRecords({followers: {$in: [pageId]}}).select('_id')).map((user) => user._id);
+        let pageFollowings = []
+        let groups = [];
+        let pageGroups = [];
+        let allGroups = []
+        if (pageId && pageId.length > 0) {
+            pageFollowings = (await this.pageService.findAllRecords({'pageFollwers.page':
+                    {$in: [pageId]}}).select('_id')).map((user) => user._id);
             pageGroups = (await this.groupService.findAllRecords({'page_members.page': pageId})).map((group) => group._id);
 
         }
@@ -128,7 +130,7 @@ export class PostsController {
         const reportedUsers = reports.map((report) => report.user);
         // find all groups that user has joined
         groups = (await this.groupService.findAllRecords({'members.member': user._id})).map((group) => group._id);
-        allGroups=pageGroups.concat(pageGroups);
+        allGroups = pageGroups.concat(pageGroups);
         const condition = {
             creator: {$nin: [...user.blockedUsers, ...reportedUsers]},
             isBlocked: false,
@@ -229,8 +231,10 @@ export class PostsController {
 
         let comment;
         if (createCommentDto.comment) {
-            comment = await this.commentService.create({creator: user._id,
-                post: id, ...createCommentDto,page:page && page._id});
+            comment = await this.commentService.create({
+                creator: user._id,
+                post: id, ...createCommentDto, page: page && page._id
+            });
             const updatedComment = await this.commentService
                 .findOneRecordAndUpdate({_id: createCommentDto.comment}, {$push: {replies: comment._id}})
                 .populate('creator');
@@ -242,7 +246,7 @@ export class PostsController {
                 sender: user._id,
                 //@ts-ignore
                 receiver: updatedComment.creator._id,
-                page:page && page._id
+                page: page && page._id
             });
 
             await this.firebaseService.sendNotification({
@@ -256,8 +260,10 @@ export class PostsController {
 
 
         } else {
-            comment = await this.commentService.create({creator: user._id,
-                post: id, root: true, ...createCommentDto,page:page && page._id});
+            comment = await this.commentService.create({
+                creator: user._id,
+                post: id, root: true, ...createCommentDto, page: page && page._id
+            });
             await this.postsService.findOneRecordAndUpdate({_id: id}, {$push: {comments: comment._id}});
 
             //@ts-ignore
@@ -269,7 +275,7 @@ export class PostsController {
                     sender: user._id,
                     //@ts-ignore
                     receiver: post.creator._id,
-                    page:page && page._id
+                    page: page && page._id
                 });
                 // check if user has fcm token then send notification to that user.
                 if (post.creator.fcmToken) {
@@ -310,6 +316,16 @@ export class PostsController {
     async updateComment(@Body() {commentId, postId, ...rest}: UpdateCommentDto) {
         return await this.commentService.update({_id: commentId}, rest);
     }
+
+
+    @Get('page/:id/following')
+    async getPostPageFollowing(@Param('id', ParseObjectId) id: string, @GetUser() user: UserDocument) {
+        const pageFollowings = (await this.pageService.findAllRecords({'pageFollwers.page':
+                {$in: [new mongoose.Types.ObjectId(id)]}}).select('_id')).map((user) => user._id);
+        const followingPages = await this.postsService.find({page: {$in: pageFollowings}})
+        return followingPages;
+    }
+
 
     async isGroupModerator(postId: string, userId: string) {
         const post = await this.postsService.findOneRecord({_id: postId});
@@ -394,7 +410,7 @@ export class PostsController {
                 user: user._id,
                 emoji: addReactionsDto.emoji,
                 comment: comment._id,
-                page:addReactionsDto.page
+                page: addReactionsDto.page
             });
             await this.commentService.findOneRecordAndUpdate({_id: comment._id}, {$push: {reactions: reaction._id}});
             return reaction;
@@ -405,7 +421,7 @@ export class PostsController {
                 user: user._id,
                 emoji: addReactionsDto.emoji,
                 post: post._id,
-                page:addReactionsDto.page
+                page: addReactionsDto.page
 
             });
             await this.postsService.findOneRecordAndUpdate({_id: post._id}, {$push: {reactions: reaction._id}});
@@ -418,7 +434,7 @@ export class PostsController {
                     sender: user._id,
                     //@ts-ignore
                     receiver: post.creator._id,
-                    page:addReactionsDto.page
+                    page: addReactionsDto.page
                 });
 
                 if (post.creator.fcmToken) {
