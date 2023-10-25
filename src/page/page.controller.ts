@@ -92,7 +92,7 @@ export class PageController {
         const options = {limit: $q.limit, sort: $q.sort};
 
         let multipleQuery=[];
-
+        query= query || "";
         if(created){
             multipleQuery.push({creator:user._id});
         }
@@ -127,7 +127,7 @@ export class PageController {
         }
 
         if (filter === PageFilter.POPULAR) {
-            const condition = {name: {$regex: query, $options: 'i'}, creator: {$ne: user._id}};
+            const condition = {name: {$regex: query || "", $options: 'i'}, creator: {$ne: user._id}};
             const total = await this.pageService.countRecords(condition);
             const pages = await this.pageService.findAllRecords(condition, options);
             return {
@@ -140,7 +140,7 @@ export class PageController {
         }
 
         if (filter === PageFilter.LATEST) {
-            const condition = {name: {$regex: query, $options: 'i'}, creator: {$ne: user._id}};
+            const condition = {name: {$regex: query || "", $options: 'i'}, creator: {$ne: user._id}};
             const total = await this.pageService.countRecords(condition);
             const pages = await this.pageService.findAllRecords(condition, options);
             return {
