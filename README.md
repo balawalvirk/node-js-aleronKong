@@ -22,9 +22,21 @@
   <!--[![Backers on Open Collective](https://opencollective.com/nest/backers/badge.svg)](https://opencollective.com/nest#backer)
   [![Sponsors on Open Collective](https://opencollective.com/nest/sponsors/badge.svg)](https://opencollective.com/nest#sponsor)-->
 
+# Aleron Kong Backend
+
 ## Description
 
-[Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+The backend component of Aleron Kong, a social media platform for comic book enthusiasts. This server is responsible for handling API requests, data storage, authentication, and e-commerce functionalities among other core features.
+
+Designed with scalability and efficiency in mind, the Aleron Kong backend ensures a seamless experience for all its users.
+
+## Tech Stack
+
+- **Runtime**: Node.js
+- **Web Framework**: [Nest](https://github.com/nestjs/nest) framework TypeScript starter repository.
+- **Database**: MongoDB
+- **Authentication**: passport JWT
+- **Others**: Hosted on AWS using ec2 instance and s3 bucket for media. Check out the package.json for versions
 
 ## Installation
 
@@ -58,16 +70,8 @@ $ npm run test:e2e
 $ npm run test:cov
 ```
 
-## Support
+## API Documentation
 
-Nest is an MIT-licensed open source project. It can grow thanks to the sponsors and support by the amazing backers. If you'd like to join them, please [read more here](https://docs.nestjs.com/support).
+[Full Postman API documentation can be found here](https://documenter.getpostman.com/view/VV4uxHQ4?version=latest)
 
-## Stay in touch
 
-- Author - [Kamil Myśliwiec](https://kamilmysliwiec.com)
-- Website - [https://nestjs.com](https://nestjs.com/)
-- Twitter - [@nestframework](https://twitter.com/nestframework)
-
-## License
-
-Nest is [MIT licensed](LICENSE).
