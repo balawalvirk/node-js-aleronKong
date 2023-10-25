@@ -1,15 +1,14 @@
-import {Prop, Schema, SchemaFactory} from '@nestjs/mongoose';
+import { Prop, Schema, SchemaFactory } from '@nestjs/mongoose';
 import mongoose from 'mongoose';
-import {User} from 'src/users/users.schema';
-import {Page} from "src/page/page.schema";
+import { User } from 'src/users/users.schema';
 
-@Schema({timestamps: true, versionKey: false, _id: false})
+@Schema({ timestamps: true, versionKey: false, _id: false })
 export class Member {
-    @Prop({type: mongoose.Schema.Types.ObjectId, ref: 'Page'})
-    page: Page;
+  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true })
+  member: User;
 
-    @Prop({dafault: false})
-    banned: boolean;
+  @Prop({ dafault: false })
+  banned: boolean;
 }
 
 export const MemberSchema = SchemaFactory.createForClass(Member);

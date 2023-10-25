@@ -319,7 +319,8 @@ export class GroupController {
                     data: {group: group._id.toString(), type: NotificationType.GROUP_JOIN_REQUEST},
                 });
             }
-            return await this.groupService.findOneRecordAndUpdate({_id: id}, {$push: {pageRequests: page._id}});
+            return await this.groupService.findOneRecordAndUpdate({_id: id}, {$push: {pageRequests: page._id}})
+                .populate("pageRequests");
         }
         await this.notificationService.createRecord({
             type: NotificationType.GROUP_JOINED,
@@ -331,7 +332,8 @@ export class GroupController {
             page: page._id
         });
 
-        const updatedGroup = await this.groupService.findOneRecordAndUpdate({_id: id}, {$push: {page_members: {page: page._id}}});
+        const updatedGroup = await this.groupService.findOneRecordAndUpdate({_id: id}, {$push: {page_members: {page: page._id}}})
+            .populate("page_members.page");
 
         //@ts-ignore
         if (group.creator.fcmToken) {

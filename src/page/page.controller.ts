@@ -266,7 +266,7 @@ export class PageController {
         });
 
         return await this.pageService.findOneRecordAndUpdate({_id: id}, {$push:
-                {pageFollwers: {page: followerPage}}});
+                {pageFollwers: {page: followerPage}}}).populate("pageFollwers.page");
     }
 
 
@@ -281,7 +281,7 @@ export class PageController {
     async unFollowPage(@GetUser() user: UserDocument, @Param('id', ParseObjectId) id: string,
                        @Param('page', ParseObjectId) unFollowPage: string) {
         return await this.pageService.findOneRecordAndUpdate({_id: id}, {$pull: {pageFollwers:
-                    {page: unFollowPage}}});
+                    {page: unFollowPage}}}).populate("pageFollwers.page");
     }
 
 

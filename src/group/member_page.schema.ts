@@ -5,7 +5,7 @@ import {Page} from "src/page/page.schema";
 
 @Schema({ timestamps: true, versionKey: false, _id: false })
 export class PageMember {
-  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true })
+  @Prop({ type: mongoose.Schema.Types.ObjectId, ref: 'Page', required: true })
   page: Page;
 
   @Prop({ dafault: false })
