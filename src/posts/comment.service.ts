@@ -35,6 +35,7 @@ export class CommentService extends BaseService<CommentDocument> {
       { path: 'creator', select: 'firstName lastName avatar isGuildMember userName fcmToken enableNotifications' },
       { path: 'reactions', populate: { path: 'user', select: 'firstName lastName avatar' } },
       { path: 'mentions', select: 'firstName lastName avatar' },
+        { path: 'page', select: '_id name profilePhoto' },
 
       // populate replies upto 4 levels
       {

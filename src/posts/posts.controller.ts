@@ -85,6 +85,57 @@ export class PostsController {
         return paginated;
     }
 
+
+
+    @Post('reaction/create')
+    async addReactions(@Body() addReactionsDto: AddReactionsDto, @GetUser() user: UserDocument) {
+        // check if user is adding reaction in comment
+        if (addReactionsDto.comment) {
+            const comment = await this.commentService.findOneRecord({_id: addReactionsDto.comment}).populate('creator');
+            if (!comment) throw new BadRequestException('Comment does not exist.');
+            const reaction = await this.reactionService.create({
+                user: user._id,
+                emoji: addReactionsDto.emoji,
+                comment: comment._id,
+                page: addReactionsDto.page
+            });
+            await this.commentService.findOneRecordAndUpdate({_id: comment._id}, {$push: {reactions: reaction._id}});
+            return reaction;
+        } else {
+            const post = await this.postsService.findOneRecord({_id: addReactionsDto.post}).populate('creator');
+            if (!post) throw new HttpException('Post does not exists', HttpStatus.BAD_REQUEST);
+            const reaction = await this.reactionService.create({
+                user: user._id,
+                emoji: addReactionsDto.emoji,
+                post: post._id,
+                page: addReactionsDto.page
+
+            });
+            await this.postsService.findOneRecordAndUpdate({_id: post._id}, {$push: {reactions: reaction._id}});
+            //@ts-ignore
+            if (user._id != post.creator._id.toString()) {
+                await this.notificationService.createRecord({
+                    post: post._id,
+                    message: 'reacted to your post.',
+                    type: NotificationType.POST_REACTED,
+                    sender: user._id,
+                    //@ts-ignore
+                    receiver: post.creator._id,
+                    page: addReactionsDto.page
+                });
+
+                if (post.creator.fcmToken) {
+                    await this.firebaseService.sendNotification({
+                        token: post.creator.fcmToken,
+                        notification: {title: `${user.firstName} ${user.lastName} reacted on your post.`},
+                        data: {post: post._id.toString(), type: NotificationType.POST_REACTED},
+                    });
+                }
+            }
+            return reaction;
+        }
+    }
+
     @Get(':id/find-one')
     async findOne(@Param('id', ParseObjectId) id: string) {
         return await this.postsService.findOne({_id: id});
@@ -338,7 +389,7 @@ export class PostsController {
 
             }
         }
-
+        comment.page=page;
         return comment;
     }
 
@@ -447,54 +498,7 @@ export class PostsController {
 
     // ====================================================================reactions apis===================================================================
 
-    @Post('reaction/create')
-    async addReactions(@Body() addReactionsDto: AddReactionsDto, @GetUser() user: UserDocument) {
-        // check if user is adding reaction in comment
-        if (addReactionsDto.comment) {
-            const comment = await this.commentService.findOneRecord({_id: addReactionsDto.comment}).populate('creator');
-            if (!comment) throw new BadRequestException('Comment does not exist.');
-            const reaction = await this.reactionService.create({
-                user: user._id,
-                emoji: addReactionsDto.emoji,
-                comment: comment._id,
-                page: addReactionsDto.page
-            });
-            await this.commentService.findOneRecordAndUpdate({_id: comment._id}, {$push: {reactions: reaction._id}});
-            return reaction;
-        } else {
-            const post = await this.postsService.findOneRecord({_id: addReactionsDto.post}).populate('creator');
-            if (!post) throw new HttpException('Post does not exists', HttpStatus.BAD_REQUEST);
-            const reaction = await this.reactionService.create({
-                user: user._id,
-                emoji: addReactionsDto.emoji,
-                post: post._id,
-                page: addReactionsDto.page
 
-            });
-            await this.postsService.findOneRecordAndUpdate({_id: post._id}, {$push: {reactions: reaction._id}});
-            //@ts-ignore
-            if (user._id != post.creator._id.toString()) {
-                await this.notificationService.createRecord({
-                    post: post._id,
-                    message: 'reacted to your post.',
-                    type: NotificationType.POST_REACTED,
-                    sender: user._id,
-                    //@ts-ignore
-                    receiver: post.creator._id,
-                    page: addReactionsDto.page
-                });
-
-                if (post.creator.fcmToken) {
-                    await this.firebaseService.sendNotification({
-                        token: post.creator.fcmToken,
-                        notification: {title: `${user.firstName} ${user.lastName} reacted on your post.`},
-                        data: {post: post._id.toString(), type: NotificationType.POST_REACTED},
-                    });
-                }
-            }
-            return reaction;
-        }
-    }
 
     @Delete('reaction/:id/delete')
     async deleteReaction(@Param('id', ParseObjectId) id: string) {
