@@ -1,10 +1,11 @@
-import { Body, Controller, Delete, Get, Put, Query, UseGuards } from '@nestjs/common';
+import {Body, Controller, Delete, Get, Param, Put, Query, UseGuards} from '@nestjs/common';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
-import { GetUser, makeQuery } from 'src/helpers';
+import {GetUser, makeQuery, ParseObjectId} from 'src/helpers';
 import { UserDocument } from 'src/users/users.schema';
 import { DeleteNotificationDto } from './dto/delete-notification.dto';
 import { FindAllNotificationsQueryDto } from './dto/find-all-notifications.query.dto';
 import { NotificationService } from './notification.service';
+import mongoose from "mongoose";
 
 @Controller('notification')
 @UseGuards(JwtAuthGuard)
@@ -40,4 +41,13 @@ export class NotificationController {
     await this.notificationService.deleteManyRecord({ receiver: user._id });
     return { message: 'Notifications deleted successfully.' };
   }
+
+
+
+    @Delete('delete-all/page/:page')
+    async deleteAllPageNotifications(@GetUser() user: UserDocument,@Param('page') pageId: string) {
+        await this.notificationService.deleteManyRecord({ page: new mongoose.Types.ObjectId(pageId) });
+        return { message: 'Notifications deleted successfully.' };
+    }
+
 }
