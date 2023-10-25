@@ -252,7 +252,7 @@ export class UserController {
       .flat(Infinity)
       //@ts-ignore
       .map((member) => member.member);
-    const allUsers = [...suggestedFriends, ...groupMembers].filter((usr) => !usr.equals(user._id));
+    const allUsers = [...suggestedFriends, ...groupMembers].filter((usr) => usr && !usr.equals(user._id));
 
     const $q = makeQuery({ page, limit });
     const condition = { _id: { $in: allUsers } };
