@@ -22,6 +22,8 @@ export class PostsService extends BaseService<PostDocument> {
                         select: 'firstName lastName avatar isGuildMember userName fcmToken enableNotifications'
                     },
                     {path: 'mentions', select: 'firstName lastName avatar'},
+                    {path: 'page', select: '_id name profilePhoto'},
+
                 ],
             },
             {path: 'likes', select: 'firstName lastName avatar fcmToken'},
@@ -31,7 +33,13 @@ export class PostsService extends BaseService<PostDocument> {
             },
             {path: 'group', select: 'name'},
             {path: 'fundraising', populate: [{path: 'category'}, {path: 'subCategory'}]},
-            {path: 'reactions', populate: {path: 'user', select: 'firstName lastName avatar'}},
+            {
+                path: 'reactions', populate: [
+                    {path: 'user', select: 'firstName lastName avatar'},
+                    {path: 'page', select: 'name profilePhoto'},
+
+                ]
+            },
             {path: 'tagged', select: 'firstName lastName avatar fcmToken enableNotifications'},
             {path: 'mentions', select: 'firstName lastName avatar'},
             {path: 'page', select: 'name profilePhoto'},
@@ -145,6 +153,15 @@ export class PostsService extends BaseService<PostDocument> {
         const posts = await this.postModel.find(query, {}, options).populate(this.getHomePostpopulateFields()).lean();
         return posts.map((post) => ({...post, comments: post.comments.slice(0, 3)}));
     }
+
+
+    async getRandomPosts() {
+        const posts = await this.postModel.aggregate([{$match: {"page": {$exists: true}}}, {$sample: {size: 10}}]);
+        await this.postModel.populate(posts, this.getHomePostpopulateFields());
+
+        return posts.map((post) => ({...post, comments: post.comments.slice(0, 3)}));
+    }
+
 
     async update(query: FilterQuery<PostDocument>, updateQuery: UpdateQuery<PostDocument>) {
         return await this.postModel.findOneAndUpdate(query, updateQuery, {new: true}).populate(this.getPopulateFields()).lean();

@@ -90,7 +90,17 @@ export class PostsController {
     @Post('reaction/create')
     async addReactions(@Body() addReactionsDto: AddReactionsDto, @GetUser() user: UserDocument) {
         // check if user is adding reaction in comment
+
+        let page;
+
+        if(addReactionsDto.page){
+            page = await this.pageService.findOneRecord({_id: addReactionsDto.page})
+
+        }
+
         if (addReactionsDto.comment) {
+
+
             const comment = await this.commentService.findOneRecord({_id: addReactionsDto.comment}).populate('creator');
             if (!comment) throw new BadRequestException('Comment does not exist.');
             const reaction = await this.reactionService.create({
@@ -100,6 +110,7 @@ export class PostsController {
                 page: addReactionsDto.page
             });
             await this.commentService.findOneRecordAndUpdate({_id: comment._id}, {$push: {reactions: reaction._id}});
+            reaction.page=page
             return reaction;
         } else {
             const post = await this.postsService.findOneRecord({_id: addReactionsDto.post}).populate('creator');
@@ -132,6 +143,7 @@ export class PostsController {
                     });
                 }
             }
+            reaction.page=page;
             return reaction;
         }
     }
@@ -250,7 +262,13 @@ export class PostsController {
                 ],
         };
 
-        const posts = await this.postsService.findHomePosts(condition, options);
+        let posts = await this.postsService.findHomePosts(condition, options);
+
+
+            posts = await this.postsService.getRandomPosts();
+
+
+
 
         const totalPosts = await Promise.all(
             posts.map(async (post) => {
@@ -412,7 +430,10 @@ export class PostsController {
 
     @Put('comment/update')
     async updateComment(@Body() {commentId, postId, ...rest}: UpdateCommentDto) {
-        return await this.commentService.update({_id: commentId}, rest);
+        const updated= await this.commentService.update({_id: commentId}, rest);
+        const page=await this.pageService.findOneRecord({_id:updated.page});
+        updated.page=page;
+        return updated;
     }
 
 
@@ -511,7 +532,11 @@ export class PostsController {
 
     @Put('reaction/:id/update')
     async updateReaction(@Param('id', ParseObjectId) id: string, @Body() updateReactionsDto: UpdateReactionsDto) {
-        return await this.reactionService.update({_id: id}, {emoji: updateReactionsDto.emoji});
+        const updated=await this.reactionService.update({_id: id}, {emoji: updateReactionsDto.emoji});
+        const page=await this.pageService.findOneRecord({_id:updated.page});
+
+        updated.page=page;
+        return updated;
     }
 
     @Get('tagged/find-all')
