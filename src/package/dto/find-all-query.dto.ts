@@ -1,22 +1,26 @@
-import { Type } from 'class-transformer';
-import { IsBoolean, IsMongoId, IsOptional } from 'class-validator';
+import {Type} from 'class-transformer';
+import {IsBoolean, IsMongoId, IsOptional} from 'class-validator';
 
 export class FindAllPackagesQueryDto {
-  @IsOptional()
-  @IsMongoId()
-  creator?: string;
+    @IsOptional()
+    @IsMongoId()
+    creator?: string;
 
-  @IsOptional()
-  @IsBoolean()
-  @Type(() => Boolean)
-  isGuildPackage?: boolean;
+    @IsOptional()
+    @IsMongoId()
+    guild?: string;
 
-  @IsOptional()
-  page: string;
+    @IsOptional()
+    @IsBoolean()
+    @Type(() => Boolean)
+    isGuildPackage?: boolean;
 
-  @IsOptional()
-  query: string;
+    @IsOptional()
+    page: string;
 
-  @IsOptional()
-  limit: string;
+    @IsOptional()
+    query: string;
+
+    @IsOptional()
+    limit: string;
 }

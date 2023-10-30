@@ -26,6 +26,7 @@ import {MuteModule} from './mute/mute.module';
 import {BroadcastModule} from './broadcast/broadcast.module';
 import {PageModule} from './page/page.module';
 import * as redisStore from 'cache-manager-redis-store';
+import {GuildModule} from "src/guild/guild.module";
 
 @Module({
     imports: [
@@ -58,6 +59,7 @@ import * as redisStore from 'cache-manager-redis-store';
         MuteModule,
         BroadcastModule,
         PageModule,
+        GuildModule
     ],
     // global interceptor for transforming response.
     providers: [
