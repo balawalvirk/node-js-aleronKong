@@ -375,7 +375,7 @@ export class GroupController {
     @Get('all-members/:id')
     async findAllMembers(@Param('id') id: string) {
         const group = await this.groupService.findAllMembers({_id: id});
-        return group.members;
+        return {members:group.members,page_members:group.page_members};
     }
 
     @Put('remove-member')
@@ -438,8 +438,8 @@ export class GroupController {
     @Get('all-requests/:id')
     async findAllRequests(@Param('id', ParseObjectId) id: string) {
         const group = await this.groupService.findAllRequests({_id: id});
-        if (!group.requests) return [];
-        return group.requests;
+        if (!group) throw new HttpException('Group does not exist.', HttpStatus.BAD_REQUEST);
+        return {requests:group.requests,pageRequests:group.pageRequests};
     }
 
     @Put('request/:id/:userId')

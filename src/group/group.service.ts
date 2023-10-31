@@ -13,11 +13,16 @@ export class GroupService extends BaseService<GroupDocument> {
   }
 
   async findAllMembers(query: FilterQuery<GroupDocument>) {
-    return await this.groupModel.findOne(query).populate({ path: 'members.member', select: 'firstName lastName avatar' }).select('members -_id');
+    return await this.groupModel.findOne(query)
+        .populate({ path: 'members.member', select: 'firstName lastName avatar' })
+        .populate({ path: 'page_members.page' })
+        .select('members -_id page_members');
   }
 
   async findAllRequests(query: FilterQuery<GroupDocument>) {
-    return await this.groupModel.findOne(query).populate({ path: 'requests', select: 'firstName lastName avatar' }).select('-_id requests');
+    return await this.groupModel.findOne(query).populate({ path: 'requests', select: 'firstName lastName avatar' })
+        .populate({ path: 'pageRequests' })
+        .select('-_id requests pageRequests');
   }
 
   async isGroupMuted(mute: LeanDocument<MuteDocument>) {
