@@ -57,7 +57,6 @@ export class PageController {
         private readonly commentService: PageCommentService,
         private readonly reactionService: PageReactionService,
         private readonly socketService: SocketGateway,
-
     ) {
     }
 
@@ -68,55 +67,90 @@ export class PageController {
 
 
     @Put('comment/update')
-    async updateComment(@Body() { commentId, pageId, ...rest }: UpdatePageCommentDto) {
-        return await this.commentService.update({ _id: commentId }, rest);
+    async updateComment(@Body() {commentId, pageId, ...rest}: UpdatePageCommentDto) {
+        return await this.commentService.update({_id: commentId}, rest);
     }
 
 
     @Get(':id/find-one')
     async findOne(@Param('id', ParseObjectId) id: string) {
-        return await this.pageService.findOneRecord({_id: id})
-            .populate({ path: 'moderators.user', select: 'firstName lastName avatar' })
-            .populate("moderators.moderator","createPost engageAsPage deletePage editPage");
+        const page: any = await this.pageService.findOneRecord({_id: id})
+            .populate({path: 'moderators.user', select: 'firstName lastName avatar'})
+            .populate("moderators.moderator", "createPost engageAsPage deletePage editPage")
+            .populate("pageFollwers.page")
+            .populate("followers.follower", "firstName lastName avatar")
+            .lean();
+
+
+        if (page) {
+            page.followers = (page.followers || []).concat(page.pageFollwers || []);
+            delete page.pageFollwers;
+        }
+        return page;
+
     }
 
     @Put(':id/update')
     async update(@Param('id', ParseObjectId) id: string, @Body() updatePageDto: UpdatePageDto) {
-        return await this.pageService.findOneRecordAndUpdate({_id: id}, updatePageDto);
+        const updated: any = await this.pageService.findOneRecordAndUpdate({_id: id}, updatePageDto)
+            .populate({path: 'moderators.user', select: 'firstName lastName avatar'})
+            .populate("moderators.moderator", "createPost engageAsPage deletePage editPage")
+            .populate("pageFollwers.page")
+            .populate("followers.follower", "firstName lastName avatar")
+            .lean();
+        if (updated) {
+            updated.followers = (updated.followers).concat(updated.pageFollwers);
+            delete updated.pageFollwers;
+
+        }
+        return updated;
+
     }
 
     @Get('/find-all')
     @UsePipes(new ValidationPipe({transform: true}))
-    async findAll(@Query() {filter, query, limit, page,created,moderating,following,pageId}: any, @GetUser() user: UserDocument) {
+    async findAll(@Query() {filter, query, limit, page, created, moderating, following, pageId}: any, @GetUser() user: UserDocument) {
         const $q = makeQuery({page, limit});
         const options = {limit: $q.limit, sort: $q.sort};
 
-        let multipleQuery=[];
-        query= query || "";
-        if(created){
-            multipleQuery.push({creator:user._id});
+        let multipleQuery = [];
+        query = query || "";
+        if (created) {
+            multipleQuery.push({creator: user._id});
         }
 
 
-        if(moderating){
-            multipleQuery.push({'moderators.user': {$in:[user._id]}});
+        if (moderating) {
+            multipleQuery.push({'moderators.user': {$in: [user._id]}});
         }
 
-        if(following){
+        if (following) {
 
-            if(pageId){
-                multipleQuery.push({'pageFollwers.page': {$in:[pageId]}});
-            }else{
-                multipleQuery.push({'followers.follower': {$in:[user._id]}});
+            if (pageId) {
+                multipleQuery.push({'pageFollwers.page': {$in: [pageId]}});
+            } else {
+                multipleQuery.push({'followers.follower': {$in: [user._id]}});
             }
         }
 
 
-
         if (filter === PageFilter.ALL) {
-            const condition = {name: {$regex: query||"", $options: 'i'}, creator: {$ne: user._id}};
+            const condition = {name: {$regex: query || "", $options: 'i'}, creator: {$ne: user._id}};
             const total = await this.pageService.countRecords(condition);
-            const pages = await this.pageService.findAllRecords(condition, options);
+            let pages = await this.pageService.findAllRecords(condition, options)
+                .populate({path: 'moderators.user', select: 'firstName lastName avatar'})
+                .populate("moderators.moderator", "createPost engageAsPage deletePage editPage")
+                .populate("pageFollwers.page")
+                .populate("followers.follower", "firstName lastName avatar")
+                .lean();
+
+            pages = pages.map((p: any) => {
+                p.followers = (p.followers).concat(p.pageFollwers);
+                delete p.pageFollwers;
+
+                return p;
+            })
+
             return {
                 total,
                 pages: Math.floor(total / $q.limit),
@@ -129,7 +163,20 @@ export class PageController {
         if (filter === PageFilter.POPULAR) {
             const condition = {name: {$regex: query || "", $options: 'i'}, creator: {$ne: user._id}};
             const total = await this.pageService.countRecords(condition);
-            const pages = await this.pageService.findAllRecords(condition, options);
+            let pages = await this.pageService.findAllRecords(condition, options)
+                .populate({path: 'moderators.user', select: 'firstName lastName avatar'})
+                .populate("moderators.moderator", "createPost engageAsPage deletePage editPage")
+                .populate("pageFollwers.page")
+                .populate("followers.follower", "firstName lastName avatar")
+                .lean();
+
+            pages = pages.map((p: any) => {
+                p.followers = (p.followers).concat(p.pageFollwers);
+                delete p.pageFollwers;
+
+                return p;
+            })
+
             return {
                 total,
                 pages: Math.floor(total / $q.limit),
@@ -142,7 +189,17 @@ export class PageController {
         if (filter === PageFilter.LATEST) {
             const condition = {name: {$regex: query || "", $options: 'i'}, creator: {$ne: user._id}};
             const total = await this.pageService.countRecords(condition);
-            const pages = await this.pageService.findAllRecords(condition, options);
+            let pages = await this.pageService.findAllRecords(condition, options)
+                .populate({path: 'moderators.user', select: 'firstName lastName avatar'})
+                .populate("moderators.moderator", "createPost engageAsPage deletePage editPage")
+                .populate("pageFollwers.page")
+                .populate("followers.follower", "firstName lastName avatar")
+                .lean();
+            pages = pages.map((p: any) => {
+                p.followers = (p.followers).concat(p.pageFollwers);
+                delete p.pageFollwers;
+                return p;
+            })
             return {
                 total,
                 pages: Math.floor(total / $q.limit),
@@ -155,7 +212,20 @@ export class PageController {
         if (filter === PageFilter.SUGGESTED) {
             const condition = {name: {$regex: query, $options: 'i'}, creator: {$ne: user._id}};
             const total = await this.pageService.countRecords(condition);
-            const pages = await this.pageService.findAllRecords(condition, options);
+            let pages = await this.pageService.findAllRecords(condition, options)
+                .populate({path: 'moderators.user', select: 'firstName lastName avatar'})
+                .populate("moderators.moderator", "createPost engageAsPage deletePage editPage")
+                .populate("pageFollwers.page")
+                .populate("followers.follower", "firstName lastName avatar")
+                .lean();
+
+            pages = pages.map((p: any) => {
+                p.followers = (p.followers).concat(p.pageFollwers);
+                delete p.pageFollwers;
+
+                return p;
+            })
+
             return {
                 total,
                 pages: Math.floor(total / $q.limit),
@@ -166,12 +236,25 @@ export class PageController {
         }
 
 
-        if(multipleQuery.length > 0){
-            const condition = {$or:multipleQuery};
+        if (multipleQuery.length > 0) {
+            const condition = {$or: multipleQuery};
             const total = await this.pageService.countRecords(condition);
-            const pages = await this.pageService.findAllRecords(condition, options)
-                .populate("moderators.user","firstName lastName avatar")
-                .populate("moderators.moderator","createPost engageAsPage deletePage editPage");
+            let pages = await this.pageService.findAllRecords(condition, options)
+                .populate({path: 'moderators.user', select: 'firstName lastName avatar'})
+                .populate("moderators.moderator", "createPost engageAsPage deletePage editPage")
+                .populate("pageFollwers.page")
+                .populate("followers.follower", "firstName lastName avatar")
+                .lean();
+
+
+            pages = pages.map((p: any) => {
+                p.followers = (p.followers).concat(p.pageFollwers);
+                delete p.pageFollwers;
+
+                return p;
+            })
+
+
             return {
                 total,
                 pages: Math.floor(total / $q.limit),
@@ -190,7 +273,20 @@ export class PageController {
         const condition = {creator: id};
         const options = {sort: $q.sort, limit: $q.limit, skip: $q.skip};
         const total = await this.pageService.countRecords(condition);
-        const pages = await this.pageService.findAllRecords(condition, options);
+        let pages = await this.pageService.findAllRecords(condition, options)
+            .populate({path: 'moderators.user', select: 'firstName lastName avatar'})
+            .populate("moderators.moderator", "createPost engageAsPage deletePage editPage")
+            .populate("pageFollwers.page")
+            .populate("followers.follower", "firstName lastName avatar")
+            .lean();
+
+        pages = pages.map((p: any) => {
+            p.followers = (p.followers).concat(p.pageFollwers);
+            delete p.pageFollwers;
+
+            return p;
+        })
+
         const paginated = {
             total,
             pages: Math.round(total / $q.limit),
@@ -231,12 +327,26 @@ export class PageController {
             data: {page: id.toString(), type: NotificationType.PAGE_FOLLOW_ACCEPTED},
         });
 
-        return await this.pageService.findOneRecordAndUpdate({_id: id}, {$push: {followers: {follower: user._id}}});
+        const updated: any = await this.pageService.findOneRecordAndUpdate({_id: id}, {$push: {followers: {follower: user._id}}})
+            .populate({path: 'moderators.user', select: 'firstName lastName avatar'})
+            .populate("moderators.moderator", "createPost engageAsPage deletePage editPage")
+            .populate("pageFollwers.page")
+            .populate("followers.follower", "firstName lastName avatar")
+            .lean();
+
+        if (updated) {
+            updated.followers = (updated.followers).concat(updated.pageFollwers);
+            delete updated.pageFollwers;
+
+        }
+
+        return updated;
+
     }
 
 
     @Put(':id/followerPage/:followerPage/follow')
-    async followPage(@Param('id', ParseObjectId) id: string,@Param('followerPage', ParseObjectId) followerPage: string, @GetUser() user: UserDocument) {
+    async followPage(@Param('id', ParseObjectId) id: string, @Param('followerPage', ParseObjectId) followerPage: string, @GetUser() user: UserDocument) {
         const page = await this.pageService.findOneRecord({_id: id})
             .populate("creator")
         if (!page) throw new BadRequestException('Page does not exists.');
@@ -265,32 +375,96 @@ export class PageController {
             data: {page: id.toString(), type: NotificationType.PAGE_FOLLOW_ACCEPTED},
         });
 
-        return await this.pageService.findOneRecordAndUpdate({_id: id}, {$push:
-                {pageFollwers: {page: followerPage}}}).populate("pageFollwers.page");
-    }
+        const updated: any = await this.pageService.findOneRecordAndUpdate({_id: id}, {
+            $push:
+                {pageFollwers: {page: followerPage}}
+        })
+            .populate({path: 'moderators.user', select: 'firstName lastName avatar'})
+            .populate("moderators.moderator", "createPost engageAsPage deletePage editPage")
+            .populate("pageFollwers.page")
+            .populate("followers.follower", "firstName lastName avatar")
+            .lean();
+        ;
 
+
+        if (updated) {
+            updated.followers = (updated.followers).concat(updated.pageFollwers);
+            delete updated.pageFollwers;
+
+        }
+
+        return updated;
+
+    }
 
 
     @Put(':id/un-follow')
     async unFollow(@GetUser() user: UserDocument, @Param('id', ParseObjectId) id: string) {
-        return await this.pageService.findOneRecordAndUpdate({_id: id}, {$pull: {followers: {follower: user._id}}});
+        const updated: any = await this.pageService.findOneRecordAndUpdate({_id: id}, {$pull: {followers: {follower: user._id}}})
+            .populate({path: 'moderators.user', select: 'firstName lastName avatar'})
+            .populate("moderators.moderator", "createPost engageAsPage deletePage editPage")
+            .populate("pageFollwers.page")
+            .populate("followers.follower", "firstName lastName avatar")
+            .lean();
+
+
+        if (updated) {
+            updated.followers = (updated.followers).concat(updated.pageFollwers);
+            delete updated.pageFollwers;
+
+        }
+
+        return updated;
     }
 
 
     @Put(':id/page/:page/un-follow')
     async unFollowPage(@GetUser() user: UserDocument, @Param('id', ParseObjectId) id: string,
                        @Param('page', ParseObjectId) unFollowPage: string) {
-        return await this.pageService.findOneRecordAndUpdate({_id: id}, {$pull: {pageFollwers:
-                    {page: unFollowPage}}}).populate("pageFollwers.page");
+        const updated: any = await this.pageService.findOneRecordAndUpdate({_id: id}, {
+            $pull: {
+                pageFollwers:
+                    {page: unFollowPage}
+            }
+        })
+            .populate({path: 'moderators.user', select: 'firstName lastName avatar'})
+            .populate("moderators.moderator", "createPost engageAsPage deletePage editPage")
+            .populate("pageFollwers.page")
+            .populate("followers.follower", "firstName lastName avatar")
+            .lean();
+        ;
+
+        if (updated) {
+            updated.followers = (updated.followers).concat(updated.pageFollwers);
+            delete updated.pageFollwers;
+
+        }
+
+        return updated;
+
     }
 
 
     @Get('follow/find-all')
     async findAllfollowedPages(@GetUser() user: UserDocument) {
-        return await this.pageService.findAllRecords({'followers.follower': user._id}).populate('creator');
+        let pages: any = await this.pageService.findAllRecords({'followers.follower': user._id}).populate('creator')
+            .populate({path: 'moderators.user', select: 'firstName lastName avatar'})
+            .populate("moderators.moderator", "createPost engageAsPage deletePage editPage")
+            .populate("pageFollwers.page")
+            .populate("followers.follower", "firstName lastName avatar")
+            .lean();
+        ;
+
+        pages = pages.map((p) => {
+            p.followers = (p.followers).concat(p.pageFollwers);
+            delete p.pageFollwers;
+
+            return p;
+        })
+
+        return pages;
+
     }
-
-
 
 
     // find all post of page that user follow
@@ -314,7 +488,16 @@ export class PageController {
 
     @Get(':id/follower/find-all')
     async findAllFollowers(@Param('id', ParseObjectId) id: string) {
-        return await this.pageService.findAllFollowers({_id: id});
+        let page: any = await this.pageService.findAllFollowers({_id: id});
+
+
+        if (page) {
+            page.followers = (page.followers).concat(page.pageFollwers);
+            delete page.pageFollwers;
+        }
+        return page;
+
+
     }
 
     // find posts of specfic page
@@ -342,6 +525,7 @@ export class PageController {
         if (page.creator.toString() != user._id) throw new BadRequestException('You cannot delete this page.');
         await this.pageService.deleteSingleRecord({_id: page._id});
         await this.postService.deleteManyRecord({page: page._id});
+
         return page;
     }
 
@@ -349,7 +533,7 @@ export class PageController {
     @Post('moderator/create')
     async createModerator(@Body() createModeratorDto: CreatePageModeratorDto, @GetUser() user: UserDocument) {
         const page = await this.pageService.findOneRecord({_id: createModeratorDto.page});
-        const moderator=await this.usersService.findOne({_id:createModeratorDto.user})
+        const moderator = await this.usersService.findOne({_id: createModeratorDto.user})
 
         if (!moderator) throw new HttpException('Moderator does not exists.', HttpStatus.BAD_REQUEST);
 
@@ -358,13 +542,13 @@ export class PageController {
         // check if user is already a moderator in this group
         // @ts-ignore
 
-        const findIndex=(page.moderators).findIndex((moderator)=>(moderator.user).toString()===createModeratorDto.user)
+        const findIndex = (page.moderators).findIndex((moderator) => (moderator.user).toString() === createModeratorDto.user)
 
-        if (findIndex!==-1) throw new BadRequestException('This moderator already exists in this page.');
+        if (findIndex !== -1) throw new BadRequestException('This moderator already exists in this page.');
         if (page.creator.toString() != user._id) throw new UnauthorizedException();
         const saveModerator = await this.moderatorService.create(createModeratorDto);
         await this.pageService.findOneRecordAndUpdate({_id: createModeratorDto.page},
-            {$push: {moderators: {user:createModeratorDto.user,moderator:saveModerator._id}}});
+            {$push: {moderators: {user: createModeratorDto.user, moderator: saveModerator._id}}});
 
 
         await this.notificationService.createRecord({
@@ -374,7 +558,7 @@ export class PageController {
             message: `${user.firstName} ${user.lastName} has added you as moderator.`,
             sender: user._id,
             //@ts-ignore
-            receiver:createModeratorDto.user
+            receiver: createModeratorDto.user
         });
 
         await this.firebaseService.sendNotification({
@@ -400,13 +584,13 @@ export class PageController {
         if (!moderator) throw new HttpException('Moderator does not exists.', HttpStatus.BAD_REQUEST);
         if (moderator.user.toString() == user._id || moderator.page.creator.toString() == user._id) {
             await this.moderatorService.deleteSingleRecord({_id: id});
-            const page = await this.pageService.findOneRecord({_id:moderator.page});
-            const findIndex=(page.moderators).findIndex((m)=>(m.moderator).toString()===(moderator._id).toString());
+            const page = await this.pageService.findOneRecord({_id: moderator.page});
+            const findIndex = (page.moderators).findIndex((m) => (m.moderator).toString() === (moderator._id).toString());
 
-            if(findIndex===-1){
+            if (findIndex === -1) {
                 throw new HttpException('Moderator does not exists.', HttpStatus.BAD_REQUEST);
             }
-            (page.moderators).splice(findIndex,1);
+            (page.moderators).splice(findIndex, 1);
             await page.save();
 
             //await this.pageService.findOneRecordAndUpdate({_id: moderator.page}, {$pull: {"moderators.m": moderator._id}});
@@ -428,7 +612,7 @@ export class PageController {
     async createInvitation(@Body() {friend, page}: CreateInvitationDto, @GetUser() user: UserDocument) {
         const invitationFound = await this.invitationService.findOneRecord({user: user._id, page, friend});
         if (invitationFound) throw new BadRequestException('Page invitation request already exists.');
-        const invitation = await this.invitationService.create({user: user._id, page, friend});
+        const invitation: any = await this.invitationService.create({user: user._id, page, friend});
 
 
         await this.notificationService.createRecord({
@@ -439,15 +623,17 @@ export class PageController {
             sender: user._id,
             //@ts-ignore
             receiver: invitation.friend._id,
-            invitation:invitation._id
+            invitation: invitation._id
         });
 
         await this.firebaseService.sendNotification({
             token: invitation.friend.fcmToken,
             notification: {title: `has sent you a page invitation request.`},
             //@ts-ignore
-            data: {page: invitation.page._id.toString(), type: NotificationType.PAGE_INVITATION,
-                invitation:(invitation._id).toString()},
+            data: {
+                page: invitation.page._id.toString(), type: NotificationType.PAGE_INVITATION,
+                invitation: (invitation._id).toString()
+            },
         });
 
         return invitation;
@@ -464,7 +650,7 @@ export class PageController {
         @Param('id', ParseObjectId) id: string,
         @GetUser() user: UserDocument
     ) {
-        let invitation:any = await this.invitationService.findOne({_id: id});
+        let invitation: any = await this.invitationService.findOne({_id: id});
         if (!invitation) throw new BadRequestException('Page invitation does not exists.');
         await this.invitationService.deleteSingleRecord({_id: id});
 
@@ -477,7 +663,7 @@ export class PageController {
                 sender: user._id,
                 //@ts-ignore
                 receiver: invitation.user._id,
-                invitation:invitation._id
+                invitation: invitation._id
             });
             //@ts-ignore
 
@@ -485,16 +671,20 @@ export class PageController {
                 token: invitation.user.fcmToken,
                 notification: {title: `${user.firstName} ${user.lastName} has accepted the ${invitation.page.name} page follow request`},
                 // @ts-ignore
-                data: {page: invitation.page._id.toString(), type: NotificationType.PAGE_FOLLOW_ACCEPTED,
-                    invitation:invitation._id.toString()},
+                data: {
+                    page: invitation.page._id.toString(), type: NotificationType.PAGE_FOLLOW_ACCEPTED,
+                    invitation: invitation._id.toString()
+                },
             });
-           const page= await this.pageService.findOneRecordAndUpdate({ _id: invitation.page._id }, { $pull: { requests: user._id }, $push: { followers: { follower: user._id } } });
-           invitation.page=page;
+            const page = await this.pageService.findOneRecordAndUpdate({_id: invitation.page._id}, {
+                $pull: {requests: user._id},
+                $push: {followers: {follower: user._id}}
+            });
+            invitation.page = page;
         }
 
         return invitation;
     }
-
 
 
     @Put('request/:id/:userId')
@@ -504,12 +694,15 @@ export class PageController {
         @Param('userId', ParseObjectId) userId: string,
         @GetUser() user: UserDocument
     ) {
-        const page = await this.pageService.findOneRecord({ _id: id });
+        const page = await this.pageService.findOneRecord({_id: id});
         if (!page) throw new HttpException('Page does not exist.', HttpStatus.BAD_REQUEST);
 
         if (page.creator.toString() == user._id) {
             if (isApproved) {
-                await this.pageService.findOneRecordAndUpdate({ _id: id }, { $pull: { requests: userId }, $push: { followers: { follower: userId } } });
+                await this.pageService.findOneRecordAndUpdate({_id: id}, {
+                    $pull: {requests: userId},
+                    $push: {followers: {follower: userId}}
+                });
                 await this.notificationService.createRecord({
                     page: page._id,
                     sender: user._id,
@@ -521,13 +714,13 @@ export class PageController {
                 if (page.creator.fcmToken) {
                     await this.firebaseService.sendNotification({
                         token: page.creator.fcmToken,
-                        notification: { title: `Your request to join page is approved` },
-                        data: { page: page._id.toString(), type: NotificationType.PAGE_JOIN_REQUEST_APPROVED },
+                        notification: {title: `Your request to join page is approved`},
+                        data: {page: page._id.toString(), type: NotificationType.PAGE_JOIN_REQUEST_APPROVED},
                     });
                 }
                 return 'Request approved successfully.';
             } else {
-                await this.pageService.findOneRecordAndUpdate({ _id: id }, { $pull: { requests: userId } });
+                await this.pageService.findOneRecordAndUpdate({_id: id}, {$pull: {requests: userId}});
 
                 await this.notificationService.createRecord({
                     page: page._id,
@@ -540,19 +733,22 @@ export class PageController {
                 if (page.creator.fcmToken) {
                     await this.firebaseService.sendNotification({
                         token: page.creator.fcmToken,
-                        notification: { title: `Your request to join page is rejected` },
-                        data: { page: page._id.toString(), type: NotificationType.PAGE_JOIN_REQUEST_REJECTED },
+                        notification: {title: `Your request to join page is rejected`},
+                        data: {page: page._id.toString(), type: NotificationType.PAGE_JOIN_REQUEST_REJECTED},
                     });
                 }
 
                 return 'Request rejected successfully.';
             }
         } else {
-            const moderator = await this.moderatorService.findOneRecord({ group: id, user: user._id });
+            const moderator = await this.moderatorService.findOneRecord({group: id, user: user._id});
             if (!moderator) throw new UnauthorizedException();
 
             if (isApproved) {
-                await this.pageService.findOneRecordAndUpdate({ _id: id }, { $pull: { requests: userId }, $push: { followers: { follower: userId } } });
+                await this.pageService.findOneRecordAndUpdate({_id: id}, {
+                    $pull: {requests: userId},
+                    $push: {followers: {follower: userId}}
+                });
 
                 await this.notificationService.createRecord({
                     page: page._id,
@@ -565,14 +761,14 @@ export class PageController {
                 if (page.creator.fcmToken) {
                     await this.firebaseService.sendNotification({
                         token: page.creator.fcmToken,
-                        notification: { title: `Your request to join page is approved` },
-                        data: { page: page._id.toString(), type: NotificationType.PAGE_JOIN_REQUEST_APPROVED },
+                        notification: {title: `Your request to join page is approved`},
+                        data: {page: page._id.toString(), type: NotificationType.PAGE_JOIN_REQUEST_APPROVED},
                     });
                 }
 
                 return 'Request approved successfully.';
             } else {
-                await this.pageService.findOneRecordAndUpdate({ _id: id }, { $pull: { requests: userId } });
+                await this.pageService.findOneRecordAndUpdate({_id: id}, {$pull: {requests: userId}});
                 await this.notificationService.createRecord({
                     page: page._id,
                     sender: user._id,
@@ -584,8 +780,8 @@ export class PageController {
                 if (page.creator.fcmToken) {
                     await this.firebaseService.sendNotification({
                         token: page.creator.fcmToken,
-                        notification: { title: `Your request to join page is rejected` },
-                        data: { page: page._id.toString(), type: NotificationType.PAGE_JOIN_REQUEST_REJECTED },
+                        notification: {title: `Your request to join page is rejected`},
+                        data: {page: page._id.toString(), type: NotificationType.PAGE_JOIN_REQUEST_REJECTED},
                     });
                 }
 
@@ -595,17 +791,15 @@ export class PageController {
     }
 
 
-
-
     @Post('/:id/comment')
     async createComment(@Param('id') id: string, @GetUser() user: UserDocument, @Body() createCommentDto: CreateCommentDto) {
-        const page = await this.pageService.findOneRecord({ _id: id }).populate('creator');
+        const page = await this.pageService.findOneRecord({_id: id}).populate('creator');
         if (!page) throw new BadRequestException('Page does not exists.');
         let comment;
         if (createCommentDto.comment) {
-            comment = await this.commentService.create({ creator: user._id, post: id, ...createCommentDto });
-            const updatedComment:any = await this.commentService
-                .findOneRecordAndUpdate({ _id: createCommentDto.comment }, { $push: { replies: comment._id } })
+            comment = await this.commentService.create({creator: user._id, post: id, ...createCommentDto});
+            const updatedComment: any = await this.commentService
+                .findOneRecordAndUpdate({_id: createCommentDto.comment}, {$push: {replies: comment._id}})
                 .populate('creator');
 
             await this.notificationService.createRecord({
@@ -619,16 +813,16 @@ export class PageController {
 
             await this.firebaseService.sendNotification({
                 token: updatedComment.creator.fcmToken,
-                notification: { title: `${user.firstName} ${user.lastName} replied to you comment.` },
-                data: { page: page._id.toString(), type: NotificationType.COMMENT_REPLIED },
+                notification: {title: `${user.firstName} ${user.lastName} replied to you comment.`},
+                data: {page: page._id.toString(), type: NotificationType.COMMENT_REPLIED},
             });
 
             this.socketService.triggerMessage(`page-comment-reply-${(page._id).toString()}`, comment);
 
 
         } else {
-            comment = await this.commentService.create({ creator: user._id, post: id, root: true, ...createCommentDto });
-            await this.pageService.findOneRecordAndUpdate({ _id: id }, { $push: { comments: comment._id } });
+            comment = await this.commentService.create({creator: user._id, post: id, root: true, ...createCommentDto});
+            await this.pageService.findOneRecordAndUpdate({_id: id}, {$push: {comments: comment._id}});
 
             //@ts-ignore
             if (user._id != page.creator._id.toString()) {
@@ -644,8 +838,8 @@ export class PageController {
                 if (page.creator.fcmToken) {
                     await this.firebaseService.sendNotification({
                         token: page.creator.fcmToken,
-                        notification: { title: `${user.firstName} ${user.lastName} commented on your post.` },
-                        data: { post: page._id.toString(), type: NotificationType.PAGE_COMMENTED },
+                        notification: {title: `${user.firstName} ${user.lastName} commented on your post.`},
+                        data: {post: page._id.toString(), type: NotificationType.PAGE_COMMENTED},
                     });
                 }
 
@@ -660,12 +854,12 @@ export class PageController {
     }
 
     @Get(':id/comment/find-all')
-    async findAllComments(@Param('id', ParseObjectId) id: string, @Query() { page, limit }: FindAllCommentQueryDto) {
-        const $q = makeQuery({ page, limit });
-        const options = { limit: $q.limit, skip: $q.skip, sort: $q.sort };
-        const condition = { post: id, root: true };
+    async findAllComments(@Param('id', ParseObjectId) id: string, @Query() {page, limit}: FindAllCommentQueryDto) {
+        const $q = makeQuery({page, limit});
+        const options = {limit: $q.limit, skip: $q.skip, sort: $q.sort};
+        const condition = {post: id, root: true};
         const comments = await this.commentService.find(condition, options);
-        const total = await this.commentService.countRecords({ post: id });
+        const total = await this.commentService.countRecords({post: id});
         const paginated = {
             total: total,
             pages: Math.ceil(total / $q.limit),
@@ -679,47 +873,53 @@ export class PageController {
 
     @Delete(':pageId/comment/:id/delete')
     async deleteComment(@Param('id', ParseObjectId) id: string, @Param('pageId', ParseObjectId) pageId: string, @GetUser() user: UserDocument) {
-        const comment = await this.commentService.findOneRecord({ _id: id });
+        const comment = await this.commentService.findOneRecord({_id: id});
         if (!comment) throw new HttpException('Comment does not exist.', HttpStatus.BAD_REQUEST);
         if (comment.creator.toString() == user._id) {
-            const deletedComment = await this.commentService.deleteSingleRecord({ _id: id });
+            const deletedComment = await this.commentService.deleteSingleRecord({_id: id});
             if (deletedComment.comment) {
-                await this.commentService.findOneRecordAndUpdate({ _id: deletedComment.comment }, { $pull: { replies: deletedComment._id } });
+                await this.commentService.findOneRecordAndUpdate({_id: deletedComment.comment}, {$pull: {replies: deletedComment._id}});
             } else {
-                await this.pageService.findOneRecordAndUpdate({ _id: deletedComment.page }, { $pull: { comments: deletedComment._id } });
+                await this.pageService.findOneRecordAndUpdate({_id: deletedComment.page}, {$pull: {comments: deletedComment._id}});
             }
-            return { message: 'Comment deleted successfully.' };
+            return {message: 'Comment deleted successfully.'};
         } else {
-            const page=await this.pageService.findOneRecord({_id:comment.page})
-            const moderator = (page.moderators).findIndex((moderator)=>(moderator.user).toString()===(user._id).toString());
-            if (moderator===-1) throw new UnauthorizedException();
-            const deletedComment = await this.commentService.deleteSingleRecord({ _id: id });
+            const page = await this.pageService.findOneRecord({_id: comment.page})
+            const moderator = (page.moderators).findIndex((moderator) => (moderator.user).toString() === (user._id).toString());
+            if (moderator === -1) throw new UnauthorizedException();
+            const deletedComment = await this.commentService.deleteSingleRecord({_id: id});
             if (deletedComment.comment) {
-                await this.commentService.findOneRecordAndUpdate({ _id: deletedComment.comment }, { $pull: { replies: deletedComment._id } });
+                await this.commentService.findOneRecordAndUpdate({_id: deletedComment.comment}, {$pull: {replies: deletedComment._id}});
             } else {
-                await this.pageService.findOneRecordAndUpdate({ _id: deletedComment.page }, { $pull: { comments: deletedComment._id } });
+                await this.pageService.findOneRecordAndUpdate({_id: deletedComment.page}, {$pull: {comments: deletedComment._id}});
             }
-            return { message: 'Comment deleted successfully.' };
+            return {message: 'Comment deleted successfully.'};
         }
     }
-
-
 
 
     @Post('reaction/create')
     async addReactions(@Body() addReactionsDto: AddReactionsDto, @GetUser() user: UserDocument) {
         // check if user is adding reaction in comment
         if (addReactionsDto.comment) {
-            const comment = await this.commentService.findOneRecord({ _id: addReactionsDto.comment }).populate('creator');
+            const comment = await this.commentService.findOneRecord({_id: addReactionsDto.comment}).populate('creator');
             if (!comment) throw new BadRequestException('Comment does not exist.');
-            const reaction = await this.reactionService.create({ user: user._id, emoji: addReactionsDto.emoji, comment: comment._id });
-            await this.commentService.findOneRecordAndUpdate({ _id: comment._id }, { $push: { reactions: reaction._id } });
+            const reaction = await this.reactionService.create({
+                user: user._id,
+                emoji: addReactionsDto.emoji,
+                comment: comment._id
+            });
+            await this.commentService.findOneRecordAndUpdate({_id: comment._id}, {$push: {reactions: reaction._id}});
             return reaction;
         } else {
-            const page = await this.pageService.findOneRecord({ _id: addReactionsDto.post }).populate('creator');
+            const page = await this.pageService.findOneRecord({_id: addReactionsDto.post}).populate('creator');
             if (!page) throw new HttpException('Page does not exists', HttpStatus.BAD_REQUEST);
-            const reaction = await this.reactionService.create({ user: user._id, emoji: addReactionsDto.emoji, page: page._id });
-            await this.pageService.findOneRecordAndUpdate({ _id: page._id }, { $push: { reactions: reaction._id } });
+            const reaction = await this.reactionService.create({
+                user: user._id,
+                emoji: addReactionsDto.emoji,
+                page: page._id
+            });
+            await this.pageService.findOneRecordAndUpdate({_id: page._id}, {$push: {reactions: reaction._id}});
             //@ts-ignore
             if (user._id != post.creator._id.toString()) {
                 await this.notificationService.createRecord({
@@ -734,8 +934,8 @@ export class PageController {
                 if (page.creator.fcmToken) {
                     await this.firebaseService.sendNotification({
                         token: page.creator.fcmToken,
-                        notification: { title: `${user.firstName} ${user.lastName} reacted on your page.` },
-                        data: { post: page._id.toString(), type: NotificationType.PAGE_REACTED },
+                        notification: {title: `${user.firstName} ${user.lastName} reacted on your page.`},
+                        data: {post: page._id.toString(), type: NotificationType.PAGE_REACTED},
                     });
                 }
             }
@@ -745,22 +945,19 @@ export class PageController {
 
     @Delete('reaction/:id/delete')
     async deleteReaction(@Param('id', ParseObjectId) id: string) {
-        const reaction = await this.reactionService.deleteSingleRecord({ _id: id });
+        const reaction = await this.reactionService.deleteSingleRecord({_id: id});
         if (!reaction) throw new HttpException('Reaction does not exists', HttpStatus.BAD_REQUEST);
-        if (reaction.page) await this.pageService.findOneRecordAndUpdate({ _id: reaction.page },
-            { $pull: { reactions: reaction._id } });
-        else if (reaction.comment) await this.commentService.findOneRecordAndUpdate({ _id: reaction.comment },
-            { $pull: { reactions: reaction._id } });
+        if (reaction.page) await this.pageService.findOneRecordAndUpdate({_id: reaction.page},
+            {$pull: {reactions: reaction._id}});
+        else if (reaction.comment) await this.commentService.findOneRecordAndUpdate({_id: reaction.comment},
+            {$pull: {reactions: reaction._id}});
         return reaction;
     }
 
     @Put('reaction/:id/update')
     async updateReaction(@Param('id', ParseObjectId) id: string, @Body() updateReactionsDto: UpdateReactionsDto) {
-        return await this.reactionService.update({ _id: id }, { emoji: updateReactionsDto.emoji });
+        return await this.reactionService.update({_id: id}, {emoji: updateReactionsDto.emoji});
     }
-
-
-
 
 
 }

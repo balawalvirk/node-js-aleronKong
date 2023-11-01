@@ -215,16 +215,46 @@ export class GroupController {
 
     @Get('find-one/:id')
     async findOne(@Param('id') id: string) {
-        return await this.groupService.findOneRecord({_id: id}).populate([{path: 'mutes'}, {path: 'moderators'}]);
+        const group: any = await this.groupService.findOneRecord({_id: id})
+            .populate([{path: 'mutes'}, {path: 'moderators'}])
+            .populate({path: 'members.member', select: 'firstName lastName avatar'})
+            .populate("page_members.page")
+            .populate("requests", "firstName lastName avatar")
+            .populate("pageRequests")
+            .lean();
+
+        if (group) {
+            group.members = (group.members).concat(group.page_members || [])
+            group.requests = (group.requests).concat(group.pageRequests || [])
+            delete group.page_members;
+            delete group.pageRequests;
+
+        }
+
+        return group;
     }
 
     @Put('update/:id')
     async update(@Param('id', ParseObjectId) id: string, @Body() updateGroupDto: UpdateGroupDto) {
         const group = await this.groupService.findOneRecord({_id: id});
         if (!group) throw new BadRequestException('Group does not exists.');
+
         const GroupWithName = await this.groupService.findOneRecord({_id: {$ne: group._id}, name: updateGroupDto.name});
         if (GroupWithName) throw new BadRequestException('A group with this name aleady exists.');
-        return await this.groupService.findOneRecordAndUpdate({_id: id}, updateGroupDto);
+        const updated: any = await this.groupService.findOneRecordAndUpdate({_id: id}, updateGroupDto)
+            .populate({path: 'members.member', select: 'firstName lastName avatar'})
+            .populate("page_members.page")
+            .populate("requests", "firstName lastName avatar")
+            .populate("pageRequests")
+            .lean();
+        if (updated) {
+            updated.members = (updated.members).concat(updated.page_members || [])
+            updated.requests = (updated.requests).concat(updated.pageRequests || [])
+            delete group.page_members;
+            delete group.pageRequests;
+
+        }
+        return updated;
     }
 
     @Put('join/:id')
@@ -257,7 +287,21 @@ export class GroupController {
                     data: {group: group._id.toString(), type: NotificationType.GROUP_JOIN_REQUEST},
                 });
             }
-            return await this.groupService.findOneRecordAndUpdate({_id: id}, {$push: {requests: user._id}});
+
+            const updated: any = await this.groupService.findOneRecordAndUpdate({_id: id}, {$push: {requests: user._id}})
+                .populate({path: 'members.member', select: 'firstName lastName avatar'})
+                .populate("page_members.page")
+                .populate("requests", "firstName lastName avatar")
+                .populate("pageRequests")
+                .lean();
+            if (updated) {
+                updated.members = (updated.members).concat(updated.page_members || [])
+                updated.requests = (updated.requests).concat(updated.pageRequests || [])
+                delete group.page_members;
+                delete group.pageRequests;
+
+            }
+            return updated;
         }
         await this.notificationService.createRecord({
             type: NotificationType.GROUP_JOINED,
@@ -268,7 +312,12 @@ export class GroupController {
             receiver: group.creator._id,
         });
 
-        const updatedGroup = await this.groupService.findOneRecordAndUpdate({_id: id}, {$push: {members: {member: user._id}}});
+        const updatedGroup: any = await this.groupService.findOneRecordAndUpdate({_id: id}, {$push: {members: {member: user._id}}})
+            .populate({path: 'members.member', select: 'firstName lastName avatar'})
+            .populate("page_members.page")
+            .populate("requests", "firstName lastName avatar")
+            .populate("pageRequests")
+            .lean();
 
         //@ts-ignore
         if (group.creator.fcmToken) {
@@ -278,6 +327,15 @@ export class GroupController {
                 data: {group: group._id.toString(), type: NotificationType.GROUP_JOINED},
             });
         }
+
+        if (updatedGroup) {
+            updatedGroup.members = (updatedGroup.members).concat(updatedGroup.page_members || [])
+            updatedGroup.requests = (updatedGroup.requests).concat(updatedGroup.pageRequests || [])
+            delete group.page_members;
+            delete group.pageRequests;
+
+        }
+
         return updatedGroup;
     }
 
@@ -319,8 +377,22 @@ export class GroupController {
                     data: {group: group._id.toString(), type: NotificationType.GROUP_JOIN_REQUEST},
                 });
             }
-            return await this.groupService.findOneRecordAndUpdate({_id: id}, {$push: {pageRequests: page._id}})
-                .populate("pageRequests");
+            const updated: any = await this.groupService.findOneRecordAndUpdate({_id: id}, {$push: {pageRequests: page._id}})
+                .populate({path: 'members.member', select: 'firstName lastName avatar'})
+                .populate("page_members.page")
+                .populate("requests", "firstName lastName avatar")
+                .populate("pageRequests")
+                .lean();
+
+
+            if (updated) {
+                updated.members = (updated.members).concat(updated.page_members || [])
+                updated.requests = (updated.requests).concat(updated.pageRequests || [])
+                delete group.page_members;
+                delete group.pageRequests;
+
+            }
+            return updated;
         }
         await this.notificationService.createRecord({
             type: NotificationType.GROUP_JOINED,
@@ -332,8 +404,12 @@ export class GroupController {
             page: page._id
         });
 
-        const updatedGroup = await this.groupService.findOneRecordAndUpdate({_id: id}, {$push: {page_members: {page: page._id}}})
-            .populate("page_members.page");
+        const updatedGroup: any = await this.groupService.findOneRecordAndUpdate({_id: id}, {$push: {page_members: {page: page._id}}})
+            .populate({path: 'members.member', select: 'firstName lastName avatar'})
+            .populate("page_members.page")
+            .populate("requests", "firstName lastName avatar")
+            .populate("pageRequests")
+            .lean();
 
         //@ts-ignore
         if (group.creator.fcmToken) {
@@ -343,6 +419,16 @@ export class GroupController {
                 data: {group: group._id.toString(), type: NotificationType.GROUP_JOINED},
             });
         }
+
+
+        if (updatedGroup) {
+            updatedGroup.members = (updatedGroup.members).concat(updatedGroup.page_members || [])
+            updatedGroup.requests = (updatedGroup.requests).concat(updatedGroup.pageRequests || [])
+            delete group.page_members;
+            delete group.pageRequests;
+
+        }
+
         return updatedGroup;
     }
 
@@ -374,8 +460,17 @@ export class GroupController {
 
     @Get('all-members/:id')
     async findAllMembers(@Param('id') id: string) {
-        const group = await this.groupService.findAllMembers({_id: id});
-        return {members:group.members,page_members:group.page_members};
+        const group: any = await this.groupService.findAllMembers({_id: id});
+
+        if (group) {
+            group.members = (group.members).concat(group.page_members || [])
+            group.requests = (group.requests).concat(group.pageRequests || [])
+            delete group.page_members;
+            delete group.pageRequests;
+
+        }
+
+        return {members: group.members, page_members: group.page_members};
     }
 
     @Put('remove-member')
@@ -389,10 +484,25 @@ export class GroupController {
             if (!group.moderators || group.moderators.length === 0 || !group.moderators[0].removeMembers)
                 throw new HttpException('You cannot remove a member.', HttpStatus.FORBIDDEN);
         }
-        const updatedGroup = await this.groupService.findOneRecordAndUpdate(
+        const updatedGroup: any = await this.groupService.findOneRecordAndUpdate(
             {_id: removeMemberDto.group},
             {$pull: {members: {member: removeMemberDto.member}}}
-        );
+        )
+            .populate({path: 'members.member', select: 'firstName lastName avatar'})
+            .populate("page_members.page")
+            .populate("requests", "firstName lastName avatar")
+            .populate("pageRequests")
+            .lean();
+
+
+        if (updatedGroup) {
+            updatedGroup.members = (updatedGroup.members).concat(updatedGroup.page_members || [])
+            updatedGroup.requests = (updatedGroup.requests).concat(updatedGroup.pageRequests || [])
+            delete group.page_members;
+            delete group.pageRequests;
+
+        }
+
         return updatedGroup.members;
     }
 
@@ -409,10 +519,25 @@ export class GroupController {
             if (!group.moderators || group.moderators.length === 0 || !group.moderators[0].banMembers)
                 throw new HttpException('You cannot ban a member.', HttpStatus.FORBIDDEN);
         }
-        const updatedGroup = await this.groupService.findOneRecordAndUpdate(
+        const updatedGroup: any = await this.groupService.findOneRecordAndUpdate(
             {_id: banMemberDto.group, 'members.member': banMemberDto.member},
             {$set: {'members.$.banned': true}}
-        );
+        )
+            .populate({path: 'members.member', select: 'firstName lastName avatar'})
+            .populate("page_members.page")
+            .populate("requests", "firstName lastName avatar")
+            .populate("pageRequests")
+            .lean();
+
+
+        if (updatedGroup) {
+            updatedGroup.members = (updatedGroup.members).concat(updatedGroup.page_members || [])
+            updatedGroup.requests = (updatedGroup.requests).concat(updatedGroup.pageRequests || [])
+            delete group.page_members;
+            delete group.pageRequests;
+
+        }
+
         return updatedGroup.members;
     }
 
@@ -428,18 +553,40 @@ export class GroupController {
                 throw new HttpException('You are not allowed to un ban a member.', HttpStatus.FORBIDDEN);
         }
 
-        const updatedGroup = await this.groupService.findOneRecordAndUpdate(
+        const updatedGroup: any = await this.groupService.findOneRecordAndUpdate(
             {_id: unBanMemberDto.group, 'members.member': unBanMemberDto.member},
             {$set: {'members.$.banned': false}}
-        );
+        )
+            .populate({path: 'members.member', select: 'firstName lastName avatar'})
+            .populate("page_members.page")
+            .populate("requests", "firstName lastName avatar")
+            .populate("pageRequests")
+            .lean();
+
+
+        if (updatedGroup) {
+            updatedGroup.members = (updatedGroup.members).concat(updatedGroup.page_members || [])
+            updatedGroup.requests = (updatedGroup.requests).concat(updatedGroup.pageRequests || [])
+            delete group.page_members;
+            delete group.pageRequests;
+
+        }
+
         return updatedGroup.members;
     }
 
     @Get('all-requests/:id')
     async findAllRequests(@Param('id', ParseObjectId) id: string) {
-        const group = await this.groupService.findAllRequests({_id: id});
+        const group: any = await this.groupService.findAllRequests({_id: id});
         if (!group) throw new HttpException('Group does not exist.', HttpStatus.BAD_REQUEST);
-        return {requests:group.requests,pageRequests:group.pageRequests};
+
+        if (group) {
+
+            group.members = (group.members).concat(group.page_members || [])
+            group.requests = (group.requests).concat(group.pageRequests || [])
+        }
+
+        return {requests: group.requests, pageRequests: group.pageRequests};
     }
 
     @Put('request/:id/:userId')
@@ -614,7 +761,13 @@ export class GroupController {
                 && pageId) {
                 const groups = await this.groupService.findAllRecords(
                     {'page_members.page': pageId}, options
-                );
+                )
+                    .populate({path: 'members.member', select: 'firstName lastName avatar'})
+                    .populate("page_members.page")
+                    .populate("requests", "firstName lastName avatar")
+                    .populate("pageRequests")
+                    .lean();
+
 
                 allGroups = [...allGroups, ...groups];
 
@@ -626,7 +779,13 @@ export class GroupController {
                 const groups = await this.groupService.findAllRecords(
                     {name: {$regex: query, $options: 'i'}, 'members.member': user._id, _id: {$nin: reportedGroups}},
                     options
-                );
+                )
+                    .populate({path: 'members.member', select: 'firstName lastName avatar'})
+                    .populate("page_members.page")
+                    .populate("requests", "firstName lastName avatar")
+                    .populate("pageRequests")
+                    .lean();
+
 
                 allGroups = [...allGroups, ...groups];
             }
@@ -636,7 +795,13 @@ export class GroupController {
                         $and: [{name: {$regex: query, $options: 'i'}}, {creator: user._id}],
                     },
                     options
-                );
+                )
+                    .populate({path: 'members.member', select: 'firstName lastName avatar'})
+                    .populate("page_members.page")
+                    .populate("requests", "firstName lastName avatar")
+                    .populate("pageRequests")
+                    .lean();
+
 
                 allGroups = [...allGroups, ...groups];
             }
@@ -649,18 +814,51 @@ export class GroupController {
                         }],
                     },
                     options
-                );
+                )
+                    .populate({path: 'members.member', select: 'firstName lastName avatar'})
+                    .populate("page_members.page")
+                    .populate("requests", "firstName lastName avatar")
+                    .populate("pageRequests")
+                    .lean();
+
                 allGroups = [...allGroups, ...groups];
             }
             // if moderator group is true then show all groups where user added as moderator
             if (type.includes('moderating')) {
                 const groupIds = (await this.moderatorService.findAllRecords({user: user._id})).map((moderator) => moderator.group);
-                const groups = await this.groupService.findAllRecords({_id: {$in: groupIds}}, options);
+                const groups = await this.groupService.findAllRecords({_id: {$in: groupIds}}, options)
+                    .populate({path: 'members.member', select: 'firstName lastName avatar'})
+                    .populate("page_members.page")
+                    .populate("requests", "firstName lastName avatar")
+                    .populate("pageRequests")
+                    .lean();
                 allGroups = [...allGroups, ...groups];
             }
+            allGroups = allGroups.map((g) => {
+                g.members = (g.members).concat(g.page_members || [])
+                g.requests = (g.requests).concat(g.pageRequests || [])
+                delete g.page_members;
+                delete g.pageRequests;
+
+                return g;
+            })
             return allGroups;
         } else {
-            return await this.groupService.findAllRecords();
+            let updated:any = await this.groupService.findAllRecords()
+                .populate({path: 'members.member', select: 'firstName lastName avatar'})
+                .populate("page_members.page")
+                .populate("requests","firstName lastName avatar")
+                .populate("pageRequests")
+                .lean();
+            updated = updated.map((g:any) => {
+                g.members = (g.members).concat(g.page_members || [])
+                g.requests = (g.requests).concat(g.pageRequests || [])
+                delete g.page_members;
+                delete g.pageRequests;
+
+                return g;
+            })
+            return updated
         }
     }
 

@@ -438,10 +438,16 @@ export class PostsController {
 
 
     @Get('page/:id/following')
-    async getPostPageFollowing(@Param('id', ParseObjectId) id: string, @GetUser() user: UserDocument) {
+    async getPostPageFollowing(@Param('id', ParseObjectId) id: string,@Query() {limit, page, sort}: FindHomePostQueryDto,
+                               @GetUser() user: UserDocument) {
+
+        const $q = makeQuery({page, limit});
+        const options = {limit: $q.limit, skip: $q.skip, sort: $q.sort};
+
+
         const pageFollowings = (await this.pageService.findAllRecords({'pageFollwers.page':
                 {$in: [new mongoose.Types.ObjectId(id)]}}).select('_id')).map((user) => user._id);
-        const followingPages = await this.postsService.find({page: {$in: pageFollowings}})
+        const followingPages = await this.postsService.find({page: {$in: pageFollowings}},options)
         return followingPages;
     }
 
