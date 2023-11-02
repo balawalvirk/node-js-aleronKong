@@ -217,10 +217,8 @@ export class GroupController {
     async findOne(@Param('id') id: string) {
         const group: any = await this.groupService.findOneRecord({_id: id})
             .populate([{path: 'mutes'}, {path: 'moderators'}])
-            .populate({path: 'members.member', select: 'firstName lastName avatar'})
+            .populate({path: 'members.member', select: 'firstName lastName avatar type'})
             .populate("page_members.page")
-            .populate("requests", "firstName lastName avatar")
-            .populate("pageRequests")
             .lean();
 
         if (group) {
@@ -242,7 +240,7 @@ export class GroupController {
         const GroupWithName = await this.groupService.findOneRecord({_id: {$ne: group._id}, name: updateGroupDto.name});
         if (GroupWithName) throw new BadRequestException('A group with this name aleady exists.');
         const updated: any = await this.groupService.findOneRecordAndUpdate({_id: id}, updateGroupDto)
-            .populate({path: 'members.member', select: 'firstName lastName avatar'})
+            .populate({path: 'members.member', select: 'firstName lastName avatar type'})
             .populate("page_members.page")
             .populate("requests", "firstName lastName avatar")
             .populate("pageRequests")
@@ -289,10 +287,8 @@ export class GroupController {
             }
 
             const updated: any = await this.groupService.findOneRecordAndUpdate({_id: id}, {$push: {requests: user._id}})
-                .populate({path: 'members.member', select: 'firstName lastName avatar'})
+                .populate({path: 'members.member', select: 'firstName lastName avatar type'})
                 .populate("page_members.page")
-                .populate("requests", "firstName lastName avatar")
-                .populate("pageRequests")
                 .lean();
             if (updated) {
                 updated.members = (updated.members).concat(updated.page_members || [])
@@ -313,10 +309,8 @@ export class GroupController {
         });
 
         const updatedGroup: any = await this.groupService.findOneRecordAndUpdate({_id: id}, {$push: {members: {member: user._id}}})
-            .populate({path: 'members.member', select: 'firstName lastName avatar'})
+            .populate({path: 'members.member', select: 'firstName lastName avatar type'})
             .populate("page_members.page")
-            .populate("requests", "firstName lastName avatar")
-            .populate("pageRequests")
             .lean();
 
         //@ts-ignore
@@ -378,10 +372,8 @@ export class GroupController {
                 });
             }
             const updated: any = await this.groupService.findOneRecordAndUpdate({_id: id}, {$push: {pageRequests: page._id}})
-                .populate({path: 'members.member', select: 'firstName lastName avatar'})
+                .populate({path: 'members.member', select: 'firstName lastName avatar type'})
                 .populate("page_members.page")
-                .populate("requests", "firstName lastName avatar")
-                .populate("pageRequests")
                 .lean();
 
 
@@ -405,10 +397,8 @@ export class GroupController {
         });
 
         const updatedGroup: any = await this.groupService.findOneRecordAndUpdate({_id: id}, {$push: {page_members: {page: page._id}}})
-            .populate({path: 'members.member', select: 'firstName lastName avatar'})
+            .populate({path: 'members.member', select: 'firstName lastName avatar type'})
             .populate("page_members.page")
-            .populate("requests", "firstName lastName avatar")
-            .populate("pageRequests")
             .lean();
 
         //@ts-ignore
@@ -488,7 +478,7 @@ export class GroupController {
             {_id: removeMemberDto.group},
             {$pull: {members: {member: removeMemberDto.member}}}
         )
-            .populate({path: 'members.member', select: 'firstName lastName avatar'})
+            .populate({path: 'members.member', select: 'firstName lastName avatar type'})
             .populate("page_members.page")
             .populate("requests", "firstName lastName avatar")
             .populate("pageRequests")
@@ -523,7 +513,7 @@ export class GroupController {
             {_id: banMemberDto.group, 'members.member': banMemberDto.member},
             {$set: {'members.$.banned': true}}
         )
-            .populate({path: 'members.member', select: 'firstName lastName avatar'})
+            .populate({path: 'members.member', select: 'firstName lastName avatar type'})
             .populate("page_members.page")
             .populate("requests", "firstName lastName avatar")
             .populate("pageRequests")
@@ -557,7 +547,7 @@ export class GroupController {
             {_id: unBanMemberDto.group, 'members.member': unBanMemberDto.member},
             {$set: {'members.$.banned': false}}
         )
-            .populate({path: 'members.member', select: 'firstName lastName avatar'})
+            .populate({path: 'members.member', select: 'firstName lastName avatar type'})
             .populate("page_members.page")
             .populate("requests", "firstName lastName avatar")
             .populate("pageRequests")
@@ -762,10 +752,8 @@ export class GroupController {
                 const groups = await this.groupService.findAllRecords(
                     {'page_members.page': pageId}, options
                 )
-                    .populate({path: 'members.member', select: 'firstName lastName avatar'})
+                    .populate({path: 'members.member', select: 'firstName lastName avatar type'})
                     .populate("page_members.page")
-                    .populate("requests", "firstName lastName avatar")
-                    .populate("pageRequests")
                     .lean();
 
 
@@ -780,10 +768,8 @@ export class GroupController {
                     {name: {$regex: query, $options: 'i'}, 'members.member': user._id, _id: {$nin: reportedGroups}},
                     options
                 )
-                    .populate({path: 'members.member', select: 'firstName lastName avatar'})
+                    .populate({path: 'members.member', select: 'firstName lastName avatar type'})
                     .populate("page_members.page")
-                    .populate("requests", "firstName lastName avatar")
-                    .populate("pageRequests")
                     .lean();
 
 
@@ -796,10 +782,8 @@ export class GroupController {
                     },
                     options
                 )
-                    .populate({path: 'members.member', select: 'firstName lastName avatar'})
+                    .populate({path: 'members.member', select: 'firstName lastName avatar type'})
                     .populate("page_members.page")
-                    .populate("requests", "firstName lastName avatar")
-                    .populate("pageRequests")
                     .lean();
 
 
@@ -815,10 +799,8 @@ export class GroupController {
                     },
                     options
                 )
-                    .populate({path: 'members.member', select: 'firstName lastName avatar'})
+                    .populate({path: 'members.member', select: 'firstName lastName avatar type'})
                     .populate("page_members.page")
-                    .populate("requests", "firstName lastName avatar")
-                    .populate("pageRequests")
                     .lean();
 
                 allGroups = [...allGroups, ...groups];
@@ -827,10 +809,8 @@ export class GroupController {
             if (type.includes('moderating')) {
                 const groupIds = (await this.moderatorService.findAllRecords({user: user._id})).map((moderator) => moderator.group);
                 const groups = await this.groupService.findAllRecords({_id: {$in: groupIds}}, options)
-                    .populate({path: 'members.member', select: 'firstName lastName avatar'})
+                    .populate({path: 'members.member', select: 'firstName lastName avatar type'})
                     .populate("page_members.page")
-                    .populate("requests", "firstName lastName avatar")
-                    .populate("pageRequests")
                     .lean();
                 allGroups = [...allGroups, ...groups];
             }
@@ -845,10 +825,8 @@ export class GroupController {
             return allGroups;
         } else {
             let updated:any = await this.groupService.findAllRecords()
-                .populate({path: 'members.member', select: 'firstName lastName avatar'})
+                .populate({path: 'members.member', select: 'firstName lastName avatar type'})
                 .populate("page_members.page")
-                .populate("requests","firstName lastName avatar")
-                .populate("pageRequests")
                 .lean();
             updated = updated.map((g:any) => {
                 g.members = (g.members).concat(g.page_members || [])

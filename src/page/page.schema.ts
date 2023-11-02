@@ -59,6 +59,11 @@ export class Page {
     @Prop({required: true, unique: true})
     name: string;
 
+
+    @Prop({ default:"page"})
+    type: string;
+
+
     @Prop({type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true})
     creator: User;
 
