@@ -77,8 +77,6 @@ export class PageController {
         const page: any = await this.pageService.findOneRecord({_id: id})
             .populate({path: 'moderators.user', select: 'firstName lastName avatar'})
             .populate("moderators.moderator", "createPost engageAsPage deletePage editPage")
-            .populate("pageFollwers.page")
-            .populate("followers.follower", "firstName lastName avatar")
             .lean();
 
 
@@ -140,8 +138,6 @@ export class PageController {
             let pages = await this.pageService.findAllRecords(condition, options)
                 .populate({path: 'moderators.user', select: 'firstName lastName avatar'})
                 .populate("moderators.moderator", "createPost engageAsPage deletePage editPage")
-                .populate("pageFollwers.page")
-                .populate("followers.follower", "firstName lastName avatar")
                 .lean();
 
             pages = pages.map((p: any) => {
@@ -166,8 +162,6 @@ export class PageController {
             let pages = await this.pageService.findAllRecords(condition, options)
                 .populate({path: 'moderators.user', select: 'firstName lastName avatar'})
                 .populate("moderators.moderator", "createPost engageAsPage deletePage editPage")
-                .populate("pageFollwers.page")
-                .populate("followers.follower", "firstName lastName avatar")
                 .lean();
 
             pages = pages.map((p: any) => {
@@ -192,8 +186,6 @@ export class PageController {
             let pages = await this.pageService.findAllRecords(condition, options)
                 .populate({path: 'moderators.user', select: 'firstName lastName avatar'})
                 .populate("moderators.moderator", "createPost engageAsPage deletePage editPage")
-                .populate("pageFollwers.page")
-                .populate("followers.follower", "firstName lastName avatar")
                 .lean();
             pages = pages.map((p: any) => {
                 p.followers = (p.followers).concat(p.pageFollwers);
@@ -215,8 +207,6 @@ export class PageController {
             let pages = await this.pageService.findAllRecords(condition, options)
                 .populate({path: 'moderators.user', select: 'firstName lastName avatar'})
                 .populate("moderators.moderator", "createPost engageAsPage deletePage editPage")
-                .populate("pageFollwers.page")
-                .populate("followers.follower", "firstName lastName avatar")
                 .lean();
 
             pages = pages.map((p: any) => {
@@ -242,8 +232,6 @@ export class PageController {
             let pages = await this.pageService.findAllRecords(condition, options)
                 .populate({path: 'moderators.user', select: 'firstName lastName avatar'})
                 .populate("moderators.moderator", "createPost engageAsPage deletePage editPage")
-                .populate("pageFollwers.page")
-                .populate("followers.follower", "firstName lastName avatar")
                 .lean();
 
 
@@ -276,8 +264,6 @@ export class PageController {
         let pages = await this.pageService.findAllRecords(condition, options)
             .populate({path: 'moderators.user', select: 'firstName lastName avatar'})
             .populate("moderators.moderator", "createPost engageAsPage deletePage editPage")
-            .populate("pageFollwers.page")
-            .populate("followers.follower", "firstName lastName avatar")
             .lean();
 
         pages = pages.map((p: any) => {
@@ -330,8 +316,6 @@ export class PageController {
         const updated: any = await this.pageService.findOneRecordAndUpdate({_id: id}, {$push: {followers: {follower: user._id}}})
             .populate({path: 'moderators.user', select: 'firstName lastName avatar'})
             .populate("moderators.moderator", "createPost engageAsPage deletePage editPage")
-            .populate("pageFollwers.page")
-            .populate("followers.follower", "firstName lastName avatar")
             .lean();
 
         if (updated) {
@@ -381,8 +365,6 @@ export class PageController {
         })
             .populate({path: 'moderators.user', select: 'firstName lastName avatar'})
             .populate("moderators.moderator", "createPost engageAsPage deletePage editPage")
-            .populate("pageFollwers.page")
-            .populate("followers.follower", "firstName lastName avatar")
             .lean();
         ;
 
@@ -450,8 +432,6 @@ export class PageController {
         let pages: any = await this.pageService.findAllRecords({'followers.follower': user._id}).populate('creator')
             .populate({path: 'moderators.user', select: 'firstName lastName avatar'})
             .populate("moderators.moderator", "createPost engageAsPage deletePage editPage")
-            .populate("pageFollwers.page")
-            .populate("followers.follower", "firstName lastName avatar")
             .lean();
         ;
 
