@@ -80,10 +80,6 @@ export class PageController {
             .lean();
 
 
-        if (page) {
-            page.followers = (page.followers || []).concat(page.pageFollwers || []);
-            delete page.pageFollwers;
-        }
         return page;
 
     }
@@ -93,14 +89,10 @@ export class PageController {
         const updated: any = await this.pageService.findOneRecordAndUpdate({_id: id}, updatePageDto)
             .populate({path: 'moderators.user', select: 'firstName lastName avatar'})
             .populate("moderators.moderator", "createPost engageAsPage deletePage editPage")
-            .populate("pageFollwers.page")
             .populate("followers.follower", "firstName lastName avatar")
+            .populate("followers.page")
             .lean();
-        if (updated) {
-            updated.followers = (updated.followers).concat(updated.pageFollwers);
-            delete updated.pageFollwers;
 
-        }
         return updated;
 
     }
@@ -125,7 +117,7 @@ export class PageController {
         if (following) {
 
             if (pageId) {
-                multipleQuery.push({'pageFollwers.page': {$in: [pageId]}});
+                multipleQuery.push({'followers.page': {$in: [pageId]}});
             } else {
                 multipleQuery.push({'followers.follower': {$in: [user._id]}});
             }
@@ -140,12 +132,6 @@ export class PageController {
                 .populate("moderators.moderator", "createPost engageAsPage deletePage editPage")
                 .lean();
 
-            pages = pages.map((p: any) => {
-                p.followers = (p.followers).concat(p.pageFollwers);
-                delete p.pageFollwers;
-
-                return p;
-            })
 
             return {
                 total,
@@ -164,12 +150,7 @@ export class PageController {
                 .populate("moderators.moderator", "createPost engageAsPage deletePage editPage")
                 .lean();
 
-            pages = pages.map((p: any) => {
-                p.followers = (p.followers).concat(p.pageFollwers);
-                delete p.pageFollwers;
 
-                return p;
-            })
 
             return {
                 total,
@@ -187,11 +168,7 @@ export class PageController {
                 .populate({path: 'moderators.user', select: 'firstName lastName avatar'})
                 .populate("moderators.moderator", "createPost engageAsPage deletePage editPage")
                 .lean();
-            pages = pages.map((p: any) => {
-                p.followers = (p.followers).concat(p.pageFollwers);
-                delete p.pageFollwers;
-                return p;
-            })
+
             return {
                 total,
                 pages: Math.floor(total / $q.limit),
@@ -209,12 +186,7 @@ export class PageController {
                 .populate("moderators.moderator", "createPost engageAsPage deletePage editPage")
                 .lean();
 
-            pages = pages.map((p: any) => {
-                p.followers = (p.followers).concat(p.pageFollwers);
-                delete p.pageFollwers;
 
-                return p;
-            })
 
             return {
                 total,
@@ -235,12 +207,7 @@ export class PageController {
                 .lean();
 
 
-            pages = pages.map((p: any) => {
-                p.followers = (p.followers).concat(p.pageFollwers);
-                delete p.pageFollwers;
 
-                return p;
-            })
 
 
             return {
@@ -266,12 +233,7 @@ export class PageController {
             .populate("moderators.moderator", "createPost engageAsPage deletePage editPage")
             .lean();
 
-        pages = pages.map((p: any) => {
-            p.followers = (p.followers).concat(p.pageFollwers);
-            delete p.pageFollwers;
 
-            return p;
-        })
 
         const paginated = {
             total,
@@ -318,11 +280,6 @@ export class PageController {
             .populate("moderators.moderator", "createPost engageAsPage deletePage editPage")
             .lean();
 
-        if (updated) {
-            updated.followers = (updated.followers).concat(updated.pageFollwers);
-            delete updated.pageFollwers;
-
-        }
 
         return updated;
 
@@ -337,7 +294,7 @@ export class PageController {
 
         //check if user is already a follower of this page
         //@ts-ignore
-        const followerFound = page.pageFollwers.find((follower) => follower.page.equals(followerPage));
+        const followerFound = page.followers.find((follower) => follower.page && follower.page.equals(followerPage));
         if (followerFound) throw new BadRequestException('You are already a follower of this page.');
 
 
@@ -361,19 +318,14 @@ export class PageController {
 
         const updated: any = await this.pageService.findOneRecordAndUpdate({_id: id}, {
             $push:
-                {pageFollwers: {page: followerPage}}
+                {followers: {page: followerPage}}
         })
             .populate({path: 'moderators.user', select: 'firstName lastName avatar'})
             .populate("moderators.moderator", "createPost engageAsPage deletePage editPage")
             .lean();
-        ;
 
 
-        if (updated) {
-            updated.followers = (updated.followers).concat(updated.pageFollwers);
-            delete updated.pageFollwers;
 
-        }
 
         return updated;
 
@@ -385,16 +337,11 @@ export class PageController {
         const updated: any = await this.pageService.findOneRecordAndUpdate({_id: id}, {$pull: {followers: {follower: user._id}}})
             .populate({path: 'moderators.user', select: 'firstName lastName avatar'})
             .populate("moderators.moderator", "createPost engageAsPage deletePage editPage")
-            .populate("pageFollwers.page")
+            .populate("followers.page")
             .populate("followers.follower", "firstName lastName avatar")
             .lean();
 
 
-        if (updated) {
-            updated.followers = (updated.followers).concat(updated.pageFollwers);
-            delete updated.pageFollwers;
-
-        }
 
         return updated;
     }
@@ -405,22 +352,17 @@ export class PageController {
                        @Param('page', ParseObjectId) unFollowPage: string) {
         const updated: any = await this.pageService.findOneRecordAndUpdate({_id: id}, {
             $pull: {
-                pageFollwers:
+                followers:
                     {page: unFollowPage}
             }
         })
             .populate({path: 'moderators.user', select: 'firstName lastName avatar'})
             .populate("moderators.moderator", "createPost engageAsPage deletePage editPage")
-            .populate("pageFollwers.page")
+            .populate("followers.page")
             .populate("followers.follower", "firstName lastName avatar")
             .lean();
-        ;
 
-        if (updated) {
-            updated.followers = (updated.followers).concat(updated.pageFollwers);
-            delete updated.pageFollwers;
 
-        }
 
         return updated;
 
@@ -433,14 +375,9 @@ export class PageController {
             .populate({path: 'moderators.user', select: 'firstName lastName avatar'})
             .populate("moderators.moderator", "createPost engageAsPage deletePage editPage")
             .lean();
-        ;
 
-        pages = pages.map((p) => {
-            p.followers = (p.followers).concat(p.pageFollwers);
-            delete p.pageFollwers;
 
-            return p;
-        })
+
 
         return pages;
 
@@ -471,10 +408,7 @@ export class PageController {
         let page: any = await this.pageService.findAllFollowers({_id: id});
 
 
-        if (page) {
-            page.followers = (page.followers).concat(page.pageFollwers);
-            delete page.pageFollwers;
-        }
+
         return page;
 
 

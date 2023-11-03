@@ -15,16 +15,11 @@ export class GroupService extends BaseService<GroupDocument> {
     async findAllMembers(query: FilterQuery<GroupDocument>) {
         const group: any = await this.groupModel.findOne(query)
             .populate({path: 'members.member', select: 'firstName lastName avatar'})
-            .populate({path: 'page_members.page'})
-            .select('members -_id page_members')
+            .populate({path: 'members.page'})
+            .select('members -_id')
             .lean();
 
-        if(group){
-            group.members = (group.members || []).concat(group.page_members || [])
-            group.requests = (group.requests || []).concat(group.pageRequests || [])
-            delete group.page_members;
-            delete group.pageRequests;
-        }
+
 
         return group;
 
@@ -32,20 +27,14 @@ export class GroupService extends BaseService<GroupDocument> {
 
     async findAllRequests(query: FilterQuery<GroupDocument>) {
         const group:any = await this.groupModel.findOne(query).populate({
-            path: 'requests',
+            path: 'requests.member',
             select: 'firstName lastName avatar'
         })
-            .populate({path: 'pageRequests'})
-            .select('-_id requests pageRequests')
+            .populate({path: 'requests.page'})
+            .select('-_id requests')
             .lean();
 
-        if(group){
-            group.members = (group.members || []).concat(group.page_members || [])
-            group.requests = (group.requests || []).concat(group.pageRequests || [])
-            delete group.page_members;
-            delete group.pageRequests;
 
-        }
         return group;
     }
 

@@ -219,13 +219,6 @@ export class GroupController {
             .populate([{path: 'mutes'}, {path: 'moderators'}])
             .lean();
 
-        if (group) {
-            group.members = (group.members).concat(group.page_members || [])
-            group.requests = (group.requests).concat(group.pageRequests || [])
-            delete group.page_members;
-            delete group.pageRequests;
-
-        }
 
         return group;
     }
@@ -239,17 +232,10 @@ export class GroupController {
         if (GroupWithName) throw new BadRequestException('A group with this name aleady exists.');
         const updated: any = await this.groupService.findOneRecordAndUpdate({_id: id}, updateGroupDto)
             .populate({path: 'members.member', select: 'firstName lastName avatar type'})
-            .populate("page_members.page")
-            .populate("requests", "firstName lastName avatar")
-            .populate("pageRequests")
+            .populate("members.page")
+            .populate("requests.member", "firstName lastName avatar")
+            .populate("requests.page")
             .lean();
-        if (updated) {
-            updated.members = (updated.members).concat(updated.page_members || [])
-            updated.requests = (updated.requests).concat(updated.pageRequests || [])
-            delete group.page_members;
-            delete group.pageRequests;
-
-        }
         return updated;
     }
 
@@ -265,7 +251,7 @@ export class GroupController {
         //check if group is private
         if (group.privacy === GroupPrivacy.PRIVATE) {
             //check if user request is already in request array  of this group
-            const requestFound = group.requests.filter((request) => request === user._id);
+            const requestFound = group.requests.filter((request) => request.member === user._id);
             if (requestFound.length > 0) throw new HttpException('Your request to join group is pending.', HttpStatus.BAD_REQUEST);
             await this.notificationService.createRecord({
                 type: NotificationType.GROUP_JOIN_REQUEST,
@@ -284,15 +270,10 @@ export class GroupController {
                 });
             }
 
-            const updated: any = await this.groupService.findOneRecordAndUpdate({_id: id}, {$push: {requests: user._id}})
+            const updated: any = await this.groupService.findOneRecordAndUpdate({_id: id},
+                {$push: {requests: {member:user._id}}})
                 .lean();
-            if (updated) {
-                updated.members = (updated.members).concat(updated.page_members || [])
-                updated.requests = (updated.requests).concat(updated.pageRequests || [])
-                delete group.page_members;
-                delete group.pageRequests;
 
-            }
             return updated;
         }
         await this.notificationService.createRecord({
@@ -304,7 +285,8 @@ export class GroupController {
             receiver: group.creator._id,
         });
 
-        const updatedGroup: any = await this.groupService.findOneRecordAndUpdate({_id: id}, {$push: {members: {member: user._id}}})
+        const updatedGroup: any = await this.groupService.findOneRecordAndUpdate({_id: id},
+            {$push: {members: {member: user._id}}})
             .lean();
 
         //@ts-ignore
@@ -316,13 +298,6 @@ export class GroupController {
             });
         }
 
-        if (updatedGroup) {
-            updatedGroup.members = (updatedGroup.members).concat(updatedGroup.page_members || [])
-            updatedGroup.requests = (updatedGroup.requests).concat(updatedGroup.pageRequests || [])
-            delete group.page_members;
-            delete group.pageRequests;
-
-        }
 
         return updatedGroup;
     }
@@ -339,14 +314,13 @@ export class GroupController {
         if (!page) throw new HttpException('Page does not exists.', HttpStatus.BAD_REQUEST);
 
         //check if user is already a member of this group
-        const memberFound = group.page_members.filter((page_member: any) => (page_member.page).toString()
-            === (page._id).toString());
+        const memberFound = group.members.filter((member: any) => member.page && (member.page).toString() === (page._id).toString());
         if (memberFound.length > 0) throw new HttpException('You are already a member of this group.', HttpStatus.BAD_REQUEST);
 
         //check if group is private
         if (group.privacy === GroupPrivacy.PRIVATE) {
             //check if user request is already in request array  of this group
-            const requestFound = group.pageRequests.filter((request) => request.toString() === (page._id).toString());
+            const requestFound = group.requests.filter((request) => request.page && (request.page).toString() === (page._id).toString());
             if (requestFound.length > 0) throw new HttpException('Your request to join group is pending.', HttpStatus.BAD_REQUEST);
             await this.notificationService.createRecord({
                 type: NotificationType.GROUP_JOIN_REQUEST,
@@ -365,17 +339,12 @@ export class GroupController {
                     data: {group: group._id.toString(), type: NotificationType.GROUP_JOIN_REQUEST},
                 });
             }
-            const updated: any = await this.groupService.findOneRecordAndUpdate({_id: id}, {$push: {pageRequests: page._id}})
+            const updated: any = await this.groupService.findOneRecordAndUpdate({_id: id},
+                {$push: {requests:{ page:page._id}}})
                 .lean();
 
 
-            if (updated) {
-                updated.members = (updated.members).concat(updated.page_members || [])
-                updated.requests = (updated.requests).concat(updated.pageRequests || [])
-                delete group.page_members;
-                delete group.pageRequests;
 
-            }
             return updated;
         }
         await this.notificationService.createRecord({
@@ -388,7 +357,8 @@ export class GroupController {
             page: page._id
         });
 
-        const updatedGroup: any = await this.groupService.findOneRecordAndUpdate({_id: id}, {$push: {page_members: {page: page._id}}})
+        const updatedGroup: any = await this.groupService.findOneRecordAndUpdate({_id: id},
+            {$push: {members: {page: page._id}}})
             .lean();
 
         //@ts-ignore
@@ -398,15 +368,6 @@ export class GroupController {
                 notification: {title: `${user.firstName} ${user.lastName} has joined your ${group.name} group`},
                 data: {group: group._id.toString(), type: NotificationType.GROUP_JOINED},
             });
-        }
-
-
-        if (updatedGroup) {
-            updatedGroup.members = (updatedGroup.members).concat(updatedGroup.page_members || [])
-            updatedGroup.requests = (updatedGroup.requests).concat(updatedGroup.pageRequests || [])
-            delete group.page_members;
-            delete group.pageRequests;
-
         }
 
         return updatedGroup;
@@ -424,7 +385,7 @@ export class GroupController {
     async leavePageGroup(@GetUser() user: UserDocument, @Param('id', ParseObjectId) id: string,
                          @Param('pageId', ParseObjectId) pageId: string) {
         await this.groupService.findOneRecordAndUpdate({_id: id},
-            {$pull: {page_members: {page: pageId}}});
+            {$pull: {members: {page: pageId}}});
         return 'Group left successfully.';
     }
 
@@ -442,15 +403,9 @@ export class GroupController {
     async findAllMembers(@Param('id') id: string) {
         const group: any = await this.groupService.findAllMembers({_id: id});
 
-        if (group) {
-            group.members = (group.members).concat(group.page_members || [])
-            group.requests = (group.requests).concat(group.pageRequests || [])
-            delete group.page_members;
-            delete group.pageRequests;
 
-        }
 
-        return {members: group.members, page_members: group.page_members};
+        return {members: group.members};
     }
 
     @Put('remove-member')
@@ -469,19 +424,12 @@ export class GroupController {
             {$pull: {members: {member: removeMemberDto.member}}}
         )
             .populate({path: 'members.member', select: 'firstName lastName avatar type'})
-            .populate("page_members.page")
+            .populate("members.page")
             .populate("requests", "firstName lastName avatar")
-            .populate("pageRequests")
+            .populate("requests.page")
             .lean();
 
 
-        if (updatedGroup) {
-            updatedGroup.members = (updatedGroup.members).concat(updatedGroup.page_members || [])
-            updatedGroup.requests = (updatedGroup.requests).concat(updatedGroup.pageRequests || [])
-            delete group.page_members;
-            delete group.pageRequests;
-
-        }
 
         return updatedGroup.members;
     }
@@ -504,19 +452,12 @@ export class GroupController {
             {$set: {'members.$.banned': true}}
         )
             .populate({path: 'members.member', select: 'firstName lastName avatar type'})
-            .populate("page_members.page")
+            .populate("members.page")
             .populate("requests", "firstName lastName avatar")
-            .populate("pageRequests")
+            .populate("requests.page")
             .lean();
 
 
-        if (updatedGroup) {
-            updatedGroup.members = (updatedGroup.members).concat(updatedGroup.page_members || [])
-            updatedGroup.requests = (updatedGroup.requests).concat(updatedGroup.pageRequests || [])
-            delete group.page_members;
-            delete group.pageRequests;
-
-        }
 
         return updatedGroup.members;
     }
@@ -538,19 +479,11 @@ export class GroupController {
             {$set: {'members.$.banned': false}}
         )
             .populate({path: 'members.member', select: 'firstName lastName avatar type'})
-            .populate("page_members.page")
+            .populate("members.page")
             .populate("requests", "firstName lastName avatar")
-            .populate("pageRequests")
+            .populate("requests.page")
             .lean();
 
-
-        if (updatedGroup) {
-            updatedGroup.members = (updatedGroup.members).concat(updatedGroup.page_members || [])
-            updatedGroup.requests = (updatedGroup.requests).concat(updatedGroup.pageRequests || [])
-            delete group.page_members;
-            delete group.pageRequests;
-
-        }
 
         return updatedGroup.members;
     }
@@ -560,13 +493,8 @@ export class GroupController {
         const group: any = await this.groupService.findAllRequests({_id: id});
         if (!group) throw new HttpException('Group does not exist.', HttpStatus.BAD_REQUEST);
 
-        if (group) {
 
-            group.members = (group.members).concat(group.page_members || [])
-            group.requests = (group.requests).concat(group.pageRequests || [])
-        }
-
-        return {requests: group.requests, pageRequests: group.pageRequests};
+        return {requests: group.requests};
     }
 
     @Put('request/:id/:userId')
@@ -582,7 +510,7 @@ export class GroupController {
         if (group.creator.toString() == user._id) {
             if (isApproved) {
                 await this.groupService.findOneRecordAndUpdate({_id: id}, {
-                    $pull: {requests: userId},
+                    $pull: {requests: {member:userId}},
                     $push: {members: {member: userId}}
                 });
                 await this.notificationService.createRecord({
@@ -602,7 +530,7 @@ export class GroupController {
                 }
                 return 'Request approved successfully.';
             } else {
-                await this.groupService.findOneRecordAndUpdate({_id: id}, {$pull: {requests: userId}});
+                await this.groupService.findOneRecordAndUpdate({_id: id}, {$pull: {requests: {member:userId}}});
 
                 await this.notificationService.createRecord({
                     group: group._id,
@@ -628,7 +556,7 @@ export class GroupController {
 
             if (isApproved) {
                 await this.groupService.findOneRecordAndUpdate({_id: id}, {
-                    $pull: {requests: userId},
+                    $pull: {requests: {member:userId}},
                     $push: {members: {member: userId}}
                 });
 
@@ -650,7 +578,7 @@ export class GroupController {
 
                 return 'Request approved successfully.';
             } else {
-                await this.groupService.findOneRecordAndUpdate({_id: id}, {$pull: {requests: userId}});
+                await this.groupService.findOneRecordAndUpdate({_id: id}, {$pull: {requests: {member:userId}}});
                 await this.notificationService.createRecord({
                     group: group._id,
                     sender: user._id,
@@ -685,8 +613,8 @@ export class GroupController {
 
         if (isApproved) {
             await this.groupService.findOneRecordAndUpdate({_id: id}, {
-                $pull: {pageRequests: pageId},
-                $push: {page_members: {page: pageId}}
+                $pull: {requests: {page:pageId}},
+                $push: {members: {page: pageId}}
             });
             await this.notificationService.createRecord({
                 group: group._id,
@@ -705,7 +633,7 @@ export class GroupController {
             }
             return 'Request approved successfully.';
         } else {
-            await this.groupService.findOneRecordAndUpdate({_id: id}, {$pull: {pageRequests: pageId}});
+            await this.groupService.findOneRecordAndUpdate({_id: id}, {$pull: {requests: {page:pageId}}});
 
             await this.notificationService.createRecord({
                 group: group._id,
@@ -740,7 +668,7 @@ export class GroupController {
             if ((type.includes('joined') || type.includes('suggested'))
                 && pageId) {
                 const groups = await this.groupService.findAllRecords(
-                    {'page_members.page': pageId}, options
+                    {'members.page': pageId}, options
                 )
                     .lean();
 
@@ -792,30 +720,16 @@ export class GroupController {
                 const groupIds = (await this.moderatorService.findAllRecords({user: user._id})).map((moderator) => moderator.group);
                 const groups = await this.groupService.findAllRecords({_id: {$in: groupIds}}, options)
                     .populate({path: 'members.member', select: 'firstName lastName avatar type'})
-                    .populate("page_members.page")
+                    .populate("members.page")
                     .lean();
                 allGroups = [...allGroups, ...groups];
             }
-            allGroups = allGroups.map((g) => {
-                g.members = (g.members).concat(g.page_members || [])
-                g.requests = (g.requests).concat(g.pageRequests || [])
-                delete g.page_members;
-                delete g.pageRequests;
 
-                return g;
-            })
             return allGroups;
         } else {
             let updated:any = await this.groupService.findAllRecords()
                 .lean();
-            updated = updated.map((g:any) => {
-                g.members = (g.members).concat(g.page_members || [])
-                g.requests = (g.requests).concat(g.pageRequests || [])
-                delete g.page_members;
-                delete g.pageRequests;
 
-                return g;
-            })
             return updated
         }
     }
@@ -973,7 +887,7 @@ export class GroupController {
                 // @ts-ignore
                 data: {group: invitation.group._id.toString(), type: NotificationType.GROUP_JOIN_REQUEST},
             });
-            await this.groupService.findOneRecordAndUpdate({_id: invitation.group}, {$push: {requests: user._id}});
+            await this.groupService.findOneRecordAndUpdate({_id: invitation.group}, {$push: {requests: {user:user._id}}});
         }
         return invitation;
     }

@@ -9,6 +9,7 @@ import {Moderator} from './moderator.schema';
 import {Report, ReportSchema} from './report.schema';
 import {Page} from "src/page/page.schema";
 import {PageMember, PageMemberSchema} from "src/group/member_page.schema";
+import {Requests, RequestsSchema} from "src/group/requests.schema";
 
 export type GroupDocument = Group & mongoose.Document;
 
@@ -36,19 +37,13 @@ export class Group {
     members: Member[];
 
 
-    @Prop({type: [PageMemberSchema]})
-    page_members: PageMember[];
-
 
     @Prop({type: [{type: mongoose.Schema.Types.ObjectId, ref: 'Posts'}]})
     posts: Posts[];
 
-    @Prop({type: [{type: mongoose.Schema.Types.ObjectId, ref: 'User'}], required: true})
-    requests: User[];
+    @Prop({type: [RequestsSchema]})
+    requests: Requests[];
 
-
-    @Prop({type: [{type: mongoose.Schema.Types.ObjectId, ref: 'Page'}], required: true})
-    pageRequests: Page[];
 
 
     @Prop({type: [ReportSchema]})

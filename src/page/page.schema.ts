@@ -10,8 +10,13 @@ export type PageDocument = Page & mongoose.Document;
 
 @Schema({timestamps: true, versionKey: false, _id: false})
 export class Follower {
-    @Prop({type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true})
+    @Prop({type: mongoose.Schema.Types.ObjectId, ref: 'User'})
     follower: User;
+
+
+    @Prop({type: mongoose.Schema.Types.ObjectId, ref: 'Page'})
+    page;
+
 
     @Prop({dafault: false})
     banned: boolean;
@@ -28,7 +33,6 @@ export class Moderators {
 }
 
 
-
 @Schema({timestamps: true, versionKey: false, _id: false})
 export class PageFollower {
     @Prop({type: mongoose.Schema.Types.ObjectId, ref: 'Page', required: true})
@@ -37,8 +41,6 @@ export class PageFollower {
     @Prop({dafault: false})
     banned: boolean;
 }
-
-
 
 
 const FollowerSchema = SchemaFactory.createForClass(Follower);
@@ -60,7 +62,7 @@ export class Page {
     name: string;
 
 
-    @Prop({ default:"page"})
+    @Prop({default: "page"})
     type: string;
 
 
@@ -69,9 +71,6 @@ export class Page {
 
     @Prop({type: [FollowerSchema]})
     followers: Follower[];
-
-    @Prop({type: [PageFollowerSchema]})
-    pageFollwers: PageFollower[];
 
 
     @Prop({type: [{type: mongoose.Schema.Types.ObjectId, ref: 'Posts'}]})
@@ -82,13 +81,13 @@ export class Page {
 
 
     @Prop({type: [ModeratorSchema]})
-    moderators:Moderators[];
+    moderators: Moderators[];
 
 
-    @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'PageReaction' }] })
+    @Prop({type: [{type: mongoose.Schema.Types.ObjectId, ref: 'PageReaction'}]})
     reactions: Reaction[];
 
-    @Prop({ type: [{ type: mongoose.Schema.Types.ObjectId, ref: 'PageComment' }] })
+    @Prop({type: [{type: mongoose.Schema.Types.ObjectId, ref: 'PageComment'}]})
     comments: Comment[];
 
 }
