@@ -665,7 +665,7 @@ export class GroupController {
             const options = {limit: $q.limit, sort: $q.sort};
             let allGroups = [];
 
-            if ((type.includes('joined') || type.includes('suggested'))
+            if ((type.includes('joined') || type.includes('suggested') )
                 && pageId) {
                 const groups = await this.groupService.findAllRecords(
                     {'members.page': pageId}, options
@@ -680,11 +680,20 @@ export class GroupController {
             if (type.includes('forYou')) {
                 const reports = await this.reportService.findAllRecords({reporter: user._id, type: ReportType.GROUP});
                 const reportedGroups = reports.map((report) => report.group);
-                const groups = await this.groupService.findAllRecords(
-                    {name: {$regex: query, $options: 'i'}, 'members.member': user._id, _id: {$nin: reportedGroups}},
-                    options
-                )
-                    .lean();
+                let groups=[]
+                if(pageId){
+                     groups = await this.groupService.findAllRecords(
+                        {name: {$regex: query, $options: 'i'}, 'members.page': pageId, _id: {$nin: reportedGroups}},
+                        options
+                    )
+                        .lean();
+                }else{
+                     groups = await this.groupService.findAllRecords(
+                        {name: {$regex: query, $options: 'i'}, 'members.member': user._id, _id: {$nin: reportedGroups}},
+                        options
+                    )
+                        .lean();
+                }
 
 
                 allGroups = [...allGroups, ...groups];
