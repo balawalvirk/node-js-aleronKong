@@ -13,7 +13,7 @@ export class PageService extends BaseService<PageDocument> {
     async findAllFollowers(query: FilterQuery<PageDocument>) {
         const pages = await this.PageModel.findOne(query)
             .populate({path: 'followers.follower', select: 'firstName lastName avatar'})
-            .populate({path: 'pageFollwers.page'})
+            .populate({path: 'followers.page'})
             .select('followers -_id pageFollwers');
         return pages;
     }
