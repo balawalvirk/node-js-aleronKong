@@ -253,7 +253,7 @@ export class PageController {
 
         //check if user is already a follower of this page
         //@ts-ignore
-        const followerFound = page.followers.find((follower) => follower.follower.equals(user._id));
+        const followerFound = page.followers.find((follower) => follower.follower && (follower.follower).equals(user._id));
         if (followerFound) throw new BadRequestException('You are already a follower of this page.');
 
 

@@ -447,8 +447,18 @@ export class PostsController {
 
         const pageFollowings = (await this.pageService.findAllRecords({'pageFollwers.page':
                 {$in: [new mongoose.Types.ObjectId(id)]}}).select('_id')).map((user) => user._id);
-        const followingPages = await this.postsService.find({page: {$in: pageFollowings}},options)
-        return followingPages;
+        const followingPages = await this.postsService.find({page: {$in: pageFollowings}},options);
+
+        const total = await this.pageService.countRecords({page: {$in: pageFollowings}});
+
+
+        return {
+            total,
+            pages: Math.floor(total / $q.limit),
+            page: $q.page,
+            limit: $q.limit,
+            data: followingPages,
+        };
     }
 
 
