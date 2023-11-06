@@ -124,7 +124,7 @@ export class PageController {
         }
 
 
-        if (filter === PageFilter.ALL) {
+        if (filter === PageFilter.ALL || filter === PageFilter.FOR_YOU) {
             const condition = {name: {$regex: query || "", $options: 'i'}, creator: {$ne: user._id}};
             const total = await this.pageService.countRecords(condition);
             let pages = await this.pageService.findAllRecords(condition, options)

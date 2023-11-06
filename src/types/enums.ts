@@ -183,6 +183,7 @@ export enum PageFilter {
   POPULAR = 'popular',
   SUGGESTED = 'suggested',
   LATEST = 'latest',
+  FOR_YOU = 'forYou',
   CREATED='created',
   MODERATING='moderating',
   FOLLOWING='following'
