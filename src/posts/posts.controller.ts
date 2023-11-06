@@ -445,7 +445,7 @@ export class PostsController {
         const options = {limit: $q.limit, skip: $q.skip, sort: $q.sort};
 
 
-        const pageFollowings = (await this.pageService.findAllRecords({'pageFollwers.page':
+        const pageFollowings = (await this.pageService.findAllRecords({'followers.page':
                 {$in: [new mongoose.Types.ObjectId(id)]}}).select('_id')).map((user) => user._id);
         const followingPages = await this.postsService.find({page: {$in: pageFollowings}},options);
 
