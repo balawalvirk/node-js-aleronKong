@@ -446,10 +446,10 @@ export class PostsController {
 
 
         const pageFollowings = (await this.pageService.findAllRecords({'followers.page':
-                {$in: [new mongoose.Types.ObjectId(id)]}}).select('_id')).map((user) => user._id);
+                {$in: [new mongoose.Types.ObjectId(id)]}}).select('_id')).map((page) => page._id);
         const followingPages = await this.postsService.find({page: {$in: pageFollowings}},options);
 
-        const total = await this.pageService.countRecords({page: {$in: pageFollowings}});
+        const total = await this.postsService.countRecords({page: {$in: pageFollowings}});
 
 
         return {
