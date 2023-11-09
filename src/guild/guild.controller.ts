@@ -23,6 +23,11 @@ import {FirebaseService} from 'src/firebase/firebase.service';
 import {GuildService} from "src/guild/guild.service";
 import {CreateGuildDto} from "src/guild/dto/create-guild.dto";
 import {UpdateGuildDto} from "src/guild/dto/update-guild.dto";
+import {PackageService} from "src/package/package.service";
+import {Package, PackageDocument} from "src/package/package.schema";
+import mongoose, {Model} from "mongoose";
+import { InjectModel } from '@nestjs/mongoose';
+const moment = require("moment");
 
 @Controller('guild')
 @UseGuards(JwtAuthGuard)
@@ -32,7 +37,9 @@ export class GuildController {
         private readonly stripeService: StripeService,
         private readonly userService: UsersService,
         private readonly notificationService: NotificationService,
-        private readonly firebaseService: FirebaseService
+        private readonly firebaseService: FirebaseService,
+        private readonly packageService: PackageService,
+        @InjectModel(Package.name) private packageModel: Model<PackageDocument>
     ) {
     }
 
@@ -46,6 +53,69 @@ export class GuildController {
             creator: user._id,
         });
     }
+
+
+    @Get('/:id/package')
+    async getGuildPackage(@Param('id', ParseObjectId) id: string) {
+        const guildPackages:any = await this.packageModel.aggregate([
+            {$match: {guild: new mongoose.Types.ObjectId(id)}},
+            {
+                $lookup: {
+                    from: "users",
+                    let: {package:'$_id'},
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: {
+                                    $and: [
+                                        {$in: [ '$$package','$supportingPackages.package',]}
+                                    ]
+                                }
+                            }
+                        },
+                    ],
+                    as: 'users_with_package'
+                },
+            },
+            {
+                $addFields: {
+                    totalMembers: {$size:"$users_with_package"}
+                }
+            },
+        ]);
+
+
+        for(let i =0;i<guildPackages.length;i++){
+            const selectedPackage:any=guildPackages[i];
+            const userWithPackages=selectedPackage.users_with_package || [];
+
+            let filteredPackages=[]
+            for(let u of userWithPackages){
+                const findIndex=(u.supportingPackages).findIndex((p)=>(p.package).toString()===(selectedPackage._id).toString());
+
+                if(findIndex!==-1){
+                    filteredPackages.push(u.supportingPackages[findIndex]);
+                }
+
+            }
+
+            let newMembers=0;
+
+            for(let j=0;j<filteredPackages.length;j++){
+                const dateBeforeNewMember=moment(new Date()).subtract(2,"days").format("YYYY-MM-DD")
+                const packageDate=moment(filteredPackages[j].date).format("YYYY-MM-DD");
+                if(moment(packageDate).isAfter(dateBeforeNewMember)){
+                    newMembers+=1;
+                }
+            }
+            guildPackages[i].newMembers=newMembers;
+            delete guildPackages[i].users_with_package
+        }
+
+
+        return guildPackages;
+    }
+
 
     @Get('/find-all')
     async findAllPackages(@Query() {page, limit, query, ...rest}: FindAllPackagesQueryDto) {

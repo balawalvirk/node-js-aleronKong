@@ -1,11 +1,25 @@
 import {Prop, Schema, SchemaFactory} from '@nestjs/mongoose';
 import mongoose, {Document} from 'mongoose';
 import {Address} from 'src/address/address.schema';
-import {Package} from 'src/package/package.schema';
+import {Buyer, BuyerSchema, Package} from 'src/package/package.schema';
 import {Product} from 'src/product/product.schema';
 import {AuthTypes, PostPrivacy, SellerRequest, UserRoles, UserStatus} from 'src/types';
 
 export type UserDocument = User & Document;
+
+
+@Schema({ versionKey: false, _id: false })
+export class SubscribedPackages {
+    @Prop({type: mongoose.Schema.Types.ObjectId, ref: 'Package'})
+    package: Package;
+
+    @Prop({ type:Date,default: Date.now })
+    date_created;
+}
+
+export const SubscribedPackagesSchema = SchemaFactory.createForClass(SubscribedPackages);
+
+
 
 @Schema({timestamps: true})
 export class User {
@@ -68,8 +82,10 @@ export class User {
     @Prop({type: [{type: mongoose.Schema.Types.ObjectId, ref: 'User'}]})
     blockedUsers: User[];
 
-    @Prop({type: [{type: mongoose.Schema.Types.ObjectId, ref: 'Package'}]})
-    supportingPackages: Package[];
+
+    @Prop({ type: [SubscribedPackagesSchema] })
+    supportingPackages: SubscribedPackages[];
+
 
     @Prop({type: [{type: mongoose.Schema.Types.ObjectId, ref: 'Product'}]})
     boughtDigitalProducts: Product[];
