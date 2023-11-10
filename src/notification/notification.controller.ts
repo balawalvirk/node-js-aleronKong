@@ -16,7 +16,12 @@ export class NotificationController {
   async findAll(@GetUser() user: UserDocument, @Query() { page, limit,pageId }: FindAllNotificationsQueryDto) {
     const $q = makeQuery({ page, limit });
     const options = { limit: $q.limit, skip: $q.skip, sort: $q.sort };
-    const condition = { receiver: user._id,page:pageId };
+    let condition:any = { receiver: user._id };
+
+    if(pageId){
+        condition = { page:new mongoose.Types.ObjectId(pageId) };
+    }
+
     await this.notificationService.updateManyRecords({ receiver: user._id, isRead: false }, { isRead: true });
     const notifications = await this.notificationService.find(condition, options);
     const total = await this.notificationService.countRecords(condition);
