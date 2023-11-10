@@ -151,7 +151,6 @@ export class PageController {
                 .lean();
 
 
-
             return {
                 total,
                 pages: Math.floor(total / $q.limit),
@@ -187,7 +186,6 @@ export class PageController {
                 .lean();
 
 
-
             return {
                 total,
                 pages: Math.floor(total / $q.limit),
@@ -205,9 +203,6 @@ export class PageController {
                 .populate({path: 'moderators.user', select: 'firstName lastName avatar'})
                 .populate("moderators.moderator", "createPost engageAsPage deletePage editPage")
                 .lean();
-
-
-
 
 
             return {
@@ -232,7 +227,6 @@ export class PageController {
             .populate({path: 'moderators.user', select: 'firstName lastName avatar'})
             .populate("moderators.moderator", "createPost engageAsPage deletePage editPage")
             .lean();
-
 
 
         const paginated = {
@@ -325,8 +319,6 @@ export class PageController {
             .lean();
 
 
-
-
         return updated;
 
     }
@@ -340,7 +332,6 @@ export class PageController {
             .populate("followers.page")
             .populate("followers.follower", "firstName lastName avatar")
             .lean();
-
 
 
         return updated;
@@ -363,7 +354,6 @@ export class PageController {
             .lean();
 
 
-
         return updated;
 
     }
@@ -376,8 +366,18 @@ export class PageController {
             .populate("moderators.moderator", "createPost engageAsPage deletePage editPage")
             .lean();
 
+        return pages;
+
+    }
 
 
+    @Get('follow-created/find-all')
+    async findAllfollowedPagesAndCreated(@GetUser() user: UserDocument) {
+        let pages: any = await this.pageService.findAllRecords({$or: [{'followers.follower': user._id}, {creator: user._id}]})
+            .populate('creator')
+            .populate({path: 'moderators.user', select: 'firstName lastName avatar'})
+            .populate("moderators.moderator", "createPost engageAsPage deletePage editPage")
+            .lean();
 
         return pages;
 
@@ -386,11 +386,19 @@ export class PageController {
 
     // find all post of page that user follow
     @Get('follow/post/find-all')
-    async feed(@GetUser() user: UserDocument, @Query() {page, limit}: PaginationDto) {
-        const $q = makeQuery({page, limit});
+    async feed(@GetUser() user: UserDocument, @Query() {page, limit,creator}: PaginationDto) {
+        const $q = makeQuery({page, limit,});
         const options = {sort: {pin: -1, ...$q.sort}, limit: $q.limit, skip: $q.skip};
+
+
         const pages = (await this.pageService.findAllRecords({'followers.follower': user._id})).map((follower) => follower._id);
-        const condition = {page: {$in: pages}, creator: {$nin: user.blockedUsers}};
+        let condition:any = {page: {$in: pages}, creator: {$nin: user.blockedUsers}};
+
+        if(creator){
+            condition = {page: {$in: pages}, $or:[{creator: {$nin: user.blockedUsers}},{creator:user._id}]};
+        }
+
+
         const posts = await this.postService.find(condition, options);
         const total = await this.postService.countRecords(condition);
         const paginated = {
@@ -406,7 +414,6 @@ export class PageController {
     @Get(':id/follower/find-all')
     async findAllFollowers(@Param('id', ParseObjectId) id: string) {
         let page: any = await this.pageService.findAllFollowers({_id: id});
-
 
 
         return page;
