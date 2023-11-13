@@ -391,11 +391,16 @@ export class PageController {
         const options = {sort: {pin: -1, ...$q.sort}, limit: $q.limit, skip: $q.skip};
 
 
-        const pages = (await this.pageService.findAllRecords({'followers.follower': user._id})).map((follower) => follower._id);
-        let condition:any = {page: {$in: pages}, creator: {$nin: user.blockedUsers}};
+
+
+        const pagesFollowed = (await this.pageService.findAllRecords({'followers.follower': user._id})).map((page) => page._id);
+
+        let condition:any = {page: {$in: pagesFollowed}, creator: {$nin: user.blockedUsers}};
 
         if(creator){
-            condition = {page: {$in: pages}, $or:[{creator: {$nin: user.blockedUsers}},{creator:user._id}]};
+            const pagesCreated = (await this.pageService.findAllRecords({'creator': user._id})).map((page) => page._id);
+
+            condition = {page: {$in: pagesFollowed.concat(pagesCreated)},creator: {$nin: user.blockedUsers}};
         }
 
 
