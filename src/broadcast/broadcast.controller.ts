@@ -63,7 +63,6 @@ export class BroadcastController {
 
 
         const broadcast = await this.broadcastService.create({token, channel, user: user._id,post:postId,page});
-        this.socketService.triggerMessage('new-broadcast', broadcast);
         const {cname, uid, resourceId} = await this.broadcastService.acquireRecording(broadcast.channel);
         const {sid} = await this.broadcastService.startRecording(resourceId, cname, broadcast.token);
         const updatedBroadcast:any = await this.broadcastService.findOneRecordAndUpdate(
@@ -73,6 +72,7 @@ export class BroadcastController {
 
         await this.cacheManager.set((broadcast._id).toString(),JSON.stringify(postData), {ttl:86400});
         await this.cacheManager.set((postId).toString(),JSON.stringify(postData), {ttl:86400});
+        this.socketService.triggerMessage('new-broadcast', {...updatedBroadcast._doc,post:postData,page});
 
         return {...updatedBroadcast._doc,post:postData,page};
     }
