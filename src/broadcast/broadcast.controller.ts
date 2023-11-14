@@ -92,7 +92,7 @@ export class BroadcastController {
     @Delete(':id')
     async remove(@Param('id', ParseObjectId) id: string, @GetUser() user: UserDocument) {
         const broadcast = await this.broadcastService.deleteSingleRecord({_id: id});
-        if (!broadcast) throw new BadRequestException('Broadcast does not exists.');
+        if (!broadcast || !broadcast.recording) throw new BadRequestException('Broadcast does not exists.');
         this.socketService.triggerMessage('remove-broadcast', broadcast);
         const stop = await this.broadcastService.stopRecording(broadcast.recording.resourceId, broadcast.channel, broadcast.recording.sid);
 
