@@ -24,6 +24,7 @@ import {PostsService} from 'src/posts/posts.service';
 import Cache from 'cache-manager';
 import {v4 as uuid} from 'uuid';
 import mongoose from "mongoose";
+import {PageService} from "src/page/page.service";
 
 @Controller('broadcast')
 @UseGuards(JwtAuthGuard)
@@ -33,6 +34,7 @@ export class BroadcastController {
         private readonly postService: PostsService,
         private readonly configService: ConfigService<IEnvironmentVariables>,
         private readonly socketService: SocketGateway,
+        private readonly pageService: PageService,
         @Inject(CACHE_MANAGER) private cacheManager: Cache
     ) {
     }
@@ -42,6 +44,14 @@ export class BroadcastController {
     @Header('Expires', '-1')
     @Header('Pragma', 'no-cache')
     async create(@Body() {role,page}: CreateBroadcastDto, @GetUser() user: UserDocument) {
+
+
+        const pageData: any = await this.pageService.findRecordById(page)
+
+        if(!pageData)
+            throw new BadRequestException('Page does not exists.');
+
+
         const channel = randomBytes(20).toString('hex');
         const currentTimestamp = Math.floor(Date.now() / 1000);
         const expirationTime = 3600;
@@ -61,7 +71,6 @@ export class BroadcastController {
         const postData={_id:postId,privacy: PostPrivacy.PUBLIC, creator: user._id,page};
         //const createPost:any = await this.postService.createRecord(postData);
 
-
         const broadcast = await this.broadcastService.create({token, channel, user: user._id,post:postId,page});
         const {cname, uid, resourceId} = await this.broadcastService.acquireRecording(broadcast.channel);
         const {sid} = await this.broadcastService.startRecording(resourceId, cname, broadcast.token);
@@ -72,7 +81,7 @@ export class BroadcastController {
 
         await this.cacheManager.set((broadcast._id).toString(),JSON.stringify(postData), {ttl:86400});
         await this.cacheManager.set((postId).toString(),JSON.stringify(postData), {ttl:86400});
-        this.socketService.triggerMessage('new-broadcast', {...updatedBroadcast._doc,post:postData,page});
+        this.socketService.triggerMessage('new-broadcast', {...updatedBroadcast._doc,post:postData,page:pageData});
 
         return {...updatedBroadcast._doc,post:postData,page};
     }
