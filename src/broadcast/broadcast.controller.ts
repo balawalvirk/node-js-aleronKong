@@ -25,6 +25,7 @@ import Cache from 'cache-manager';
 import {v4 as uuid} from 'uuid';
 import mongoose from "mongoose";
 import {PageService} from "src/page/page.service";
+import {CommentService} from "src/posts/comment.service";
 
 @Controller('broadcast')
 @UseGuards(JwtAuthGuard)
@@ -35,6 +36,7 @@ export class BroadcastController {
         private readonly configService: ConfigService<IEnvironmentVariables>,
         private readonly socketService: SocketGateway,
         private readonly pageService: PageService,
+        private readonly commentService: CommentService,
         @Inject(CACHE_MANAGER) private cacheManager: Cache
     ) {
     }
@@ -113,9 +115,11 @@ export class BroadcastController {
 
         const postData=await this.cacheManager.get(id);
         if(postData){
+            const prevComments = (await this.commentService.find({post: JSON.parse(postData)._id})).map((p)=>p._id);
 
             const createPost:any = await this.postService.createRecord(
-                {...JSON.parse(postData),videos:[url],live:true});
+                {...JSON.parse(postData),videos:[url],live:true,comments:prevComments});
+
             //await this.postService.findOneRecordAndUpdate({_id:new mongoose.Types.ObjectId(postId)},{videos: [url]});
             await this.cacheManager.del(id)
         }
