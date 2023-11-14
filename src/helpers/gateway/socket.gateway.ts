@@ -63,7 +63,9 @@ export class SocketGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 
 
 
-  triggerMessage(event: string, payload: any) {
-    this.wss.emit(event, payload);
+  triggerMessage(event: string, payload: any,creator?:string) {
+
+      this.wss.emit(event, payload);
+
   }
 }

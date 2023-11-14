@@ -371,7 +371,7 @@ export class PostsController {
                 data: {post: post._id.toString(), type: NotificationType.COMMENT_REPLIED},
             });
 
-
+            comment.page=page;
             this.socketService.triggerMessage(`post-comment-reply-${(post._id).toString()}`, comment);
 
 
@@ -401,11 +401,11 @@ export class PostsController {
                         data: {post: post._id.toString(), type: NotificationType.POST_COMMENTED},
                     });
                 }
-
-                this.socketService.triggerMessage(`post-comment-${(post._id).toString()}`, comment);
-
-
             }
+
+            comment.page=page;
+            this.socketService.triggerMessage(`post-comment-${(post._id).toString()}`, comment);
+
         }
         comment.page=page;
         return comment;
