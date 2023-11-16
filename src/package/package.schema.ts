@@ -60,12 +60,6 @@ export class Package {
     guild: Guild;
 
 
-    @Prop({default: false})
-    isEligible: boolean;
-
-
-    @Prop({default: false})
-    benefitDelivered: boolean;
 
 
     @Prop({type: [{type: String, default:[]}]})

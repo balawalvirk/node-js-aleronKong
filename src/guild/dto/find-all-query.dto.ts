@@ -20,3 +20,20 @@ export class FindAllPackagesQueryDto {
   @IsOptional()
   limit: string;
 }
+
+
+export class FindUserSubscribedPackagesQueryDto {
+
+    @IsOptional()
+    filter;
+
+    @IsOptional()
+    sort;
+
+
+    @IsOptional()
+    query: string;
+
+    @IsOptional()
+    limit: string;
+}

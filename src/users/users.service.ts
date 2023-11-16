@@ -18,7 +18,15 @@ export class UsersService extends BaseService<UserDocument> {
       .lean();
   }
 
-  async createCustomerAccount(email: string, name: string) {
+
+    async findOneWithoutLean(query: FilterQuery<UserDocument>) {
+        return await this.userModal
+            .findOne(query)
+            .populate([{ path: 'defaultAddress' }, { path: 'supportingPackages' }])
+    }
+
+
+    async createCustomerAccount(email: string, name: string) {
     return await this.stripeService.createCustomer({ email, name });
   }
 

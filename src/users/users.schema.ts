@@ -13,6 +13,16 @@ export class SubscribedPackages {
     @Prop({type: mongoose.Schema.Types.ObjectId, ref: 'Package'})
     package: Package;
 
+
+    @Prop({default: false})
+    isEligible: boolean;
+
+
+    @Prop({default: false})
+    benefitDelivered: boolean;
+
+
+
     @Prop({ type:Date,default: Date.now })
     date_created;
 }

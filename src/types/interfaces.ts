@@ -1,5 +1,5 @@
 export interface IQuery {
-  page: string;
+  page?: string;
   limit: string;
   query?: string;
 }
