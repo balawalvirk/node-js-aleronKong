@@ -144,6 +144,20 @@ export class GuildController {
     }
 
 
+    @Get(':id/benefits')
+    async findGuildPackagesBenefits(@Param('id', ParseObjectId) id: string) {
+        return await this.guildService.findRecordById(id).select('benefits')
+            .populate("benefits");
+    }
+
+
+
+    @Delete('delete/:id')
+    async remove(@Param('id', ParseObjectId) id: string, @GetUser() user: UserDocument) {
+        return await this.guildService.deleteSingleRecord({_id: id});
+    }
+
+
     @Get('/package/:id/users')
     async getUserSubscribedGuildPackage(@Param('id') id: string, @Query() {sort, filter, limit, query, ...rest}: FindUserSubscribedPackagesQueryDto) {
         const $q = makeQuery({limit: limit});

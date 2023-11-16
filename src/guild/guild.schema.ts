@@ -1,6 +1,7 @@
 import {Prop, Schema, SchemaFactory} from '@nestjs/mongoose';
 import * as mongoose from 'mongoose';
 import {User} from 'src/users/users.schema';
+import {Benefit} from "src/benefits/benefit.schema";
 
 export type GuildDocument = Guild & mongoose.Document;
 
@@ -21,6 +22,11 @@ export class Guild {
 
     @Prop({type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true})
     creator: User;
+
+
+    @Prop([{type: mongoose.Schema.Types.ObjectId,ref:Benefit.name}])
+    benefits:String[];
+
 
 
     @Prop({type: Date, default:Date.now})

@@ -256,10 +256,6 @@ export class PackageController {
     }
 
 
-    @Get('guild/:id/benefits')
-    async findGuildPackagesBenefits(@Param('id', ParseObjectId) id: string) {
-        return await this.packageService.findOneRecord({guild: id}).select('benefits');
-    }
 
     @Get(':id/payment-history')
     async findMembership(@GetUser() user: UserDocument, @Param('id', ParseObjectId) id: string) {

@@ -23,18 +23,5 @@ export class CreatePackageDto {
     guild: string;
 
 
-    @IsOptional()
-    @IsBoolean()
-    isEligible?: boolean;
-
-
-    @IsOptional()
-    @IsBoolean()
-    benefitDelivered?: boolean;
-
-
-    @IsOptional()
-    @IsString({ each: true })
-    benefits;
 
 }

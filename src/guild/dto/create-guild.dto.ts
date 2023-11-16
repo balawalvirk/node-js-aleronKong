@@ -1,4 +1,4 @@
-import {IsBoolean, IsNumber, IsOptional, IsString} from 'class-validator';
+import {IsBoolean, IsMongoId, IsNumber, IsOptional, IsString} from 'class-validator';
 
 export class CreateGuildDto {
     @IsString()
@@ -15,5 +15,11 @@ export class CreateGuildDto {
 
     @IsString()
     cover_photo: string;
+
+
+    @IsOptional()
+    @IsMongoId({ each: true })
+    benefits:string[];
+
 
 }

@@ -62,10 +62,6 @@ export class Package {
 
 
 
-    @Prop({type: [{type: String, default:[]}]})
-    benefits:String[];
-
-
 }
 
 export const PackageSchema = SchemaFactory.createForClass(Package);
