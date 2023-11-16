@@ -1,6 +1,11 @@
-import { IsString } from 'class-validator';
+import {IsString} from 'class-validator';
 
 export class CreateBenefitDto {
-  @IsString()
-  label: string;
+    @IsString()
+    label: string;
+
+    @IsString()
+    image: string;
+
+
 }
