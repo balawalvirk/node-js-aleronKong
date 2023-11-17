@@ -6,6 +6,7 @@ import { UsersService } from 'src/users/users.service';
 import {BenefitService} from "src/benefits/benefit.service";
 import {CreateBenefitDto} from "src/benefits/dto/create-benefit.dto";
 import {UpdateBenefitDto} from "src/benefits/dto/update-benefit.dto";
+import mongoose from "mongoose";
 
 @Controller('benefit')
 @UseGuards(JwtAuthGuard)
@@ -14,12 +15,12 @@ export class BenefitController {
 
   @Post('create')
   async create(@Body() createAddressDto: CreateBenefitDto, @GetUser() user: UserDocument) {
-    return await this.benefitService.createRecord({ ...createAddressDto, creator: user._id });
+    return await this.benefitService.createRecord({ ...createAddressDto });
   }
 
-  @Get('find-all')
-  async findAll(@GetUser() user: UserDocument) {
-    return await this.benefitService.findAllRecords({ creator: user._id });
+  @Get('guild/:guildId/find-all')
+  async findAll(@GetUser() user: UserDocument,@Param('guildId', ParseObjectId) id: string) {
+    return await this.benefitService.findAllRecords({ guild: new mongoose.Types.ObjectId(id) });
   }
 
   @Get(':id/find-one')

@@ -16,8 +16,8 @@ export class Benefit {
 
 
 
-    @Prop({type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true})
-    creator: User;
+    @Prop({type: mongoose.Schema.Types.ObjectId, ref: 'Guild'})
+    guild: Guild;
 
 
 

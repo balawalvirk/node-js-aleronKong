@@ -4,6 +4,7 @@ import {User} from 'src/users/users.schema';
 import {Guild} from "src/guild/guild.schema";
 import {Product} from "src/product/product.schema";
 import {Item, ItemSchema} from "src/product/cart.schema";
+import {Benefit} from "src/benefits/benefit.schema";
 
 export type PackageDocument = Package & mongoose.Document;
 
@@ -54,6 +55,9 @@ export class Package {
     @Prop({ type: [BuyerSchema] })
     buyers: Buyer[];
 
+
+    @Prop([{type: mongoose.Schema.Types.ObjectId,ref:Benefit.name}])
+    benefits:String[];
 
 
     @Prop({type: mongoose.Schema.Types.ObjectId, ref: 'Guild'})

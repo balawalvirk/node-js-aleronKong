@@ -1,4 +1,4 @@
-import {IsString} from 'class-validator';
+import {IsMongoId, IsOptional, IsString} from 'class-validator';
 
 export class CreateBenefitDto {
     @IsString()
@@ -7,5 +7,7 @@ export class CreateBenefitDto {
     @IsString()
     image: string;
 
+    @IsMongoId()
+    guild:string;
 
 }

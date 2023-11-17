@@ -23,5 +23,8 @@ export class CreatePackageDto {
     guild: string;
 
 
+    @IsOptional()
+    @IsMongoId({ each: true })
+    benefits:string[];
 
 }

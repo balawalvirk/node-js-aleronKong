@@ -24,9 +24,6 @@ export class Guild {
     creator: User;
 
 
-    @Prop([{type: mongoose.Schema.Types.ObjectId,ref:Benefit.name}])
-    benefits:String[];
-
 
 
     @Prop({type: Date, default:Date.now})

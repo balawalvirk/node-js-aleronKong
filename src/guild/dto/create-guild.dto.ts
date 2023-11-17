@@ -17,9 +17,6 @@ export class CreateGuildDto {
     cover_photo: string;
 
 
-    @IsOptional()
-    @IsMongoId({ each: true })
-    benefits:string[];
 
 
 }
