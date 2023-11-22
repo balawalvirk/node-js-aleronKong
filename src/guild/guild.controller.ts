@@ -85,10 +85,18 @@ export class GuildController {
             },
         ]);
 
+        let supportersCount=0;
+        let minimumPrice=0;
+        let maximumPrice=0;
 
         for (let i = 0; i < guildPackages.length; i++) {
             const selectedPackage: any = guildPackages[i];
             const userWithPackages = selectedPackage.users_with_package || [];
+
+            supportersCount+=userWithPackages.length;
+            if(selectedPackage.price<minimumPrice || minimumPrice===0) minimumPrice=selectedPackage.price;
+            if(selectedPackage.price>maximumPrice || maximumPrice===0) maximumPrice=selectedPackage.price;
+
 
             let filteredPackages = []
             for (let u of userWithPackages) {
@@ -114,7 +122,7 @@ export class GuildController {
         }
 
 
-        return guildPackages;
+        return {packages:guildPackages,supportersCount,minimumPrice,maximumPrice};
     }
 
 
@@ -163,9 +171,25 @@ export class GuildController {
         const $q = makeQuery({limit: limit});
         const rjx = {$regex: query ? query : '', $options: 'i'};
         const options = {limit: $q.limit, skip: $q.skip, sort: {"supportingPackages.date_created": sort}};
+        let condition: any
 
+        if(query && query.length>0){
+            condition = {
+                $and:[
+                    {"supportingPackages.package": new mongoose.Types.ObjectId(id)},
+                    {
+                        $or:[
+                            {firstName:{$regex: query, $options: 'i'}},
+                            {lastName:{$regex: query, $options: 'i'}},
+                            {userName:{$regex: query, $options: 'i'}},
 
-        let condition: any = {...rest, "supportingPackages.package": new mongoose.Types.ObjectId(id)};
+                        ]
+                    }
+                ]};
+        }else{
+            condition = {...rest, "supportingPackages.package": new mongoose.Types.ObjectId(id)};
+
+        }
         if (filter === "isEligible") {
             condition = {...condition, "supportingPackages.isEligible": true};
         } else if (filter === "benefitDelivered") {
@@ -174,7 +198,7 @@ export class GuildController {
 
 
         const total = await this.userService.countRecords(condition);
-        let packages = (await this.userService.findAllRecords(condition, options).select('firstName lastName avatar supportingPackages'))
+        let packages = (await this.userService.findAllRecords(condition, options).select('firstName lastName userName avatar supportingPackages'))
         packages = packages.map((user: any) => {
             const index = (user.supportingPackages).findIndex((p) => (p.package).toString() === id);
             if (index !== -1) {

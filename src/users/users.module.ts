@@ -12,10 +12,16 @@ import { FriendRequest, FriendRequestSchema } from './friend-request.schema';
 import { FriendRequestService } from './friend-request.service';
 import { UserController } from './users.controller';
 import { UsersService } from './users.service';
+import {GuildService} from "src/guild/guild.service";
+import {Guild, GuildSchema} from "src/guild/guild.schema";
 
 @Module({
   imports: [
-    MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
+    MongooseModule.forFeature([
+        { name: User.name, schema: UserSchema },
+        {name: Guild.name, schema: GuildSchema},
+
+    ]),
     MongooseModule.forFeature([{ name: FriendRequest.name, schema: FriendRequestSchema }]),
     NotificationModule,
     FirebaseModule,
@@ -25,7 +31,7 @@ import { UsersService } from './users.service';
     GroupModule,
   ],
   controllers: [UserController],
-  providers: [UsersService, StripeService, FriendRequestService],
+  providers: [UsersService, StripeService, FriendRequestService,GuildService],
   exports: [UsersService],
 })
 export class UsersModule {}

@@ -15,6 +15,8 @@ import { StripeService } from 'src/helpers';
 import { NotificationModule } from 'src/notification/notification.module';
 import { ProductModule } from 'src/product/product.module';
 import { FileModule } from 'src/file/file.module';
+import {GuildService} from "src/guild/guild.service";
+import {Guild, GuildSchema} from "src/guild/guild.schema";
 
 @Module({
   imports: [
@@ -27,9 +29,9 @@ import { FileModule } from 'src/file/file.module';
       secret: new ConfigService<IEnvironmentVariables>().get('JWT_TOKEN_SECRET'),
       signOptions: { expiresIn: '15d' },
     }),
-    MongooseModule.forFeature([{ name: Otp.name, schema: OtpSchema }]),
+    MongooseModule.forFeature([{ name: Otp.name, schema: OtpSchema },{name: Guild.name, schema: GuildSchema}]),
   ],
-  providers: [AuthService, LocalStrategy, JwtStrategy, EmailService, StripeService],
+  providers: [AuthService, LocalStrategy, JwtStrategy, EmailService, StripeService,GuildService],
   controllers: [AuthController],
   exports: [AuthService, JwtModule],
 })

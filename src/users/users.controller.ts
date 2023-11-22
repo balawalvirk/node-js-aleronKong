@@ -40,6 +40,7 @@ import {UpdateUserDto} from './dtos/update-user';
 import {FriendRequestService} from './friend-request.service';
 import {UsersService} from './users.service';
 import mongoose from "mongoose";
+import {GuildService} from "src/guild/guild.service";
 
 @Controller('user')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -52,13 +53,18 @@ export class UserController {
         private readonly messageService: MessageService,
         private readonly cartService: CartService,
         private readonly friendRequestService: FriendRequestService,
-        private readonly groupService: GroupService
+        private readonly groupService: GroupService,
+        private readonly guildService: GuildService,
+
     ) {
     }
 
     @Put('update')
     async setupProfile(@Body() updateUserDto: UpdateUserDto, @GetUser() user: UserDocument) {
-        return await this.usersService.findOneRecordAndUpdate({_id: user._id}, updateUserDto);
+        const userProfile:any =  await this.usersService.findOneRecordAndUpdate({_id: user._id}, updateUserDto).lean();
+        const guild = await this.guildService.findAllRecords({creator:user._id});
+        userProfile.guildProfile=guild;
+        return userProfile;
     }
 
     @Put('/complete-profile')
