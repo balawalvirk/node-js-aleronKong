@@ -27,6 +27,7 @@ import {PackageService} from "src/package/package.service";
 import {Package, PackageDocument} from "src/package/package.schema";
 import mongoose, {Model} from "mongoose";
 import {InjectModel} from '@nestjs/mongoose';
+import {Benefit} from "src/benefits/benefit.schema";
 
 const moment = require("moment");
 
@@ -84,6 +85,17 @@ export class GuildController {
                 }
             },
         ]);
+
+
+        await this.packageModel.populate(guildPackages,
+            [
+                {
+                    path: 'benefits',
+                    model: Benefit.name,
+                    select:"label"
+                }
+            ],
+        );
 
         let supportersCount=0;
         let minimumPrice=0;
