@@ -126,6 +126,77 @@ export class GuildController {
     }
 
 
+    @Get('/:id/package/stats')
+    async getGuildPackageStats(@Param('id', ParseObjectId) id: string) {
+        const guildPackages: any = await this.packageModel.aggregate([
+            {$match: {guild: new mongoose.Types.ObjectId(id)}},
+            {
+                $lookup: {
+                    from: "users",
+                    let: {package: '$_id'},
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: {
+                                    $and: [
+                                        {$in: ['$$package', '$supportingPackages.package',]}
+                                    ]
+                                }
+                            }
+                        },
+                    ],
+                    as: 'users_with_package'
+                },
+            },
+            {
+                $addFields: {
+                    totalMembers: {$size: "$users_with_package"}
+                }
+            },
+        ]);
+
+        let supportersCount=0;
+        let minimumPrice=0;
+        let maximumPrice=0;
+
+        for (let i = 0; i < guildPackages.length; i++) {
+            const selectedPackage: any = guildPackages[i];
+            const userWithPackages = selectedPackage.users_with_package || [];
+
+            supportersCount+=userWithPackages.length;
+            if(selectedPackage.price<minimumPrice || minimumPrice===0) minimumPrice=selectedPackage.price;
+            if(selectedPackage.price>maximumPrice || maximumPrice===0) maximumPrice=selectedPackage.price;
+
+
+            let filteredPackages = []
+            for (let u of userWithPackages) {
+                const findIndex = (u.supportingPackages).findIndex((p) => (p.package).toString() === (selectedPackage._id).toString());
+
+                if (findIndex !== -1) {
+                    filteredPackages.push(u.supportingPackages[findIndex]);
+                }
+
+            }
+
+            let newMembers = 0;
+
+            for (let j = 0; j < filteredPackages.length; j++) {
+                const dateBeforeNewMember = moment(new Date()).subtract(2, "days").format("YYYY-MM-DD")
+                const packageDate = moment(filteredPackages[j].date).format("YYYY-MM-DD");
+                if (moment(packageDate).isAfter(dateBeforeNewMember)) {
+                    newMembers += 1;
+                }
+            }
+            guildPackages[i].newMembers = newMembers;
+            delete guildPackages[i].users_with_package
+        }
+
+
+        return {supportersCount,minimumPrice,maximumPrice};
+    }
+
+
+
     @Get('/find-all')
     async findAllPackages(@Query() {page, limit, query, ...rest}: FindAllPackagesQueryDto) {
         const $q = makeQuery({page: page, limit: limit});
