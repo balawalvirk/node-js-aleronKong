@@ -128,6 +128,7 @@ export class GuildController {
 
     @Get('/:id/package/stats')
     async getGuildPackageStats(@Param('id', ParseObjectId) id: string) {
+        const guild=await this.guildService.findRecordById(id);
         const guildPackages: any = await this.packageModel.aggregate([
             {$match: {guild: new mongoose.Types.ObjectId(id)}},
             {
@@ -178,21 +179,12 @@ export class GuildController {
 
             }
 
-            let newMembers = 0;
 
-            for (let j = 0; j < filteredPackages.length; j++) {
-                const dateBeforeNewMember = moment(new Date()).subtract(2, "days").format("YYYY-MM-DD")
-                const packageDate = moment(filteredPackages[j].date).format("YYYY-MM-DD");
-                if (moment(packageDate).isAfter(dateBeforeNewMember)) {
-                    newMembers += 1;
-                }
-            }
-            guildPackages[i].newMembers = newMembers;
             delete guildPackages[i].users_with_package
         }
 
 
-        return {supportersCount,minimumPrice,maximumPrice};
+        return {supportersCount,minimumPrice,maximumPrice,packages:guildPackages,guild};
     }
 
 
