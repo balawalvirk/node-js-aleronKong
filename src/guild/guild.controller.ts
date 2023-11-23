@@ -184,7 +184,7 @@ export class GuildController {
         }
 
 
-        return {supportersCount,minimumPrice,maximumPrice,packages:guildPackages,guild};
+        return {supportersCount,minimumPrice,maximumPrice,guild};
     }
 
 
