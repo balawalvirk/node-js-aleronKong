@@ -134,7 +134,7 @@ export class PackageController {
         if (!pkg) throw new BadRequestException('Package does not exists.');
 
         //check if user already subscribed to this package.
-        const pkgExists = pkg.buyers.find((buyer) => (buyer.user).toString() == (user._id).toString());
+        const pkgExists = pkg.buyers.find((buyer) => buyer.user && ((buyer.user).toString() == (user._id).toString()));
         if (pkgExists) throw new HttpException('You are already subscriber of this package.', HttpStatus.BAD_REQUEST);
 
         //check if package is not guild pakage
