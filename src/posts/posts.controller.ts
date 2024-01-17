@@ -298,6 +298,12 @@ export class PostsController {
         if (postExists) return await this.postsService.update({_id: id}, {$pull: {likes: user._id}});
         const post = await this.postsService.update({_id: id}, {$push: {likes: user._id}});
 
+        const isUserBlock=(user.blockedUsers).findIndex((u)=>u.toString()===id);
+
+        if(isUserBlock!==-1)
+            throw new HttpException('Post does not exists.', HttpStatus.BAD_REQUEST);
+
+
         //@ts-ignore
         if (user._id != post.creator._id.toString()) {
             await this.notificationService.createRecord({
@@ -322,6 +328,11 @@ export class PostsController {
 
     @Put('un-like/:id')
     async unLike(@Param('id', ParseObjectId) id: string, @GetUser() user: UserDocument) {
+        const isUserBlock=(user.blockedUsers).findIndex((u)=>u.toString()===id);
+
+        if(isUserBlock!==-1)
+            throw new HttpException('Post does not exists.', HttpStatus.BAD_REQUEST);
+
         return await this.postsService.update({_id: id}, {$pull: {likes: user._id}});
     }
 
