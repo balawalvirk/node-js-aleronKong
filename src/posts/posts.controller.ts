@@ -93,11 +93,6 @@ export class PostsController {
         let page;
 
 
-        const isUserBlock=(user.blockedUsers).findIndex((u)=>u.toString()===id);
-        if(isUserBlock!==-1)
-            throw new HttpException('Post does not exists.', HttpStatus.BAD_REQUEST);
-
-
         if (addReactionsDto.page) {
             page = await this.pageService.findOneRecord({_id: addReactionsDto.page})
 
@@ -120,6 +115,13 @@ export class PostsController {
         } else {
             const post = await this.postsService.findOneRecord({_id: addReactionsDto.post}).populate('creator');
             if (!post) throw new HttpException('Post does not exists', HttpStatus.BAD_REQUEST);
+
+
+            const isUserBlock=(user.blockedUsers).findIndex((u)=>u.toString()===post.creator._id.toString());
+            if(isUserBlock!==-1)
+                throw new HttpException('Post does not exists.', HttpStatus.BAD_REQUEST);
+
+
             const reaction = await this.reactionService.create({
                 user: user._id,
                 emoji: addReactionsDto.emoji,
