@@ -92,6 +92,12 @@ export class PostsController {
 
         let page;
 
+
+        const isUserBlock=(user.blockedUsers).findIndex((u)=>u.toString()===id);
+        if(isUserBlock!==-1)
+            throw new HttpException('Post does not exists.', HttpStatus.BAD_REQUEST);
+
+
         if (addReactionsDto.page) {
             page = await this.pageService.findOneRecord({_id: addReactionsDto.page})
 
@@ -342,6 +348,11 @@ export class PostsController {
 
         let post: any = await this.postsService.findOneRecord({_id: id}).populate('creator');
 
+        const isUserBlock=(user.blockedUsers).findIndex((u)=>u.toString()===id);
+        if(isUserBlock!==-1)
+            throw new HttpException('Post does not exists.', HttpStatus.BAD_REQUEST);
+
+
         let page;
 
 
@@ -425,11 +436,22 @@ export class PostsController {
     }
 
     @Get(':id/comment/find-all')
-    async findAllComments(@Param('id', ParseObjectId) id: string, @Query() {page, limit}: FindAllCommentQueryDto) {
+    async findAllComments(@Param('id', ParseObjectId) id: string, @Query() {page, limit}: FindAllCommentQueryDto,
+                          @GetUser() user: UserDocument) {
+
+        const isUserBlock=(user.blockedUsers).findIndex((u)=>u.toString()===id);
+
+        if(isUserBlock!==-1)
+            throw new HttpException('Post does not exists.', HttpStatus.BAD_REQUEST);
+
+
         const $q = makeQuery({page, limit});
         const options = {limit: $q.limit, skip: $q.skip, sort: $q.sort};
         const condition = {post: id, root: true};
         const comments = await this.commentService.find(condition, options);
+
+
+
         const total = await this.commentService.countRecords({post: id});
         const paginated = {
             total: total,
@@ -552,7 +574,12 @@ export class PostsController {
 
 
     @Delete('reaction/:id/delete')
-    async deleteReaction(@Param('id', ParseObjectId) id: string) {
+    async deleteReaction(@Param('id', ParseObjectId) id: string,@GetUser() user: UserDocument) {
+        const isUserBlock=(user.blockedUsers).findIndex((u)=>u.toString()===id);
+        if(isUserBlock!==-1)
+            throw new HttpException('Post does not exists.', HttpStatus.BAD_REQUEST);
+
+
         const reaction = await this.reactionService.deleteSingleRecord({_id: id});
         if (!reaction) throw new HttpException('Reaction does not exists', HttpStatus.BAD_REQUEST);
         if (reaction.post) await this.postsService.findOneRecordAndUpdate({_id: reaction.post}, {$pull: {reactions: reaction._id}});
