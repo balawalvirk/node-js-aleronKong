@@ -65,11 +65,16 @@ export class PackageController {
     }
 
     @Get('/find-all')
-    async findAllPackages(@Query() {page, limit, query, ...rest}: FindAllPackagesQueryDto) {
+    async findAllPackages(@Query() {page, limit, query, ...rest}: FindAllPackagesQueryDto,@GetUser() user: UserDocument) {
         const $q = makeQuery({page: page, limit: limit});
         const rjx = {$regex: query ? query : '', $options: 'i'};
         const options = {limit: $q.limit, skip: $q.skip, sort: $q.sort};
-        const condition = {...rest, title: rjx};
+        let condition:any = {...rest, title: rjx};
+
+        if(rest.isGuildPackage){
+            condition={"buyers.user":{$nin:[user._id]}}
+        }
+
         const total = await this.packageService.countRecords(condition);
         const packages = await this.packageService.findAllRecords(condition, options);
         const paginated = {
@@ -147,7 +152,7 @@ export class PackageController {
             //check if user has more than one packages of same authors
             const authorFound = userFound.supportingPackages.find(
                 //@ts-ignore
-                (supportingPackage) => (supportingPackage.package).creator == pkg.creator._id
+                (supportingPackage) => supportingPackage.package && (supportingPackage.package).creator == pkg.creator._id
             );
             if (authorFound) throw new HttpException('You already subscribed to one of the packages of this owner.', HttpStatus.BAD_REQUEST);
         }

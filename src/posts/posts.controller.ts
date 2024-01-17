@@ -86,14 +86,13 @@ export class PostsController {
     }
 
 
-
     @Post('reaction/create')
     async addReactions(@Body() addReactionsDto: AddReactionsDto, @GetUser() user: UserDocument) {
         // check if user is adding reaction in comment
 
         let page;
 
-        if(addReactionsDto.page){
+        if (addReactionsDto.page) {
             page = await this.pageService.findOneRecord({_id: addReactionsDto.page})
 
         }
@@ -110,7 +109,7 @@ export class PostsController {
                 page: addReactionsDto.page
             });
             await this.commentService.findOneRecordAndUpdate({_id: comment._id}, {$push: {reactions: reaction._id}});
-            reaction.page=page
+            reaction.page = page
             return reaction;
         } else {
             const post = await this.postsService.findOneRecord({_id: addReactionsDto.post}).populate('creator');
@@ -143,7 +142,7 @@ export class PostsController {
                     });
                 }
             }
-            reaction.page=page;
+            reaction.page = page;
             return reaction;
         }
     }
@@ -155,8 +154,15 @@ export class PostsController {
 
     //find post of a specific user
     @Get('find-all/user/:id')
-    async findUserPost(@Param('id', ParseObjectId) id: string, @Query('page') page: string, @Query('limit') limit: string) {
+    async findUserPost(@Param('id', ParseObjectId) id: string, @Query('page') page: string, @Query('limit') limit: string,
+                       @GetUser() user: UserDocument) {
         const $q = makeQuery({page, limit});
+
+        const isUserBlock=(user.blockedUsers).findIndex((u)=>u.toString()===id);
+
+        if(isUserBlock!==-1)
+            throw new HttpException('Post does not exists.', HttpStatus.BAD_REQUEST);
+
         const condition = {creator: id};
         const options = {sort: $q.sort, limit: $q.limit, skip: $q.skip};
         const total = await this.postsService.countRecords(condition);
@@ -232,9 +238,6 @@ export class PostsController {
     }
 
 
-
-
-
     @Get('home/page/:pageId')
     @UsePipes(new ValidationPipe({transform: true}))
     async findHomePagePosts(@Param('pageId', ParseObjectId) pageId: string,
@@ -246,8 +249,10 @@ export class PostsController {
         let groups = [];
         let pageGroups = [];
         let allGroups = [];
-        pageFollowings = (await this.pageService.findAllRecords({'pageFollwers.page':
-                {$in: [pageId]}}).select('_id')).map((user) => user._id);
+        pageFollowings = (await this.pageService.findAllRecords({
+            'pageFollwers.page':
+                {$in: [pageId]}
+        }).select('_id')).map((user) => user._id);
         pageGroups = (await this.groupService.findAllRecords({'page_members.page': pageId})).map((group) => group._id);
 
 
@@ -257,17 +262,15 @@ export class PostsController {
             isBlocked: false,
             status: PostStatus.ACTIVE,
             $or: [
-                    {page: {$in: pageFollowings}},
-                    {privacy: PostPrivacy.GROUP, group: {$in: allGroups}},
-                ],
+                {page: {$in: pageFollowings}},
+                {privacy: PostPrivacy.GROUP, group: {$in: allGroups}},
+            ],
         };
 
         let posts = await this.postsService.findHomePosts(condition, options);
 
 
-            posts = await this.postsService.getRandomPosts();
-
-
+        posts = await this.postsService.getRandomPosts();
 
 
         const totalPosts = await Promise.all(
@@ -287,7 +290,6 @@ export class PostsController {
         };
         return paginated;
     }
-
 
 
     @Post('like/:id')
@@ -371,7 +373,7 @@ export class PostsController {
                 data: {post: post._id.toString(), type: NotificationType.COMMENT_REPLIED},
             });
 
-            comment.page=page;
+            comment.page = page;
             this.socketService.triggerMessage(`post-comment-reply-${(post._id).toString()}`, comment);
 
 
@@ -403,11 +405,11 @@ export class PostsController {
                 }
             }
 
-            comment.page=page;
+            comment.page = page;
             this.socketService.triggerMessage(`post-comment-${(post._id).toString()}`, comment);
 
         }
-        comment.page=page;
+        comment.page = page;
         return comment;
     }
 
@@ -430,24 +432,26 @@ export class PostsController {
 
     @Put('comment/update')
     async updateComment(@Body() {commentId, postId, ...rest}: UpdateCommentDto) {
-        const updated= await this.commentService.update({_id: commentId}, rest);
-        const page=await this.pageService.findOneRecord({_id:updated.page});
-        updated.page=page;
+        const updated = await this.commentService.update({_id: commentId}, rest);
+        const page = await this.pageService.findOneRecord({_id: updated.page});
+        updated.page = page;
         return updated;
     }
 
 
     @Get('page/:id/following')
-    async getPostPageFollowing(@Param('id', ParseObjectId) id: string,@Query() {limit, page, sort}: FindHomePostQueryDto,
+    async getPostPageFollowing(@Param('id', ParseObjectId) id: string, @Query() {limit, page, sort}: FindHomePostQueryDto,
                                @GetUser() user: UserDocument) {
 
         const $q = makeQuery({page, limit});
         const options = {limit: $q.limit, skip: $q.skip, sort: $q.sort};
 
 
-        const pageFollowings = (await this.pageService.findAllRecords({'followers.page':
-                {$in: [new mongoose.Types.ObjectId(id)]}}).select('_id')).map((page) => page._id);
-        const followingPages = await this.postsService.find({page: {$in: pageFollowings}},options);
+        const pageFollowings = (await this.pageService.findAllRecords({
+            'followers.page':
+                {$in: [new mongoose.Types.ObjectId(id)]}
+        }).select('_id')).map((page) => page._id);
+        const followingPages = await this.postsService.find({page: {$in: pageFollowings}}, options);
 
         const total = await this.postsService.countRecords({page: {$in: pageFollowings}});
 
@@ -536,7 +540,6 @@ export class PostsController {
     // ====================================================================reactions apis===================================================================
 
 
-
     @Delete('reaction/:id/delete')
     async deleteReaction(@Param('id', ParseObjectId) id: string) {
         const reaction = await this.reactionService.deleteSingleRecord({_id: id});
@@ -548,10 +551,10 @@ export class PostsController {
 
     @Put('reaction/:id/update')
     async updateReaction(@Param('id', ParseObjectId) id: string, @Body() updateReactionsDto: UpdateReactionsDto) {
-        const updated=await this.reactionService.update({_id: id}, {emoji: updateReactionsDto.emoji});
-        const page=await this.pageService.findOneRecord({_id:updated.page});
+        const updated = await this.reactionService.update({_id: id}, {emoji: updateReactionsDto.emoji});
+        const page = await this.pageService.findOneRecord({_id: updated.page});
 
-        updated.page=page;
+        updated.page = page;
         return updated;
     }
 
