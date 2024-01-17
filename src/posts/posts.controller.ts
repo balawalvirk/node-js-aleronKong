@@ -350,7 +350,7 @@ export class PostsController {
 
         let post: any = await this.postsService.findOneRecord({_id: id}).populate('creator');
 
-        const isUserBlock=(user.blockedUsers).findIndex((u)=>u.toString()===id);
+        const isUserBlock=(user.blockedUsers).findIndex((u)=>u.toString()===(post.creator).toString());
         if(isUserBlock!==-1)
             throw new HttpException('Post does not exists.', HttpStatus.BAD_REQUEST);
 
