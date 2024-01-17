@@ -113,11 +113,11 @@ export class PostsController {
             reaction.page = page
             return reaction;
         } else {
-            const post = await this.postsService.findOneRecord({_id: addReactionsDto.post}).populate('creator');
+            const post:any = await this.postsService.findOneRecord({_id: addReactionsDto.post}).populate('creator');
             if (!post) throw new HttpException('Post does not exists', HttpStatus.BAD_REQUEST);
 
 
-            const isUserBlock=(user.blockedUsers).findIndex((u)=>u.toString()===post.creator._id.toString());
+            const isUserBlock=(user.blockedUsers).findIndex((u)=>u.toString()===(post.creator._id).toString());
             if(isUserBlock!==-1)
                 throw new HttpException('Post does not exists.', HttpStatus.BAD_REQUEST);
 
