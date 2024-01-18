@@ -63,7 +63,7 @@ export class UserController {
 
         if (updateUserDto.userName) {
             const userNameExist = await this.usersService.findOne({userName: updateUserDto.userName});
-            if (userNameExist)
+            if (userNameExist && userNameExist.userName!==updateUserDto.userName)
                 throw new BadRequestException('Username already exist.');
         }
 
