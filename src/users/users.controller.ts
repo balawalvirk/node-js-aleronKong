@@ -120,7 +120,9 @@ export class UserController {
             const userFound = await this.usersService.findOneRecord({_id: user._id, blockedUsers: {$in: [id]},
                 blockedByOthers: {$in: [user._id]}});
             if (userFound) throw new BadRequestException('You already blocked this user.');
-            return await this.usersService.findOneRecordAndUpdate({_id: user._id}, {$push: {blockedUsers: id}});
+            return await this.usersService.findOneRecordAndUpdate({_id: user._id},
+                {$push: {blockedUsers: id,blockedByOthers: user._id}
+                });
         }
     }
 

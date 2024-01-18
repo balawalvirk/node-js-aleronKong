@@ -206,7 +206,7 @@ export class PostsController {
         groups = (await this.groupService.findAllRecords({'members.member': user._id})).map((group) => group._id);
         allGroups = pageGroups.concat(pageGroups);
         const condition = {
-            creator: {$nin: [...user.blockedUsers, ...reportedUsers]},
+            creator: {$nin: [...user.blockedUsers,...user.blockedByOthers, ...reportedUsers]},
             isBlocked: false,
             status: PostStatus.ACTIVE,
             $or: user.isGuildMember
