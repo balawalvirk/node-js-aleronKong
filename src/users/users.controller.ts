@@ -140,6 +140,10 @@ export class UserController {
             await this.usersService.findOneRecordAndUpdate({_id: id}, {status: UserStatus.ACTIVE});
             return {message: 'User unblocked successfully.'};
         } else {
+            await this.usersService.findOneRecordAndUpdate({_id: id},
+                {$pull: {blockedByOthers: user._id}
+                });
+
             return await this.usersService.findOneRecordAndUpdate({_id: user._id}, {$pull: {blockedUsers: id}});
         }
     }
