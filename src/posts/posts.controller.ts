@@ -118,8 +118,9 @@ export class PostsController {
 
 
             const isUserBlock=(user.blockedUsers).findIndex((u)=>u.toString()===(post.creator._id).toString());
-            if(isUserBlock!==-1)
-                throw new HttpException('Post does not exists.', HttpStatus.BAD_REQUEST);
+            const isOtherUserBlock=(user.blockedByOthers).findIndex((u)=>u.toString()===(post.creator._id).toString());
+            if(isUserBlock!==-1 || isOtherUserBlock!==-1)
+                throw new HttpException('You are blocked from accessing this post.', HttpStatus.BAD_REQUEST);
 
 
             const reaction = await this.reactionService.create({
@@ -167,9 +168,10 @@ export class PostsController {
         const $q = makeQuery({page, limit});
 
         const isUserBlock=(user.blockedUsers).findIndex((u)=>u.toString()===id);
+        const isOtherUserBlock=(user.blockedByOthers).findIndex((u)=>u.toString()===(id).toString());
 
-        if(isUserBlock!==-1)
-            throw new HttpException('Post does not exists.', HttpStatus.BAD_REQUEST);
+        if(isUserBlock!==-1 || isOtherUserBlock!==-1)
+            throw new HttpException('You are blocked from accessing this post.', HttpStatus.BAD_REQUEST);
 
         const condition = {creator: id};
         const options = {sort: $q.sort, limit: $q.limit, skip: $q.skip};
@@ -307,9 +309,10 @@ export class PostsController {
         const post = await this.postsService.update({_id: id}, {$push: {likes: user._id}});
 
         const isUserBlock=(user.blockedUsers).findIndex((u)=>u.toString()===id);
+        const isOtherUserBlock=(user.blockedByOthers).findIndex((u)=>u.toString()===(id).toString());
 
-        if(isUserBlock!==-1)
-            throw new HttpException('Post does not exists.', HttpStatus.BAD_REQUEST);
+        if(isUserBlock!==-1 || isOtherUserBlock!==-1)
+            throw new HttpException('You are blocked from accessing this post.', HttpStatus.BAD_REQUEST);
 
 
         //@ts-ignore
@@ -337,9 +340,10 @@ export class PostsController {
     @Put('un-like/:id')
     async unLike(@Param('id', ParseObjectId) id: string, @GetUser() user: UserDocument) {
         const isUserBlock=(user.blockedUsers).findIndex((u)=>u.toString()===id);
+        const isOtherUserBlock=(user.blockedByOthers).findIndex((u)=>u.toString()===(id).toString());
 
-        if(isUserBlock!==-1)
-            throw new HttpException('Post does not exists.', HttpStatus.BAD_REQUEST);
+        if(isUserBlock!==-1 || isOtherUserBlock!==-1)
+            throw new HttpException('You are blocked from accessing this post.', HttpStatus.BAD_REQUEST);
 
         return await this.postsService.update({_id: id}, {$pull: {likes: user._id}});
     }
@@ -351,8 +355,11 @@ export class PostsController {
         let post: any = await this.postsService.findOneRecord({_id: id}).populate('creator');
 
         const isUserBlock=(user.blockedUsers).findIndex((u)=>u.toString()===(post.creator._id).toString());
-        if(isUserBlock!==-1)
-            throw new HttpException('Post does not exists.', HttpStatus.BAD_REQUEST);
+        const isOtherUserBlock=(user.blockedByOthers).findIndex((u)=>u.toString()===(post.creator._id).toString());
+
+
+        if(isUserBlock!==-1 || isOtherUserBlock!==-1)
+            throw new HttpException('You are blocked from accessing this post.', HttpStatus.BAD_REQUEST);
 
 
         let page;
@@ -442,9 +449,10 @@ export class PostsController {
                           @GetUser() user: UserDocument) {
 
         const isUserBlock=(user.blockedUsers).findIndex((u)=>u.toString()===id);
+        const isOtherUserBlock=(user.blockedByOthers).findIndex((u)=>u.toString()===id);
 
-        if(isUserBlock!==-1)
-            throw new HttpException('Post does not exists.', HttpStatus.BAD_REQUEST);
+        if(isUserBlock!==-1 || isOtherUserBlock!==-1)
+            throw new HttpException('You are blocked from accessing this post.', HttpStatus.BAD_REQUEST);
 
 
         const $q = makeQuery({page, limit});
@@ -578,8 +586,10 @@ export class PostsController {
     @Delete('reaction/:id/delete')
     async deleteReaction(@Param('id', ParseObjectId) id: string,@GetUser() user: UserDocument) {
         const isUserBlock=(user.blockedUsers).findIndex((u)=>u.toString()===id);
-        if(isUserBlock!==-1)
-            throw new HttpException('Post does not exists.', HttpStatus.BAD_REQUEST);
+        const isOtherUserBlock=(user.blockedByOthers).findIndex((u)=>u.toString()===id);
+
+        if(isUserBlock!==-1 || isOtherUserBlock)
+            throw new HttpException('You are blocked from accessing this post.', HttpStatus.BAD_REQUEST);
 
 
         const reaction = await this.reactionService.deleteSingleRecord({_id: id});

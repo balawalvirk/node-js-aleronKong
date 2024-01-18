@@ -93,6 +93,10 @@ export class User {
     blockedUsers: User[];
 
 
+    @Prop({type: [{type: mongoose.Schema.Types.ObjectId, ref: 'User'}]})
+    blockedByOthers: User[];
+
+
     @Prop({ type: [SubscribedPackagesSchema] })
     supportingPackages: SubscribedPackages[];
 
