@@ -1,56 +1,62 @@
-import { IsString, IsDateString, IsOptional, IsBoolean, IsEnum } from 'class-validator';
-import { PostPrivacy } from 'src/types';
+import {IsString, IsDateString, IsOptional, IsBoolean, IsEnum} from 'class-validator';
+import {PostPrivacy} from 'src/types';
 
 export class UpdateUserDto {
-  @IsOptional()
-  @IsString()
-  firstName?: string;
+    @IsOptional()
+    @IsString()
+    firstName?: string;
 
-  @IsOptional()
-  @IsString()
-  lastName?: string;
+    @IsOptional()
+    @IsString()
+    lastName?: string;
 
-  @IsOptional()
-  @IsDateString()
-  birthDate?: Date;
 
-  @IsOptional()
-  @IsString()
-  avatar?: string;
+    @IsOptional()
+    @IsString()
+    userName?: string;
 
-  @IsOptional()
-  @IsBoolean()
-  enableNotifications?: string;
 
-  @IsOptional()
-  @IsBoolean()
-  newReleaseNotifications?: boolean;
+    @IsOptional()
+    @IsDateString()
+    birthDate?: Date;
 
-  @IsOptional()
-  @IsBoolean()
-  newPostsNotifications?: boolean;
+    @IsOptional()
+    @IsString()
+    avatar?: string;
 
-  @IsOptional()
-  @IsBoolean()
-  appUpdatesNotifications?: boolean;
+    @IsOptional()
+    @IsBoolean()
+    enableNotifications?: string;
 
-  @IsOptional()
-  @IsBoolean()
-  receiveCalls?: boolean;
+    @IsOptional()
+    @IsBoolean()
+    newReleaseNotifications?: boolean;
 
-  @IsOptional()
-  @IsString()
-  shopifyStoreName?: string;
+    @IsOptional()
+    @IsBoolean()
+    newPostsNotifications?: boolean;
 
-  @IsOptional()
-  @IsString()
-  shopifyAccessToken?: string;
+    @IsOptional()
+    @IsBoolean()
+    appUpdatesNotifications?: boolean;
 
-  @IsOptional()
-  @IsBoolean()
-  goLive?: boolean;
+    @IsOptional()
+    @IsBoolean()
+    receiveCalls?: boolean;
 
-  @IsOptional()
-  @IsEnum(PostPrivacy, { each: true })
-  postPrivacy?: string;
+    @IsOptional()
+    @IsString()
+    shopifyStoreName?: string;
+
+    @IsOptional()
+    @IsString()
+    shopifyAccessToken?: string;
+
+    @IsOptional()
+    @IsBoolean()
+    goLive?: boolean;
+
+    @IsOptional()
+    @IsEnum(PostPrivacy, {each: true})
+    postPrivacy?: string;
 }

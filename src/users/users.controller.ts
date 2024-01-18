@@ -55,15 +55,21 @@ export class UserController {
         private readonly friendRequestService: FriendRequestService,
         private readonly groupService: GroupService,
         private readonly guildService: GuildService,
-
     ) {
     }
 
     @Put('update')
     async setupProfile(@Body() updateUserDto: UpdateUserDto, @GetUser() user: UserDocument) {
-        const userProfile:any =  await this.usersService.findOneRecordAndUpdate({_id: user._id}, updateUserDto).lean();
-        const guild = await this.guildService.findAllRecords({creator:user._id});
-        userProfile.guildProfile=guild;
+
+        if (updateUserDto.userName) {
+            const userNameExist = await this.usersService.findOne({userName: updateUserDto.userName});
+            if (userNameExist)
+                throw new BadRequestException('Username already exist.');
+        }
+
+        const userProfile: any = await this.usersService.findOneRecordAndUpdate({_id: user._id}, updateUserDto).lean();
+        const guild = await this.guildService.findAllRecords({creator: user._id});
+        userProfile.guildProfile = guild;
         return userProfile;
     }
 
@@ -120,15 +126,20 @@ export class UserController {
             const userFound = await this.usersService.findOneRecord({_id: user._id, blockedUsers: {$in: [id]}});
             if (userFound) throw new BadRequestException('You already blocked this user.');
 
-            const blockedUserFound = await this.usersService.findOneRecord({_id: id, blockedByOthers: {$in: [user._id]}});
-            if(!blockedUserFound){
+            const blockedUserFound = await this.usersService.findOneRecord({
+                _id: id,
+                blockedByOthers: {$in: [user._id]}
+            });
+            if (!blockedUserFound) {
                 await this.usersService.findOneRecordAndUpdate({_id: id},
-                    {$push: {blockedByOthers: user._id}
+                    {
+                        $push: {blockedByOthers: user._id}
                     });
             }
 
             return await this.usersService.findOneRecordAndUpdate({_id: user._id},
-                {$push: {blockedUsers: id}
+                {
+                    $push: {blockedUsers: id}
                 });
         }
     }
@@ -141,7 +152,8 @@ export class UserController {
             return {message: 'User unblocked successfully.'};
         } else {
             await this.usersService.findOneRecordAndUpdate({_id: id},
-                {$pull: {blockedByOthers: user._id}
+                {
+                    $pull: {blockedByOthers: user._id}
                 });
 
             return await this.usersService.findOneRecordAndUpdate({_id: user._id}, {$pull: {blockedUsers: id}});
@@ -303,18 +315,26 @@ export class UserController {
         const messages = await this.messageService.countRecords({receiver: user._id, isRead: false});
         const notifications = await this.notificationService.countRecords({receiver: user._id, isRead: false});
 
-        let pageMessageCount=0;
-        let notificationMessageCount=0;
+        let pageMessageCount = 0;
+        let notificationMessageCount = 0;
 
         if (pageId) {
-            notificationMessageCount = await this.notificationService.countRecords({page: new mongoose.Types.ObjectId(pageId),
-                isRead: false});
+            notificationMessageCount = await this.notificationService.countRecords({
+                page: new mongoose.Types.ObjectId(pageId),
+                isRead: false
+            });
 
         }
 
 
         const cart = await this.cartService.findOneRecord({creator: user._id});
-        return {messages, notifications,notificationMessageCount,pageMessageCount, cartItems: cart?.items?.length || 0};
+        return {
+            messages,
+            notifications,
+            notificationMessageCount,
+            pageMessageCount,
+            cartItems: cart?.items?.length || 0
+        };
     }
 
     //get count of unread messages
