@@ -583,7 +583,7 @@ export class PostsController {
         const isUserBlock=(user.blockedUsers).findIndex((u)=>u.toString()===id);
         const isOtherUserBlock=(user.blockedByOthers).findIndex((u)=>u.toString()===id);
 
-        if(isUserBlock!==-1 || isOtherUserBlock)
+        if(isUserBlock!==-1 || isOtherUserBlock!==-1)
             throw new HttpException('You are blocked from accessing this post.', HttpStatus.BAD_REQUEST);
 
 
