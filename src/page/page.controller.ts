@@ -101,7 +101,7 @@ export class PageController {
     @UsePipes(new ValidationPipe({transform: true}))
     async findAll(@Query() {filter, query, limit, page, created, moderating, following, pageId}: any, @GetUser() user: UserDocument) {
         const $q = makeQuery({page, limit});
-        const options = {limit: $q.limit, sort: $q.sort};
+        const options = {limit: $q.limit, sort: $q.sort,skip: $q.skip};
 
         let multipleQuery = [];
         query = query || "";

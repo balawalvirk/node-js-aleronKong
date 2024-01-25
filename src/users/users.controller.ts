@@ -12,7 +12,7 @@ import {
     UsePipes,
     Ip,
     BadRequestException,
-    ParseBoolPipe,
+    ParseBoolPipe, NotFoundException,
 } from '@nestjs/common';
 import {compare, hash} from 'bcrypt';
 import {ChangePasswordDto} from 'src/auth/dtos/change-pass.dto';
@@ -63,7 +63,7 @@ export class UserController {
 
         if (updateUserDto.userName) {
             const userNameExist = await this.usersService.findOne({userName: updateUserDto.userName});
-            if (userNameExist && userNameExist.userName!==updateUserDto.userName)
+            if (userNameExist && userNameExist.userName !== updateUserDto.userName)
                 throw new BadRequestException('Username already exist.');
         }
 
@@ -233,6 +233,8 @@ export class UserController {
         const userFound = await this.usersService.findOneRecord({_id: user._id, friends: {$in: [id]}});
         if (userFound) throw new BadRequestException('User is already your friend.');
         const friend = await this.usersService.findOneRecord({_id: id});
+        if (!friend) throw new NotFoundException('Friend not found.');
+
         const updatedUser = await this.usersService.findOneRecordAndUpdate({_id: user._id}, {$push: {friends: id}});
         await this.notificationService.createRecord({
             user: user._id,
@@ -263,7 +265,17 @@ export class UserController {
     @Get('friend/find-all')
     @UsePipes(new ValidationPipe({transform: true}))
     async findAllFriends(@GetUser() user: UserDocument, @Query() paginationDto: PaginationDto) {
-        const condition = {_id: {$in: user.friends}};
+        let condition:any = {_id: {$in: user.friends}};
+
+        if (paginationDto.search && (paginationDto.search).length > 0) {
+            condition = {
+                ...condition, $or: [
+                    {firstName: {$regex: paginationDto.search || "", $options: 'i'}},
+                    {lastName: {$regex: paginationDto.search || "", $options: 'i'}}
+                ]
+            }
+        }
+
         if (paginationDto) {
             const $q = makeQuery({page: paginationDto.page, limit: paginationDto.limit});
             const options = {sort: $q.sort, limit: $q.limit, skip: $q.skip};

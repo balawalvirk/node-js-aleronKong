@@ -1,22 +1,27 @@
-import { IsMongoId, IsOptional, IsString } from 'class-validator';
+import {IsMongoId, IsOptional, IsString} from 'class-validator';
 
 export class CreateMessageDto {
-  @IsOptional()
-  @IsString()
-  content: string;
+    @IsOptional()
+    @IsString()
+    content: string;
 
-  @IsMongoId()
-  chat: string;
+    @IsMongoId()
+    chat: string;
 
-  @IsOptional()
-  @IsString()
-  gif?: string;
+    @IsOptional()
+    @IsMongoId()
+    post: string;
 
-  @IsOptional()
-  @IsString({ each: true })
-  videos?: string[];
 
-  @IsOptional()
-  @IsString({ each: true })
-  images?: string[];
+    @IsOptional()
+    @IsString()
+    gif?: string;
+
+    @IsOptional()
+    @IsString({each: true})
+    videos?: string[];
+
+    @IsOptional()
+    @IsString({each: true})
+    images?: string[];
 }

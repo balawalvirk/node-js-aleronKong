@@ -256,7 +256,7 @@ export class GroupController {
             await this.notificationService.createRecord({
                 type: NotificationType.GROUP_JOIN_REQUEST,
                 group: group._id,
-                message: `has send a join request for ${group.name} group`,
+                message: `has sent a join request for ${group.name} group`,
                 sender: user._id,
                 //@ts-ignore
                 receiver: group.creator._id,
@@ -265,7 +265,7 @@ export class GroupController {
             if (group.creator.fcmToken) {
                 await this.firebaseService.sendNotification({
                     token: group.creator.fcmToken,
-                    notification: {title: `${user.firstName} ${user.lastName} has send a join request for ${group.name} group`},
+                    notification: {title: `${user.firstName} ${user.lastName} has sent a join request for ${group.name} group`},
                     data: {group: group._id.toString(), type: NotificationType.GROUP_JOIN_REQUEST},
                 });
             }
@@ -325,7 +325,7 @@ export class GroupController {
             await this.notificationService.createRecord({
                 type: NotificationType.GROUP_JOIN_REQUEST,
                 group: group._id,
-                message: `has send a join request for ${group.name} group`,
+                message: `has sent a join request for ${group.name} group`,
                 sender: user._id,
                 //@ts-ignore
                 receiver: group.creator._id,
@@ -335,7 +335,7 @@ export class GroupController {
             if (group.creator.fcmToken) {
                 await this.firebaseService.sendNotification({
                     token: group.creator.fcmToken,
-                    notification: {title: `${user.firstName} ${user.lastName} has send a join request for ${group.name} group`},
+                    notification: {title: `${user.firstName} ${user.lastName} has sent a join request for ${group.name} group`},
                     data: {group: group._id.toString(), type: NotificationType.GROUP_JOIN_REQUEST},
                 });
             }

@@ -48,6 +48,12 @@ export class UpdateUserDto {
     @IsString()
     shopifyStoreName?: string;
 
+
+    @IsOptional()
+    @IsString()
+    fcmToken?: string;
+
+
     @IsOptional()
     @IsString()
     shopifyAccessToken?: string;

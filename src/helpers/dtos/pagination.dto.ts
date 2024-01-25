@@ -13,4 +13,8 @@ export class PaginationDto {
     @IsOptional()
     creator: string = '';
 
+
+    @IsOptional()
+    search: string = '';
+
 }
