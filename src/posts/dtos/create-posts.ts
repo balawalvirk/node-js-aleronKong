@@ -21,11 +21,9 @@ export class CreatePostsDto {
     @IsString({each: true})
     images?: string;
 
-    @IsOptional()
-    @IsArray()
-    @ValidateNested({each: true})
-    @Type(() => Video)
-    videos?: Video[];
+  @IsOptional()
+  @IsString({ each: true })
+  videos?: string;
 
     @IsOptional()
     @IsString()

@@ -24,13 +24,8 @@ export class Posts {
     @Prop({type: [String]})
     images: string[];
 
-    @Prop({
-        type: [{
-            url:{type:String},
-            thumbnail:{type:String}
-        }]
-    })
-    videos;
+    @Prop({type: [String]})
+    videos: string[];
 
     @Prop({type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true})
     creator: User;
