@@ -31,6 +31,18 @@ export class SearchController {
         let packages = [];
         let pages = [];
 
+
+        let sortBy:any={before:{createdAt:-1,_id:-1},after:{"products.createdAt":-1,_id:-1}};
+
+        if(sort==="name"){
+            sortBy={before:{title:-1,_id:-1},after:{"products.title":-1,_id:-1}}
+        }
+
+
+        if(sort==="rating"){
+            sortBy={before:{avgRating:-1,_id:-1},after:{"products.avgRating":-1,_id:-1}}
+        }
+
         // if nothing is passed then show recommended products
         if (sort === 'createdAt' && filter === 'all' && !category && query.length === 0) {
             const products = await this.productService.getSearchProducts();
@@ -69,7 +81,7 @@ export class SearchController {
                 {
                     title: rjx,
                 },
-                {sort: sort === 'name' ? {title: -1} : {createdAt: -1}, limit: 10}
+                {sort: sortBy, limit: 10}
             );
             const totalProducts = products.length > 0 ? products.reduce((n, {count}) => n + count, 0) : 0;
 
@@ -150,15 +162,20 @@ export class SearchController {
         } else {
             if (category) {
                 const ObjectId = mongoose.Types.ObjectId;
+
+
+
                 products = await this.productService.findAllRecords(
                     {
                         title: rjx,
                         category: new ObjectId(category),
                     },
-                    {sort: sort === 'name' ? {title: -1} : {createdAt: -1}}
+                    {sort: sortBy}
                 );
             } else {
-                products = await this.productService.findAllRecords({title: rjx}, {sort: sort === 'name' ? {title: -1} : {createdAt: -1}});
+
+
+                products = await this.productService.findAllRecords({title: rjx}, {sort:sortBy});
             }
             return {
                 users: this.userService.getMutalFriends(users, user),

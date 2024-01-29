@@ -198,8 +198,9 @@ export class PostsController {
         const reports = await this.reportService.findAllRecords({reporter: user._id, type: ReportType.USER});
         const reportedUsers = reports.map((report) => report.user);
         // find all groups that user has joined
-        groups = (await this.groupService.findAllRecords({'members.member': user._id})).map((group) => group._id);
-        allGroups = pageGroups.concat(pageGroups);
+        groups = (await this.groupService.findAllRecords({$or:[{'members.member': user._id,creator:user._id}]}))
+            .map((group) => group._id);
+        allGroups = pageGroups.concat(groups);
         const condition = {
             creator: {$nin: [...user.blockedUsers,...user.blockedByOthers, ...reportedUsers]},
             isBlocked: false,
