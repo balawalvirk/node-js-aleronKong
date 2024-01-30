@@ -1,6 +1,6 @@
 import {Injectable} from '@nestjs/common';
 import {InjectModel} from '@nestjs/mongoose';
-import {FilterQuery, Model, QueryOptions, UpdateQuery} from 'mongoose';
+import mongoose, {FilterQuery, Model, QueryOptions, UpdateQuery} from 'mongoose';
 import {BaseService} from 'src/helpers/services/base.service';
 import {MediaType, PostSort} from 'src/types';
 import {PostDocument, Posts} from './posts.schema';
@@ -31,7 +31,7 @@ export class PostsService extends BaseService<PostDocument> {
                 path: 'creator',
                 select: 'firstName lastName avatar userName isGuildMember sellerId fcmToken enableNotifications'
             },
-            {path: 'group', select: 'name'},
+            {path: 'group', select: 'name privacy members creator'},
             {path: 'fundraising', populate: [{path: 'category'}, {path: 'subCategory'}]},
             {
                 path: 'reactions', populate: [
@@ -114,7 +114,7 @@ export class PostsService extends BaseService<PostDocument> {
                 path: 'creator',
                 select: 'firstName lastName avatar userName isGuildMember sellerId fcmToken enableNotifications'
             },
-            {path: 'group', select: 'name'},
+            {path: 'group', select: 'name privacy members creator'},
             {path: 'fundraising', populate: [{path: 'category'}, {path: 'subCategory'}]},
             {
                 path: 'reactions', populate: [
@@ -140,6 +140,7 @@ export class PostsService extends BaseService<PostDocument> {
         ];
     }
 
+
     async find(query: FilterQuery<PostDocument>, options?: QueryOptions<PostDocument>) {
         const posts = await this.postModel.find(query, {}, options).populate(this.getPopulateFields()).lean();
         return posts.map((post) => ({
@@ -147,6 +148,101 @@ export class PostsService extends BaseService<PostDocument> {
             totalComments: post.comments.length,
             comments: post.comments.slice(0, 3)
         }));
+    }
+
+
+    async findPostsFilteredByPrivacy(user_id:any,query: FilterQuery<PostDocument>, options?: QueryOptions<PostDocument>) {
+        const posts = await this.postModel.aggregate([
+            {$match: query},
+            {
+                $lookup: {
+                    from: "groups",
+                    let: {group: '$group'},
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: {
+                                    $and: [
+                                        {$eq: ['$$group', '$_id']},
+                                    ]
+                                }
+                            },
+                        },
+                    ],
+                    as: 'group_details'
+                },
+            },
+            {
+                $match: {
+                    $or: [
+                        {"group_details.privacy": "public"},
+                        {
+                            $and: [
+                                {"group_details.privacy": "private"},
+                                {"group_details.creator":user_id},
+                                {"group.members":{$in:[user_id]}}
+                            ]
+                        }
+                    ]
+                }
+            },
+            { $unset: ["group_details"] },
+            {
+                $skip: (options.perPage) * (options.page-1)
+            },
+            {
+                $limit: options.perPage
+            },
+            {
+                $sort:options.sort
+            },
+        ])
+
+
+
+        const total = (await this.postModel.aggregate([
+            {$match: query},
+            {
+                $lookup: {
+                    from: "groups",
+                    let: {group: '$group'},
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: {
+                                    $and: [
+                                        {$eq: ['$$group', '$_id']},
+                                    ]
+                                }
+                            },
+                        },
+                    ],
+                    as: 'group_details'
+                },
+            },
+            {
+                $match: {
+                    $or: [
+                        {"group_details.privacy": "public"},
+                        {
+                            $and: [
+                                {"group_details.privacy": "private"},
+                                {"group_details.creator":user_id},
+                                {"group.members":{$in:[user_id]}}
+                            ]
+                        }
+                    ]
+                }
+            },
+            { $unset: ["group_details"] },
+        ])).length
+
+        await this.postModel.populate(posts,this.getPopulateFields());
+        return {posts:posts.map((post) => ({
+            ...post,
+            totalComments: post.comments.length,
+            comments: post.comments.slice(0, 3)
+        })),total};
     }
 
     async findHomePosts(query: FilterQuery<PostDocument>, options?: QueryOptions<PostDocument>) {

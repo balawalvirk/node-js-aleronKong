@@ -168,13 +168,12 @@ export class PostsController {
         const $q = makeQuery({page, limit});
 
 
-        const condition = {creator: id};
-        const options = {sort: $q.sort, limit: $q.limit, skip: $q.skip};
-        const total = await this.postsService.countRecords(condition);
-        const posts = await this.postsService.find(condition, options);
+        const condition = {creator: new mongoose.Types.ObjectId(id)};
+        const options = {sort: $q.sort, limit: $q.limit, skip: $q.skip,page:$q.page,perPage:10};
+        const {total,posts} = await this.postsService.findPostsFilteredByPrivacy(user._id,condition, options);
         const paginated = {
             total,
-            pages: Math.round(total / $q.limit),
+            pages: Math.ceil(total / $q.limit),
             page: $q.page,
             limit: $q.limit,
             data: posts,
