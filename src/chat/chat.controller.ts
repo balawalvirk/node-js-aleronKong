@@ -124,16 +124,19 @@ export class ChatController {
 
     @Get('/message/find-all/:chatId')
     async findAllMessage(@Param('chatId') chatId: string, @GetUser() user: UserDocument) {
-        const messages = await this.messageService.findAllRecords({chat: chatId}).sort({createdAt: 1})
+        const messages = await this.messageService.findAllRecords({chat: chatId,deletedBy:{$nin: [user._id]}}).sort({createdAt: 1})
             .populate('post','-likes -comments -reactions -tagged');
         await this.messageService.updateManyRecords({chat: chatId, isRead: false, receiver: user._id}, {isRead: true});
         return messages;
     }
 
     @Delete('/delete/:id')
-    async delete(@Param('id', ParseObjectId) id: string) {
-        const chat: ChatDocument = await this.chatService.deleteSingleRecord({_id: id});
-        await this.messageService.deleteManyRecord({chat: chat._id});
+    async delete(@Param('id', ParseObjectId) id: string, @GetUser() user: UserDocument) {
+        const chat: ChatDocument = await this.chatService.findOne({_id: id},user._id);
+        if(!chat)
+            throw new HttpException('Chat conversation not found.', HttpStatus.NOT_FOUND);
+
+        await this.messageService.updateManyRecords({chat: chat._id},{$push: {deletedBy:  user._id}});
         return {message: 'Conversation deleted successfully.'};
     }
 

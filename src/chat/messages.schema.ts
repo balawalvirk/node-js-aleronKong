@@ -32,6 +32,8 @@ export class Message {
     @Prop({default: false})
     isRead: boolean;
 
+    @Prop([{type: mongoose.Schema.Types.ObjectId, ref: 'User'}])
+    deletedBy: [User];
 
     @Prop({type: mongoose.Schema.Types.ObjectId, ref: 'Posts'})
     post;
