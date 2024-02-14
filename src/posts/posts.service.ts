@@ -176,6 +176,7 @@ export class PostsService extends BaseService<PostDocument> {
                 $match: {
                     $or: [
                         {"group_details.privacy": "public"},
+                        {"group_details":{$exists: true}},
                         {
                             $and: [
                                 {"group_details.privacy": "private"},
@@ -224,6 +225,7 @@ export class PostsService extends BaseService<PostDocument> {
                 $match: {
                     $or: [
                         {"group_details.privacy": "public"},
+                        {"group_details":{$exists: true}},
                         {
                             $and: [
                                 {"group_details.privacy": "private"},

@@ -89,7 +89,7 @@ export class ChatController {
 
 
                         await this.notificationService.createRecord({
-                            message: 'has sent you a message.',
+                            message: 'Has SENT you a message.',
                             sender: user._id,
                             //@ts-ignore
                             receiver: receiver._id,
