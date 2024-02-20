@@ -509,6 +509,7 @@ export class PostsController {
         // check if post is not group post then throw exception
         if (!post.group) return false;
         const moderator = await this.moderatorService.findOneRecord({group: post.group, user: userId});
+
         //check if user is moderator
         if (!moderator) return false;
         else return moderator;
@@ -561,7 +562,11 @@ export class PostsController {
             await this.postsService.findOneRecordAndUpdate({_id: id}, pinUnpinDto);
         } else {
             const moderator = await this.isGroupModerator(id, user._id);
-            if (!moderator || !moderator.pinPosts) throw new UnauthorizedException();
+
+            const groupCreator = await this.groupService.findOneRecord({_id: post.group, creator: user._id});
+
+
+            if ((!moderator || !moderator.pinPosts) && !groupCreator) throw new UnauthorizedException();
             await this.postsService.findOneRecordAndUpdate({_id: id}, pinUnpinDto);
         }
         return {message: `Post ${pinUnpinDto.pin ? 'pin' : 'un pin'} successfully.`};
