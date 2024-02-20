@@ -553,11 +553,11 @@ export class PostsController {
 
     @Put(':id/pin-unpin')
     async pinUnpinPost(@Param('id', ParseObjectId) id: string, @Body() pinUnpinDto: PinUnpinDto, @GetUser() user: UserDocument) {
-        const post = await this.postsService.findOne({_id: id});
+        const post:any = await this.postsService.findOne({_id: id});
 
         if (!post) throw new HttpException('Post does not exists.', HttpStatus.BAD_REQUEST);
 
-        if (post.creator.toString() == user._id) {
+        if ((post.creator._id).toString() == (user._id).toString()) {
             await this.postsService.findOneRecordAndUpdate({_id: id}, pinUnpinDto);
         } else {
             const moderator = await this.isGroupModerator(id, user._id);
