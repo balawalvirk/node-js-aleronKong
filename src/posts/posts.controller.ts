@@ -557,7 +557,7 @@ export class PostsController {
 
         if (!post) throw new HttpException('Post does not exists.', HttpStatus.BAD_REQUEST);
 
-        if (post.creator.toString() == user._id || user.role.includes(UserRoles.ADMIN)) {
+        if (post.creator.toString() == user._id)) {
             await this.postsService.findOneRecordAndUpdate({_id: id}, pinUnpinDto);
         } else {
             const moderator = await this.isGroupModerator(id, user._id);
