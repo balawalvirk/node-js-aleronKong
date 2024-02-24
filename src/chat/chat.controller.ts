@@ -50,7 +50,7 @@ export class ChatController {
         //find receiver from chat object
 
         //@ts-ignore
-        const receiver:any = chatFound.members.find((member) => !member._id.equals(user._id));
+        const receiver: any = chatFound.members.find((member) => !member._id.equals(user._id));
 
         //@ts-ignore
         const message = await this.messageService.createRecord({
@@ -58,13 +58,18 @@ export class ChatController {
             sender: user._id,
             receiver: receiver._id
         });
+
+        const messageWithPost = await this.messageService.findRecordById(message._id)
+            .populate('post', '-likes -comments -reactions -tagged')
+
+
         const chat = await this.chatService.findOneRecordAndUpdate(
             {_id: createMessageDto.chat},
             {lastMessage: message._id, $push: {messages: message._id}}
         );
         //send socket message to members of chat
-        this.socketService.triggerMessage(createMessageDto.chat, message);
-        this.socketService.triggerMessage('new-message', {chat: createMessageDto.chat, lastMessage: message});
+        this.socketService.triggerMessage(createMessageDto.chat, messageWithPost);
+        this.socketService.triggerMessage('new-message', {chat: createMessageDto.chat, lastMessage: messageWithPost});
 
         //create notification obj in database
 
@@ -124,19 +129,22 @@ export class ChatController {
 
     @Get('/message/find-all/:chatId')
     async findAllMessage(@Param('chatId') chatId: string, @GetUser() user: UserDocument) {
-        const messages = await this.messageService.findAllRecords({chat: chatId,deletedBy:{$nin: [user._id]}}).sort({createdAt: 1})
-            .populate('post','-likes -comments -reactions -tagged');
+        const messages = await this.messageService.findAllRecords({
+            chat: chatId,
+            deletedBy: {$nin: [user._id]}
+        }).sort({createdAt: 1})
+            .populate('post', '-likes -comments -reactions -tagged');
         await this.messageService.updateManyRecords({chat: chatId, isRead: false, receiver: user._id}, {isRead: true});
         return messages;
     }
 
     @Delete('/delete/:id')
     async delete(@Param('id', ParseObjectId) id: string, @GetUser() user: UserDocument) {
-        const chat: ChatDocument = await this.chatService.findOne({_id: id},user._id);
-        if(!chat)
+        const chat: ChatDocument = await this.chatService.findOne({_id: id}, user._id);
+        if (!chat)
             throw new HttpException('Chat conversation not found.', HttpStatus.NOT_FOUND);
 
-        await this.messageService.updateManyRecords({chat: chat._id},{$push: {deletedBy:  user._id}});
+        await this.messageService.updateManyRecords({chat: chat._id}, {$push: {deletedBy: user._id}});
         return {message: 'Conversation deleted successfully.'};
     }
 

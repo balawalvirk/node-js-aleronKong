@@ -183,7 +183,11 @@ export class GroupController {
             }
         } else {
             const moderator = await this.isGroupModerator(post._id, user._id);
-            if (!moderator || !moderator.deletePosts) throw new UnauthorizedException();
+
+            const groupCreator = await this.groupService.findOneRecord({_id: post.group, creator: user._id});
+            if ((!moderator || !moderator.deletePosts) && !groupCreator) throw new UnauthorizedException();
+
+
             const deletedPost = await this.postService.deleteSingleRecord({_id: id});
             if (deletedPost.group) await this.groupService.findOneRecordAndUpdate({_id: deletedPost.group}, {$pull: {posts: deletedPost._id}});
             if (deletedPost.type === PostType.FUNDRAISING) {

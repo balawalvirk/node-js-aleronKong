@@ -134,6 +134,12 @@ export class PostsService extends BaseService<PostDocument> {
                     {path: 'fundraising', populate: [{path: 'category'}, {path: 'subCategory'}]},
                     {path: 'tagged', select: 'firstName lastName avatar fcmToken enableNotifications'},
                     {path: 'page', select: 'name profilePhoto'},
+                    {
+                        path: 'reactions', populate: [
+                            {path: 'user', select: 'firstName lastName avatar'},
+                            {path: 'page', select: '_id name profilePhoto'}
+                        ]
+                    }
                 ],
             },
             {path: 'mentions', select: 'firstName lastName avatar'},
