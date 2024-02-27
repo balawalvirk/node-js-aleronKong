@@ -1,4 +1,4 @@
-import {IsArray, IsEnum, IsMongoId, IsNumber, IsOptional, IsString, ValidateNested} from 'class-validator';
+import {IsArray, IsEnum, IsMongoId, IsNumber, IsObject, IsOptional, IsString, ValidateNested} from 'class-validator';
 import {PostPrivacy} from 'src/types';
 import {Type} from "class-transformer";
 
@@ -21,9 +21,11 @@ export class CreatePostsDto {
     @IsString({each: true})
     images?: string;
 
-  @IsOptional()
-  @IsString({ each: true })
-  videos?: string;
+    @IsOptional()
+    @IsArray()
+    @ValidateNested()
+    @Type(() => Video)
+    videos?: Video;
 
     @IsOptional()
     @IsString()
