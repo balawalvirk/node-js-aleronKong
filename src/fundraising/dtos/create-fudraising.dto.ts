@@ -1,43 +1,56 @@
-import { IsDateString, IsNumber, IsOptional, IsString } from 'class-validator';
+import {IsArray, IsDateString, IsNumber, IsObject, IsOptional, IsString, ValidateNested} from 'class-validator';
+import {Type} from "class-transformer";
+
+
+class Video {
+    @IsString()
+    url: string;
+
+    @IsString()
+    thumbnail: string;
+}
+
 
 export class CreateFudraisingDto {
-  @IsOptional()
-  @IsString()
-  image: string;
+    @IsOptional()
+    @IsString()
+    image: string;
 
-  @IsOptional()
-  @IsString()
-  video: string;
+    @IsOptional()
+    @IsObject()
+    @ValidateNested()
+    @Type(() => Video)
+    video?: Video;
 
-  @IsString()
-  title: string;
+    @IsString()
+    title: string;
 
-  @IsString()
-  subtitle: string;
+    @IsString()
+    subtitle: string;
 
-  @IsString()
-  description: string;
+    @IsString()
+    description: string;
 
-  @IsString()
-  category: string;
+    @IsString()
+    category: string;
 
-  @IsString()
-  location: string;
+    @IsString()
+    location: string;
 
-  @IsDateString()
-  launchDate: Date;
+    @IsDateString()
+    launchDate: Date;
 
-  @IsNumber()
-  compaignDuration: number;
+    @IsNumber()
+    compaignDuration: number;
 
-  @IsNumber()
-  fundingGoal: number;
+    @IsNumber()
+    fundingGoal: number;
 
-  @IsOptional()
-  @IsString()
-  bank: string;
+    @IsOptional()
+    @IsString()
+    bank: string;
 
-  @IsOptional()
-  @IsString()
-  bankAccount: string;
+    @IsOptional()
+    @IsString()
+    bankAccount: string;
 }

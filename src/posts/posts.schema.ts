@@ -28,7 +28,8 @@ export class Posts {
         type: [{
             thumbnail:{type:String,default:""},
             url:{type:String,default:""}
-        }]
+        }],
+        default:[]
     })
     videos;
 
