@@ -18,10 +18,10 @@ export class Fundraising {
     description: string;
 
     @Prop({
-        type: {
+        type: [{
             thumbnail: {type: String, default: ""},
             url: {type: String, default: ""}
-        },
+        }],
         default: []
     })
     video;
