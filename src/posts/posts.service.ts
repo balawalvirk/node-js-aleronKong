@@ -68,6 +68,12 @@ export class PostsService extends BaseService<PostDocument> {
                         path: 'creator',
                         select: 'firstName lastName avatar isGuildMember userName fcmToken enableNotifications'
                     },
+                    {
+                        path: 'reactions', populate: [
+                            {path: 'user', select: 'firstName lastName avatar'},
+                            {path: 'page', select: '_id name profilePhoto'}
+                        ]
+                    },
                     {path: 'mentions', select: 'firstName lastName avatar'},
                     {path: 'page', select: '_id name profilePhoto'},
 
