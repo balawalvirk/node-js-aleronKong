@@ -47,6 +47,7 @@ import { CreateShowCaseProductDto } from './dtos/create-showcase-product.dto';
 import { TrackDto } from './dtos/track.dto';
 import { TrackService } from './track.service';
 import { FindBoughtProductsQueryDto } from './dtos/find-bought.query.dto';
+import {UpdateReviewDto} from "src/product/dtos/update.review.dto";
 
 @Controller('product')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -501,6 +502,40 @@ export class ProductController {
     await this.productService.findOneRecordAndUpdate({ _id: createReviewDto.product }, { $push: { reviews: review._id }, avgRating });
     return { message: 'Thanks for sharing your review.' };
   }
+
+
+    @Post('review/:id/update')
+    async updateReview(@Param('id') id: string,@GetUser() user: UserDocument, @Body() createReviewDto: UpdateReviewDto) {
+        const product = await this.productService.findOneRecord({ _id: createReviewDto.product }).populate('reviews');
+        const prevReview = await this.reviewService.findOneRecord({ _id: new mongoose.Types.ObjectId(id) });
+
+        if (!product) throw new HttpException('Product does not exists.', HttpStatus.BAD_REQUEST);
+        if (!prevReview) throw new HttpException('Review does not exists.', HttpStatus.BAD_REQUEST);
+        const review = await this.reviewService.findOneRecordAndUpdate({_id:new mongoose.Types.ObjectId(id)}
+        ,{
+            review: createReviewDto.review,
+            product: createReviewDto.product,
+            rating: createReviewDto.rating,
+            creator: user._id,
+            order: createReviewDto.order,
+        });
+        const reviews = [...product.reviews, review];
+        const avgRating = Math.round(reviews.reduce((n, { rating }) => n + rating / reviews.length, 0) * 10) / 10;
+        await this.productService.findOneRecordAndUpdate({ _id: createReviewDto.product }, { $push: { reviews: review._id }, avgRating });
+        return { message: 'Thanks for sharing your review.' };
+    }
+
+
+    @Delete('/review/:id/delete')
+    async removeReview(@Param('id', ParseObjectId) id: string, @GetUser() user: UserDocument) {
+        const reviewFound = await this.reviewService.findOneRecord({ _id: new mongoose.Types.ObjectId(id) });
+        // check if user is creator of this product or user is admin.
+        if (reviewFound && (reviewFound.creator).toString()===(user._id).toString()) {
+            const review = await this.reviewService.deleteSingleRecord({ _id: id });
+            return review;
+        } else throw new HttpException('Review not found', HttpStatus.FORBIDDEN);
+    }
+
 
   @Get(':id/review/find-all')
   async findAllReviews(@Param('id', ParseObjectId) id: string) {

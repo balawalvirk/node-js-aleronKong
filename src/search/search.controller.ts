@@ -32,16 +32,28 @@ export class SearchController {
         let pages = [];
 
 
-        let sortBy:any={before:{createdAt:-1,_id:-1},after:{"products.createdAt":-1,_id:-1}};
+        let sortBy:any;
 
-        if(sort==="name"){
-            sortBy={before:{title:-1,_id:-1},after:{"products.title":-1,_id:-1}}
+
+        if(filter==='all'){
+
+            if(sort==="name"){
+                sortBy={before:{title:-1,_id:-1},after:{"products.title":-1,_id:-1}}
+            }else if(sort==="rating"){
+                sortBy={before:{avgRating:-1,_id:-1},after:{"products.avgRating":-1,_id:-1}}
+            } else{
+                sortBy=={before:{createdAt:-1,_id:-1},after:{"products.createdAt":-1,_id:-1}};
+            }
+        }else{
+            if(sort==="name"){
+                sortBy={title:-1,_id:-1}
+            }else if(sort==="rating"){
+                sortBy={avgRating:-1,_id:-1}
+            }else{
+                sortBy=={createdAt:-1,_id:-1}
+            }
         }
 
-
-        if(sort==="rating"){
-            sortBy={before:{avgRating:-1,_id:-1},after:{"products.avgRating":-1,_id:-1}}
-        }
 
         // if nothing is passed then show recommended products
         if (sort === 'createdAt' && filter === 'all' && !category && query.length === 0) {
