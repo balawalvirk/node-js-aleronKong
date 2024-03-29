@@ -154,7 +154,7 @@ export class PostsService extends BaseService<PostDocument> {
 
 
     async find(query: FilterQuery<PostDocument>, options?: QueryOptions<PostDocument>) {
-        const posts = await this.postModel.find(query, {}, options).populate(this.getPopulateFields()).lean();
+        const posts = await this.postModel.find(query, {}, options).populate(this.getHomePostpopulateFields()).lean();
         return posts.map((post) => ({
             ...post,
             totalComments: post.comments.length,
@@ -251,7 +251,7 @@ export class PostsService extends BaseService<PostDocument> {
             { $unset: ["group_details"] },
         ])).length
 
-        await this.postModel.populate(posts,this.getPopulateFields());
+        await this.postModel.populate(posts,this.getHomePostpopulateFields());
         return {posts:posts.map((post) => ({
             ...post,
             totalComments: post.comments.length,
@@ -274,15 +274,15 @@ export class PostsService extends BaseService<PostDocument> {
 
 
     async update(query: FilterQuery<PostDocument>, updateQuery: UpdateQuery<PostDocument>) {
-        return await this.postModel.findOneAndUpdate(query, updateQuery, {new: true}).populate(this.getPopulateFields()).lean();
+        return await this.postModel.findOneAndUpdate(query, updateQuery, {new: true}).populate(this.getHomePostpopulateFields()).lean();
     }
 
     async createPost(query: FilterQuery<PostDocument>) {
-        return (await this.postModel.create(query)).populate(this.getPopulateFields());
+        return (await this.postModel.create(query)).populate(this.getHomePostpopulateFields());
     }
 
     async findOne(query: FilterQuery<PostDocument>) {
-        return await this.postModel.findOne(query).populate(this.getPopulateFields()).lean();
+        return await this.postModel.findOne(query).populate(this.getHomePostpopulateFields()).lean();
     }
 
     async FindAllFundraisingProjects(query: FilterQuery<PostDocument>, options?: QueryOptions<PostDocument>) {
