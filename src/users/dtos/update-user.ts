@@ -1,4 +1,4 @@
-import {IsString, IsDateString, IsOptional, IsBoolean, IsEnum} from 'class-validator';
+import {IsString, IsDateString, IsOptional, IsBoolean, IsEnum, NotContains} from 'class-validator';
 import {PostPrivacy} from 'src/types';
 
 export class UpdateUserDto {
@@ -13,6 +13,8 @@ export class UpdateUserDto {
 
     @IsOptional()
     @IsString()
+    @NotContains(" ")
+
     userName?: string;
 
 
