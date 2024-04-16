@@ -112,7 +112,7 @@ export class ChatController {
                         //send notification to user fcm token
                         await this.firebaseService.sendNotification({
                             token: receiver.fcmToken,
-                            notification: {title: `${user.firstName} ${user.lastName} has send you message.`},
+                            notification: {title: `${user.firstName} ${user.lastName} Has SENT you a message.`},
                             data: {user: user._id.toString(), type: NotificationType.NEW_MESSAGE},
                         });
 
@@ -135,7 +135,7 @@ export class ChatController {
                     } else {
                         await this.firebaseService.sendNotification({
                             token: receiver.fcmToken,
-                            notification: {title: `${user.firstName} ${user.lastName} has send you message.`},
+                            notification: {title: `${user.firstName} ${user.lastName} Has SENT you a message.`},
                             data: {user: user._id.toString(), type: NotificationType.NEW_MESSAGE},
                         });
                     }
@@ -144,7 +144,7 @@ export class ChatController {
         } else {
             await this.firebaseService.sendNotification({
                 token: receiver.fcmToken,
-                notification: {title: `${user.firstName} ${user.lastName} has send you message.`},
+                notification: {title: `${user.firstName} ${user.lastName} Has SENT you a message.`},
                 data: {user: user._id.toString(), type: NotificationType.NEW_MESSAGE},
             });
         }
