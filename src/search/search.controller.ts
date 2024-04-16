@@ -68,7 +68,7 @@ export class SearchController {
                     {
                         $expr: {
                             $regexMatch: {
-                                input: {$concat: ['$firstName', ' ', '$lastName']},
+                                input: {$concat: ['$firstName', ' ', '$lastName','$userName']},
                                 regex: query,
                                 options: 'i',
                             },
