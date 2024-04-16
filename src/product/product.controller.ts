@@ -19,7 +19,7 @@ import { AddressService } from 'src/address/address.service';
 import { JwtAuthGuard } from 'src/auth/jwt-auth.guard';
 import { RolesGuard } from 'src/auth/role.guard';
 import { CartService } from 'src/product/cart.service';
-import { makeQuery, ParseObjectId, Roles, StripeService } from 'src/helpers';
+import {makeQuery, ParseObjectId, Roles, SocketGateway, StripeService} from 'src/helpers';
 import { GetUser } from 'src/helpers/decorators/user.decorator';
 import { BoughtProductsSort, NotificationType, ProductType, UserRoles } from 'src/types';
 import { UserDocument } from 'src/users/users.schema';
@@ -48,6 +48,7 @@ import { TrackDto } from './dtos/track.dto';
 import { TrackService } from './track.service';
 import { FindBoughtProductsQueryDto } from './dtos/find-bought.query.dto';
 import {UpdateReviewDto} from "src/product/dtos/update.review.dto";
+import {UserController} from "src/users/users.controller";
 
 @Controller('product')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -60,11 +61,13 @@ export class ProductController {
     private readonly cartService: CartService,
     private readonly orderService: OrderService,
     private readonly saleService: SaleService,
-    private readonly userService: UsersService,
     private readonly reviewService: ReviewService,
     private readonly notificationService: NotificationService,
     private readonly firebaseService: FirebaseService,
-    private readonly trackService: TrackService
+    private readonly trackService: TrackService,
+    private readonly socketService: SocketGateway,
+    private readonly userService: UsersService,
+
   ) {}
 
   @Post('create')
@@ -241,7 +244,18 @@ export class ProductController {
         message: 'has placed an order',
         type: NotificationType.ORDER_PLACED,
       });
-      if (item.creator.fcmToken) {
+
+
+
+      let tempItem:any=item;
+        const userData = await this.userService.findOneRecord({_id: tempItem.creator._id});
+        if (userData) {
+            const notificationData = await this.userService.getNotificationData(userData, {pageId: null});
+            this.socketService.triggerMessage(`notification-${(userData._id).toString()}`, {data: notificationData});
+        }
+
+
+        if (item.creator.fcmToken) {
         await this.firebaseService.sendNotification({
           token: item.creator.fcmToken,
           notification: {
@@ -257,7 +271,7 @@ export class ProductController {
 
   @Post('buy')
   async buyProduct(@GetUser() user: UserDocument, @Body() buyProductDto: BuyProductDto) {
-    const product = await this.productService.findOne({ _id: buyProductDto.product });
+    const product:any = await this.productService.findOne({ _id: buyProductDto.product });
     if (!product) throw new HttpException('Product does not exists.', HttpStatus.BAD_REQUEST);
     const { total, applicationFeeAmount } = this.productService.calculateTax(product.price, product.category.commission);
     await this.stripeService.createPaymentIntent({
@@ -287,7 +301,16 @@ export class ProductController {
       message: 'has bought your product.',
     });
 
-    await this.userService.findOneRecordAndUpdate({ _id: user._id }, { $push: { boughtDigitalProducts: product._id } });
+
+      const userData = await this.userService.findOneRecord({_id: product.creator._id});
+      if (userData) {
+          const notificationData = await this.userService.getNotificationData(userData, {pageId: null});
+          this.socketService.triggerMessage(`notification-${(userData._id).toString()}`, {data: notificationData});
+      }
+
+
+
+      await this.userService.findOneRecordAndUpdate({ _id: user._id }, { $push: { boughtDigitalProducts: product._id } });
     if (product.creator.fcmToken) {
       await this.firebaseService.sendNotification({
         token: product.creator.fcmToken,
@@ -303,7 +326,7 @@ export class ProductController {
 
   @Post('buy-series')
   async buySeries(@GetUser() user: UserDocument, @Body() buySeriesDto: BuySeriesDto) {
-    const product = await this.productService.findOne({ _id: buySeriesDto.product });
+    const product:any = await this.productService.findOne({ _id: buySeriesDto.product });
     if (!product) throw new HttpException('Product does not exists.', HttpStatus.BAD_REQUEST);
     //@ts-ignore
     const series = product.series.filter((series) => buySeriesDto.series.includes(series._id.toString()));
@@ -349,6 +372,14 @@ export class ProductController {
       type: NotificationType.PRODUCT_BOUGHT,
       message: 'has bought your product.',
     });
+
+
+      const userData = await this.userService.findOneRecord({_id: product.creator._id});
+      if (userData) {
+          const notificationData = await this.userService.getNotificationData(userData, {pageId: null});
+          this.socketService.triggerMessage(`notification-${(userData._id).toString()}`, {data: notificationData});
+      }
+
 
     if (product.creator.fcmToken) {
       await this.firebaseService.sendNotification({

@@ -62,7 +62,7 @@ export class SearchController {
             return products[0].products;
         }
         const rjx = {$regex: query, $options: 'i'};
-        if (filter === 'all') {
+        if (filter === 'all' || (query && query.length>0)) {
             const userSearchCondition = {
                 $or: [
                     {
@@ -75,7 +75,7 @@ export class SearchController {
                         },
                     },
                 ],
-                _id: {$ne: user._id},
+                _id: {$nin: [...user.blockedUsers, ...user.blockedByOthers,...[user._id]]},
             };
             users = await this.userService.findAllRecords(userSearchCondition, {
                 sort: sort === 'name' ? {firstName: -1, lastName: -1} : {createdAt: -1},
@@ -139,7 +139,7 @@ export class SearchController {
                             },
                         },
                     ],
-                    _id: {$ne: user._id},
+                    _id: {$nin: [...user.blockedUsers, ...user.blockedByOthers,...[user._id]]},
                 },
                 {sort: sort === 'name' ? {firstName: -1, lastName: -1} : {createdAt: -1}}
             );

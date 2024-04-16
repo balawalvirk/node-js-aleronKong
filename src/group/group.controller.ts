@@ -26,7 +26,7 @@ import {JwtAuthGuard} from 'src/auth/jwt-auth.guard';
 import {PostsService} from 'src/posts/posts.service';
 import {CreatePostsDto} from 'src/posts/dtos/create-posts';
 import {GroupPrivacy, MuteInterval, NotificationType, PostPrivacy, PostType, ReportType} from 'src/types';
-import {makeQuery, ParseObjectId} from 'src/helpers';
+import {makeQuery, ParseObjectId, SocketGateway} from 'src/helpers';
 import {FundService} from 'src/fundraising/fund.service';
 import {FundraisingService} from 'src/fundraising/fundraising.service';
 import {NotificationService} from 'src/notification/notification.service';
@@ -44,6 +44,8 @@ import {CreateInvitationDto} from './dto/create-invitation.dto';
 import {GroupInvitationService} from './invitation.service';
 import {ReportService} from 'src/report/report.service';
 import {PageService} from 'src/page/page.service';
+import {UsersService} from "src/users/users.service";
+import {UserController} from "src/users/users.controller";
 
 @Controller('group')
 @UseGuards(JwtAuthGuard)
@@ -59,7 +61,9 @@ export class GroupController {
         private readonly muteService: MuteService,
         private readonly invitationService: GroupInvitationService,
         private readonly reportService: ReportService,
-        private readonly pageService: PageService
+        private readonly pageService: PageService,
+        private readonly usersService: UsersService,
+        private readonly socketService: SocketGateway,
     ) {
     }
 
@@ -73,7 +77,7 @@ export class GroupController {
     @Post('post/create')
     async createPost(@Body() createPostDto: CreatePostsDto, @GetUser() user: UserDocument) {
         if (createPostDto.group) {
-            const group = await this.groupService.findOneRecord({_id: createPostDto.group});
+            const group: any = await this.groupService.findOneRecord({_id: createPostDto.group});
             if (!group) throw new HttpException('Group does not exists.', HttpStatus.BAD_REQUEST);
 
             // check if current user is member of group.
@@ -91,6 +95,7 @@ export class GroupController {
 
             //@ts-ignore
             if (user._id != group.creator._id.toString()) {
+
                 await this.notificationService.createRecord({
                     type: NotificationType.NEW_GROUP_POST,
                     group: group._id,
@@ -99,6 +104,14 @@ export class GroupController {
                     //@ts-ignore
                     receiver: group.creator._id,
                 });
+
+
+                const userData = await this.usersService.findOneRecord({_id: group.creator._id});
+                if (userData) {
+                    const notificationData = await this.usersService.getNotificationData(userData, {pageId: null})
+                    this.socketService.triggerMessage(`notification-${(userData._id).toString()}`, {data: notificationData});
+                }
+
 
                 //@ts-ignore
                 const mute = await this.muteService.findOneRecord({group: group._id, user: group.creator._id});
@@ -129,7 +142,7 @@ export class GroupController {
             await this.pageService.findOneRecordAndUpdate({_id: post.page}, {$push: {posts: post._id}});
             return post;
         } else {
-            const post = await this.postService.createPost({...createPostDto, creator: user._id});
+            const post: any = await this.postService.createPost({...createPostDto, creator: user._id});
             // check if user tagged to any friend
             if (post.tagged) {
                 for (const taggedUser of post.tagged) {
@@ -141,6 +154,14 @@ export class GroupController {
                         //@ts-ignore
                         receiver: taggedUser._id,
                     });
+
+
+                    const userData = await this.usersService.findOneRecord({_id: taggedUser._id});
+                    if (userData) {
+                        const notificationData = await this.usersService.getNotificationData(userData, {pageId: null})
+                        this.socketService.triggerMessage(`notification-${(userData._id).toString()}`, {data: notificationData});
+                    }
+
 
                     // check if user has enabled notifications
                     if (taggedUser.enableNotifications) {
@@ -245,7 +266,10 @@ export class GroupController {
 
     @Put('join/:id')
     async joinGroup(@GetUser() user: UserDocument, @Param('id') id: string) {
-        const group = await this.groupService.findOneRecord({_id: id}).populate({path: 'creator', select: 'fcmToken'});
+        const group: any = await this.groupService.findOneRecord({_id: id}).populate({
+            path: 'creator',
+            select: 'fcmToken'
+        });
         if (!group) throw new HttpException('Group does not exists.', HttpStatus.BAD_REQUEST);
 
         //check if user is already a member of this group
@@ -265,6 +289,15 @@ export class GroupController {
                 //@ts-ignore
                 receiver: group.creator._id,
             });
+
+
+            const userData = await this.usersService.findOneRecord({_id: group.creator._id});
+            if (userData) {
+                const notificationData = await this.usersService.getNotificationData(userData, {pageId: null})
+                this.socketService.triggerMessage(`notification-${(userData._id).toString()}`, {data: notificationData});
+            }
+
+
             //@ts-ignore
             if (group.creator.fcmToken) {
                 await this.firebaseService.sendNotification({
@@ -275,11 +308,13 @@ export class GroupController {
             }
 
             const updated: any = await this.groupService.findOneRecordAndUpdate({_id: id},
-                {$push: {requests: {member:user._id}}})
+                {$push: {requests: {member: user._id}}})
                 .lean();
 
             return updated;
         }
+
+
         await this.notificationService.createRecord({
             type: NotificationType.GROUP_JOINED,
             group: group._id,
@@ -288,6 +323,14 @@ export class GroupController {
             //@ts-ignore
             receiver: group.creator._id,
         });
+
+
+        const userData = await this.usersService.findOneRecord({_id: group.creator._id});
+        if (userData) {
+            const notificationData = await this.usersService.getNotificationData(userData, {pageId: null})
+            this.socketService.triggerMessage(`notification-${(userData._id).toString()}`, {data: notificationData});
+        }
+
 
         const updatedGroup: any = await this.groupService.findOneRecordAndUpdate({_id: id},
             {$push: {members: {member: user._id}}})
@@ -309,7 +352,10 @@ export class GroupController {
 
     @Put('join/:id/page/:pageId')
     async joinPageGroup(@GetUser() user: UserDocument, @Param('id') id: string, @Param('pageId') pageId: string) {
-        const group = await this.groupService.findOneRecord({_id: id}).populate({path: 'creator', select: 'fcmToken'});
+        const group: any = await this.groupService.findOneRecord({_id: id}).populate({
+            path: 'creator',
+            select: 'fcmToken'
+        });
         if (!group) throw new HttpException('Group does not exists.', HttpStatus.BAD_REQUEST);
         const page = await this.pageService.findOneRecord({_id: pageId}).populate({
             path: 'creator',
@@ -335,6 +381,7 @@ export class GroupController {
                 receiver: group.creator._id,
                 page: page._id
             });
+
             //@ts-ignore
             if (group.creator.fcmToken) {
                 await this.firebaseService.sendNotification({
@@ -344,13 +391,21 @@ export class GroupController {
                 });
             }
             const updated: any = await this.groupService.findOneRecordAndUpdate({_id: id},
-                {$push: {requests:{ page:page._id}}})
+                {$push: {requests: {page: page._id}}})
                 .lean();
 
+
+            const userData = await this.usersService.findOneRecord({_id: group.creator._id});
+            if (userData) {
+                const notificationData = await this.usersService.getNotificationData(userData, {pageId: null})
+                this.socketService.triggerMessage(`notification-${(userData._id).toString()}`, {data: notificationData});
+            }
 
 
             return updated;
         }
+
+
         await this.notificationService.createRecord({
             type: NotificationType.GROUP_JOINED,
             group: group._id,
@@ -360,6 +415,14 @@ export class GroupController {
             receiver: group.creator._id,
             page: page._id
         });
+
+
+        const userData = await this.usersService.findOneRecord({_id: group.creator._id});
+        if (userData) {
+            const notificationData = await this.usersService.getNotificationData(userData, {pageId: null})
+            this.socketService.triggerMessage(`notification-${(userData._id).toString()}`, {data: notificationData});
+        }
+
 
         const updatedGroup: any = await this.groupService.findOneRecordAndUpdate({_id: id},
             {$push: {members: {page: page._id}}})
@@ -408,7 +471,6 @@ export class GroupController {
         const group: any = await this.groupService.findAllMembers({_id: id});
 
 
-
         return {members: group.members};
     }
 
@@ -432,7 +494,6 @@ export class GroupController {
             .populate("requests", "firstName lastName avatar")
             .populate("requests.page")
             .lean();
-
 
 
         return updatedGroup.members;
@@ -460,7 +521,6 @@ export class GroupController {
             .populate("requests", "firstName lastName avatar")
             .populate("requests.page")
             .lean();
-
 
 
         return updatedGroup.members;
@@ -514,9 +574,11 @@ export class GroupController {
         if (group.creator.toString() == user._id) {
             if (isApproved) {
                 await this.groupService.findOneRecordAndUpdate({_id: id}, {
-                    $pull: {requests: {member:userId}},
+                    $pull: {requests: {member: userId}},
                     $push: {members: {member: userId}}
                 });
+
+
                 await this.notificationService.createRecord({
                     group: group._id,
                     sender: user._id,
@@ -524,6 +586,14 @@ export class GroupController {
                     message: `Your request to join group is approved`,
                     type: NotificationType.GROUP_JOIN_REQUEST_APPROVED,
                 });
+
+
+                const userData = await this.usersService.findOneRecord({_id: userId});
+                if (userData) {
+                    const notificationData = await this.usersService.getNotificationData(userData, {pageId: null})
+                    this.socketService.triggerMessage(`notification-${(userData._id).toString()}`, {data: notificationData});
+                }
+
 
                 if (group.creator.fcmToken) {
                     await this.firebaseService.sendNotification({
@@ -534,7 +604,7 @@ export class GroupController {
                 }
                 return 'Request approved successfully.';
             } else {
-                await this.groupService.findOneRecordAndUpdate({_id: id}, {$pull: {requests: {member:userId}}});
+                await this.groupService.findOneRecordAndUpdate({_id: id}, {$pull: {requests: {member: userId}}});
 
                 await this.notificationService.createRecord({
                     group: group._id,
@@ -543,6 +613,14 @@ export class GroupController {
                     message: `Your request to join group is rejected`,
                     type: NotificationType.GROUP_JOIN_REQUEST_REJECTED,
                 });
+
+
+                const userData = await this.usersService.findOneRecord({_id: userId});
+                if (userData) {
+                    const notificationData = await this.usersService.getNotificationData(userData, {pageId: null})
+                    this.socketService.triggerMessage(`notification-${(userData._id).toString()}`, {data: notificationData});
+                }
+
 
                 if (group.creator.fcmToken) {
                     await this.firebaseService.sendNotification({
@@ -560,7 +638,7 @@ export class GroupController {
 
             if (isApproved) {
                 await this.groupService.findOneRecordAndUpdate({_id: id}, {
-                    $pull: {requests: {member:userId}},
+                    $pull: {requests: {member: userId}},
                     $push: {members: {member: userId}}
                 });
 
@@ -572,6 +650,13 @@ export class GroupController {
                     type: NotificationType.GROUP_JOIN_REQUEST_APPROVED,
                 });
 
+                const userData = await this.usersService.findOneRecord({_id: userId});
+                if (userData) {
+                    const notificationData = await this.usersService.getNotificationData(userData, {pageId: null})
+                    this.socketService.triggerMessage(`notification-${(userData._id).toString()}`, {data: notificationData});
+                }
+
+
                 if (group.creator.fcmToken) {
                     await this.firebaseService.sendNotification({
                         token: group.creator.fcmToken,
@@ -582,7 +667,9 @@ export class GroupController {
 
                 return 'Request approved successfully.';
             } else {
-                await this.groupService.findOneRecordAndUpdate({_id: id}, {$pull: {requests: {member:userId}}});
+                await this.groupService.findOneRecordAndUpdate({_id: id}, {$pull: {requests: {member: userId}}});
+
+
                 await this.notificationService.createRecord({
                     group: group._id,
                     sender: user._id,
@@ -590,6 +677,13 @@ export class GroupController {
                     message: `Your request to join group is rejected`,
                     type: NotificationType.GROUP_JOIN_REQUEST_REJECTED,
                 });
+
+                const userData = await this.usersService.findOneRecord({_id: userId});
+                if (userData) {
+                    const notificationData = await this.usersService.getNotificationData(userData, {pageId: null})
+                    this.socketService.triggerMessage(`notification-${(userData._id).toString()}`, {data: notificationData});
+                }
+
 
                 if (group.creator.fcmToken) {
                     await this.firebaseService.sendNotification({
@@ -617,9 +711,11 @@ export class GroupController {
 
         if (isApproved) {
             await this.groupService.findOneRecordAndUpdate({_id: id}, {
-                $pull: {requests: {page:pageId}},
+                $pull: {requests: {page: pageId}},
                 $push: {members: {page: pageId}}
             });
+
+
             await this.notificationService.createRecord({
                 group: group._id,
                 sender: user._id,
@@ -627,6 +723,17 @@ export class GroupController {
                 message: `Your request to join group is approved`,
                 type: NotificationType.GROUP_JOIN_REQUEST_APPROVED,
             });
+
+
+            const notificationPage = await this.pageService.findRecordById(pageId);
+            if (notificationPage.creator) {
+                const userData = await this.usersService.findOneRecord({_id: notificationPage.creator});
+                if (userData) {
+                    const notificationData = await this.usersService.getNotificationData(userData, {pageId: pageId});
+                    this.socketService.triggerMessage(`notification-${(userData._id).toString()}`, {data: notificationData});
+                }
+            }
+
 
             if (group.creator.fcmToken) {
                 await this.firebaseService.sendNotification({
@@ -637,7 +744,7 @@ export class GroupController {
             }
             return 'Request approved successfully.';
         } else {
-            await this.groupService.findOneRecordAndUpdate({_id: id}, {$pull: {requests: {page:pageId}}});
+            await this.groupService.findOneRecordAndUpdate({_id: id}, {$pull: {requests: {page: pageId}}});
 
             await this.notificationService.createRecord({
                 group: group._id,
@@ -646,6 +753,16 @@ export class GroupController {
                 message: `Your request to join group is rejected`,
                 type: NotificationType.GROUP_JOIN_REQUEST_REJECTED,
             });
+
+            const notificationPage = await this.pageService.findRecordById(pageId);
+            if (notificationPage.creator) {
+                const userData = await this.usersService.findOneRecord({_id: notificationPage.creator});
+                if (userData) {
+                    const notificationData = await this.usersService.getNotificationData(userData, {pageId: pageId});
+                    this.socketService.triggerMessage(`notification-${(userData._id).toString()}`, {data: notificationData});
+                }
+            }
+
 
             if (group.creator.fcmToken) {
                 await this.firebaseService.sendNotification({
@@ -669,10 +786,14 @@ export class GroupController {
             const options = {limit: $q.limit, sort: $q.sort};
             let allGroups = [];
 
-            if ((type.includes('joined') || type.includes('suggested') )
+            if ((type.includes('joined') || type.includes('suggested'))
                 && pageId) {
                 const groups = await this.groupService.findAllRecords(
-                    {'members.page': pageId}, options
+                    {
+                        'members.page': pageId,
+                        creator: {$nin: [...user.blockedUsers, ...user.blockedByOthers]},
+
+                    }, options
                 )
                     .lean();
 
@@ -684,16 +805,24 @@ export class GroupController {
             if (type.includes('forYou')) {
                 const reports = await this.reportService.findAllRecords({reporter: user._id, type: ReportType.GROUP});
                 const reportedGroups = reports.map((report) => report.group);
-                let groups=[]
-                if(pageId){
-                     groups = await this.groupService.findAllRecords(
-                        {name: {$regex: query, $options: 'i'}, 'members.page': pageId, _id: {$nin: reportedGroups}},
+                let groups = []
+                if (pageId) {
+                    groups = await this.groupService.findAllRecords(
+                        {
+                            name: {$regex: query, $options: 'i'}, 'members.page': pageId, _id: {$nin: reportedGroups},
+                            creator: {$nin: [...user.blockedUsers, ...user.blockedByOthers]},
+                        },
                         options
                     )
                         .lean();
-                }else{
-                     groups = await this.groupService.findAllRecords(
-                        {name: {$regex: query, $options: 'i'}, 'members.member': user._id, _id: {$nin: reportedGroups}},
+                } else {
+                    groups = await this.groupService.findAllRecords(
+                        {
+                            name: {$regex: query, $options: 'i'},
+                            'members.member': user._id,
+                            _id: {$nin: reportedGroups},
+                            creator: {$nin: [...user.blockedUsers, ...user.blockedByOthers]},
+                        },
                         options
                     )
                         .lean();
@@ -719,7 +848,7 @@ export class GroupController {
                     {
                         $and: [{name: {$regex: query, $options: 'i'}}, {
                             'members.member': {$ne: user._id},
-                            creator: {$ne: user._id}
+                            creator: {$nin: [...user.blockedUsers, ...user.blockedByOthers, ...[user._id]]}
                         }],
                     },
                     options
@@ -731,7 +860,10 @@ export class GroupController {
             // if moderator group is true then show all groups where user added as moderator
             if (type.includes('moderating')) {
                 const groupIds = (await this.moderatorService.findAllRecords({user: user._id})).map((moderator) => moderator.group);
-                const groups = await this.groupService.findAllRecords({_id: {$in: groupIds}}, options)
+                const groups = await this.groupService.findAllRecords({
+                    _id: {$in: groupIds},
+                    creator: {$nin: [...user.blockedUsers, ...user.blockedByOthers]},
+                }, options)
                     .populate({path: 'members.member', select: 'firstName lastName avatar type'})
                     .populate("members.page")
                     .lean();
@@ -740,7 +872,7 @@ export class GroupController {
 
             return allGroups;
         } else {
-            let updated:any = await this.groupService.findAllRecords()
+            let updated: any = await this.groupService.findAllRecords()
                 .lean();
 
             return updated
@@ -845,7 +977,15 @@ export class GroupController {
     async createInvitation(@Body() {friend, group}: CreateInvitationDto, @GetUser() user: UserDocument) {
         const invitationFound = await this.invitationService.findOneRecord({user: user._id, group, friend});
         if (invitationFound) throw new BadRequestException('Group request already exists.');
-        const invitation = await this.invitationService.create({user: user._id, group, friend});
+        const invitation: any = await this.invitationService.create({user: user._id, group, friend});
+
+
+        const userData = await this.usersService.findOneRecord({_id: invitation.friend._id});
+        if (userData) {
+            const notificationData = await this.usersService.getNotificationData(userData, {pageId: null});
+            this.socketService.triggerMessage(`notification-${(userData._id).toString()}`, {data: notificationData});
+        }
+
 
         await this.notificationService.createRecord({
             type: NotificationType.GROUP_INVITATION,
@@ -883,6 +1023,15 @@ export class GroupController {
         await this.invitationService.deleteSingleRecord({_id: id});
 
         if (isApproved) {
+
+
+            const userData = await this.usersService.findOneRecord({_id: invitation.user});
+            if (userData) {
+                const notificationData = await this.usersService.getNotificationData(userData, {pageId: null});
+                this.socketService.triggerMessage(`notification-${(userData._id).toString()}`, {data: notificationData});
+            }
+
+
             await this.notificationService.createRecord({
                 type: NotificationType.GROUP_JOIN_REQUEST,
                 // @ts-ignore
@@ -900,7 +1049,7 @@ export class GroupController {
                 // @ts-ignore
                 data: {group: invitation.group._id.toString(), type: NotificationType.GROUP_JOIN_REQUEST},
             });
-            await this.groupService.findOneRecordAndUpdate({_id: invitation.group}, {$push: {requests: {user:user._id}}});
+            await this.groupService.findOneRecordAndUpdate({_id: invitation.group}, {$push: {requests: {user: user._id}}});
         }
         return invitation;
     }

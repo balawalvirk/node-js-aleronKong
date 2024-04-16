@@ -45,6 +45,7 @@ import {ReactionService} from './reaction.service';
 import Cache from 'cache-manager';
 import {PageService} from "src/page/page.service";
 import mongoose from "mongoose";
+import {UserController} from "src/users/users.controller";
 
 @Controller('post')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -143,10 +144,21 @@ export class PostsController {
                     page: addReactionsDto.page
                 });
 
+
+                const notificationPage = await this.pageService.findRecordById(addReactionsDto.page);
+                if (notificationPage.creator) {
+                    const userData = await this.userService.findOneRecord({_id: notificationPage.creator});
+                    if (userData) {
+                        const notificationData = await this.userService.getNotificationData(userData, {pageId: notificationPage._id});
+                        this.socketService.triggerMessage(`notification-${(userData._id).toString()}`, {data: notificationData});
+                    }
+                }
+
+
                 if (post.creator.fcmToken) {
                     await this.firebaseService.sendNotification({
                         token: post.creator.fcmToken,
-                        notification: {title: `${user.firstName} ${user.lastName} reacted on your post.`},
+                        notification: {title: `${user.firstName} ${user.lastName} reacted to your post.`},
                         data: {post: post._id.toString(), type: NotificationType.POST_REACTED},
                     });
                 }
@@ -166,6 +178,11 @@ export class PostsController {
     async findUserPost(@Param('id', ParseObjectId) id: string, @Query('page') page: string, @Query('limit') limit: string,
                        @GetUser() user: UserDocument) {
         const $q = makeQuery({page, limit});
+
+
+        const userFound = await this.userService.findOneRecord({_id: id});
+        if(userFound && (userFound.blockedUsers || []).indexOf(user._id)!==-1)
+            throw new BadRequestException('You have been blocked by this user.');
 
 
         const condition = {creator: new mongoose.Types.ObjectId(id)};
@@ -301,7 +318,7 @@ export class PostsController {
     async addLike(@Param('id', ParseObjectId) id: string, @GetUser() user: UserDocument) {
         const postExists = await this.postsService.findOneRecord({_id: id, likes: {$in: [user._id]}});
         if (postExists) return await this.postsService.update({_id: id}, {$pull: {likes: user._id}});
-        const post = await this.postsService.update({_id: id}, {$push: {likes: user._id}});
+        const post:any = await this.postsService.update({_id: id}, {$push: {likes: user._id}});
 
         const isUserBlock=(user.blockedUsers).findIndex((u)=>u.toString()===id);
         const isOtherUserBlock=(user.blockedByOthers).findIndex((u)=>u.toString()===(id).toString());
@@ -320,6 +337,14 @@ export class PostsController {
                 //@ts-ignore
                 receiver: post.creator._id,
             });
+
+
+            const userData = await this.userService.findOneRecord({_id: post.creator._id});
+            if (userData) {
+                const notificationData = await this.userService.getNotificationData(userData, {pageId: null});
+                this.socketService.triggerMessage(`notification-${(userData._id).toString()}`, {data: notificationData});
+            }
+
             if (post.creator.fcmToken) {
                 await this.firebaseService.sendNotification({
                     token: post.creator.fcmToken,
@@ -379,7 +404,7 @@ export class PostsController {
                 creator: user._id,
                 post: id, ...createCommentDto, page: page && page._id
             });
-            const updatedComment = await this.commentService
+            const updatedComment:any = await this.commentService
                 .findOneRecordAndUpdate({_id: createCommentDto.comment}, {$push: {replies: comment._id}})
                 .populate('creator');
 
@@ -392,6 +417,14 @@ export class PostsController {
                 receiver: updatedComment.creator._id,
                 page: page && page._id
             });
+
+
+            const userData = await this.userService.findOneRecord({_id: updatedComment.creator._id});
+            if (userData) {
+                const notificationData = await this.userService.getNotificationData(userData, {pageId: null});
+                this.socketService.triggerMessage(`notification-${(userData._id).toString()}`, {data: notificationData});
+            }
+
 
             await this.firebaseService.sendNotification({
                 token: updatedComment.creator.fcmToken,
@@ -421,6 +454,15 @@ export class PostsController {
                     receiver: post.creator._id,
                     page: page && page._id
                 });
+
+
+                const userData = await this.userService.findOneRecord({_id: post.creator._id});
+                if (userData) {
+                    const notificationData = await this.userService.getNotificationData(userData, {pageId: null});
+                    this.socketService.triggerMessage(`notification-${(userData._id).toString()}`, {data: notificationData});
+                }
+
+
                 // check if user has fcm token then send notification to that user.
                 if (post.creator.fcmToken) {
                     await this.firebaseService.sendNotification({

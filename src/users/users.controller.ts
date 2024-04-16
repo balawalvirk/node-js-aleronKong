@@ -21,7 +21,7 @@ import {RolesGuard} from 'src/auth/role.guard';
 import {MessageService} from 'src/chat/message.service';
 import {FirebaseService} from 'src/firebase/firebase.service';
 import {GroupService} from 'src/group/group.service';
-import {makeQuery, PaginationDto, ParseObjectId, Roles, StripeService} from 'src/helpers';
+import {makeQuery, PaginationDto, ParseObjectId, Roles, SocketGateway, StripeService} from 'src/helpers';
 import {GetUser} from 'src/helpers/decorators/user.decorator';
 import {NotificationService} from 'src/notification/notification.service';
 import {CartService} from 'src/product/cart.service';
@@ -55,6 +55,8 @@ export class UserController {
         private readonly friendRequestService: FriendRequestService,
         private readonly groupService: GroupService,
         private readonly guildService: GuildService,
+        private readonly socketService: SocketGateway,
+
     ) {
     }
 
@@ -87,6 +89,12 @@ export class UserController {
     @Get('find-one/:id')
     async findOne(@Param('id', ParseObjectId) id: string, @GetUser() user: UserDocument) {
         const userFound = await this.usersService.findOneRecord({_id: id});
+
+
+        if(userFound && (userFound.blockedUsers || []).indexOf(user._id)!==-1)
+            throw new BadRequestException('You have been blocked by this user.');
+
+
         const friendRequest = await this.friendRequestService.findOneRecord({sender: user._id, receiver: id});
         if (friendRequest) return {...userFound.toJSON(), friendRequest};
         else return userFound;
@@ -243,6 +251,11 @@ export class UserController {
             sender: user._id,
             receiver: id,
         });
+
+        const notificationData=await this.home(friend,null)
+        this.socketService.triggerMessage('notification', {data:notificationData});
+
+
         if (friend.fcmToken) {
             await this.firebaseService.sendNotification({
                 token: friend.fcmToken,
@@ -320,6 +333,9 @@ export class UserController {
         };
         return paginated;
     }
+
+
+
 
     // find count of unread messages and unread notifications
     @Get('home')
@@ -427,6 +443,8 @@ export class UserController {
             user: user._id,
             receiver: admin._id,
         });
+
+
         if (admin.fcmToken) {
             await this.firebaseService.sendNotification({
                 token: admin.fcmToken,
@@ -470,11 +488,19 @@ export class UserController {
             });
         }
 
+
+
+
         await this.notificationService.createRecord({
             type: NotificationType.SELLER_REQUEST_APPROVED_REJECTED,
             message: `Your seller request has been ${sellerRequest}`,
             receiver: userFound._id,
         });
+
+
+        const notificationData=await this.home(userFound,null)
+        this.socketService.triggerMessage('notification', {data:notificationData});
+
 
         if (userFound.fcmToken) {
             await this.firebaseService.sendNotification({
@@ -576,6 +602,12 @@ export class UserController {
             message: 'sent you a friend request.',
             type: NotificationType.FRIEND_REQUEST,
         });
+
+
+        const userData=await this.usersService.findOneRecord({_id:new mongoose.Types.ObjectId(receiver)})
+        const notificationData=await this.home(userData,null)
+        this.socketService.triggerMessage('notification', {data:notificationData});
+
 
         await this.firebaseService.sendNotification({
             token: friendRequest.receiver.fcmToken,

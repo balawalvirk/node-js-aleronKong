@@ -13,6 +13,7 @@ import {CreateMessageDto} from './dto/create-message.dto';
 import {MuteChatDto} from './dto/mute-chat.dto';
 import {MessageService} from './message.service';
 import {MuteService} from 'src/mute/mute.service';
+import {UsersService} from "src/users/users.service";
 
 @Controller('chat')
 @UseGuards(JwtAuthGuard)
@@ -23,7 +24,9 @@ export class ChatController {
         private readonly socketService: SocketGateway,
         private readonly notificationService: NotificationService,
         private readonly firebaseService: FirebaseService,
-        private readonly muteService: MuteService
+        private readonly muteService: MuteService,
+        private readonly usersService: UsersService,
+
     ) {
     }
 
@@ -31,6 +34,14 @@ export class ChatController {
     async createChat(@Body('receiverId') receiverId: string, @GetUser() user: UserDocument) {
         const chat = await this.chatService.findOneRecord({members: {$all: [receiverId, user._id]}});
         if (chat) throw new HttpException('You already have chat with this member.', HttpStatus.BAD_REQUEST);
+
+        const isUserBlock=(user.blockedUsers).findIndex((u)=>u.toString()===(receiverId).toString());
+        const isOtherUserBlock=(user.blockedByOthers).findIndex((u)=>u.toString()===(receiverId).toString());
+
+        if(isUserBlock!==-1 || isOtherUserBlock!==-1)
+            throw new HttpException('You are blocked from using this feature.', HttpStatus.BAD_REQUEST);
+
+
         return await this.chatService.create([user._id, receiverId], user._id);
     }
 
@@ -46,13 +57,26 @@ export class ChatController {
 
     @Post('/message/create')
     async createMessage(@Body() createMessageDto: CreateMessageDto, @GetUser() user: UserDocument) {
+
+
         const chatFound = await this.chatService.findOneRecord({_id: createMessageDto.chat}).populate('members');
         //find receiver from chat object
+
+
+        const isUserBlock=(user.blockedUsers).findIndex((u)=>(chatFound.members).indexOf(u)!==-1);
+        const isOtherUserBlock=(user.blockedByOthers).findIndex((u)=>(chatFound.members).indexOf(u)!==-1);
+
+        if(isUserBlock!==-1 || isOtherUserBlock!==-1)
+            throw new HttpException('You are blocked from using this feature.', HttpStatus.BAD_REQUEST);
+
 
         //@ts-ignore
         const receiver: any = chatFound.members.find((member) => !member._id.equals(user._id));
 
         //@ts-ignore
+
+
+
         const message = await this.messageService.createRecord({
             ...createMessageDto,
             sender: user._id,

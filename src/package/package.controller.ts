@@ -15,7 +15,7 @@ import {
 import {PackageService} from './package.service';
 import {CreatePackageDto} from './dto/create-package.dto';
 import {UpdatePackageDto} from './dto/update-package.dto';
-import {GetUser, makeQuery, ParseObjectId, StripeService} from 'src/helpers';
+import {GetUser, makeQuery, ParseObjectId, SocketGateway, StripeService} from 'src/helpers';
 import {UserDocument} from 'src/users/users.schema';
 import {JwtAuthGuard} from 'src/auth/jwt-auth.guard';
 import {UsersService} from 'src/users/users.service';
@@ -23,6 +23,7 @@ import {NotificationType, UserRoles} from 'src/types';
 import {FindAllPackagesQueryDto} from './dto/find-all-query.dto';
 import {NotificationService} from 'src/notification/notification.service';
 import {FirebaseService} from 'src/firebase/firebase.service';
+import {UserController} from "src/users/users.controller";
 
 @Controller('package')
 @UseGuards(JwtAuthGuard)
@@ -32,7 +33,9 @@ export class PackageController {
         private readonly stripeService: StripeService,
         private readonly userService: UsersService,
         private readonly notificationService: NotificationService,
-        private readonly firebaseService: FirebaseService
+        private readonly firebaseService: FirebaseService,
+        private readonly socketService: SocketGateway,
+
     ) {
     }
 
@@ -132,7 +135,7 @@ export class PackageController {
 
     @Patch('subscribe/:id')
     async subscribe(@GetUser() user: UserDocument, @Param('id', ParseObjectId) id: string) {
-        const pkg = await this.packageService.findOneRecord({_id: id}).populate({
+        const pkg:any = await this.packageService.findOneRecord({_id: id}).populate({
             path: 'creator',
             select: 'sellerId fcmToken'
         });
@@ -186,6 +189,13 @@ export class PackageController {
                 message: `subscribed your package.`,
                 type: NotificationType.USER_SUPPORTING,
             });
+
+
+            const userData = await this.userService.findOneRecord({_id: pkg.creator._id});
+            if (userData) {
+                const notificationData = await this.userService.getNotificationData(userData, {pageId: null});
+                this.socketService.triggerMessage(`notification-${(userData._id).toString()}`, {data: notificationData});
+            }
 
             await this.firebaseService.sendNotification({
                 token: pkg.creator.fcmToken,

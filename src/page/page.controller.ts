@@ -860,7 +860,7 @@ export class PageController {
                 if (page.creator.fcmToken) {
                     await this.firebaseService.sendNotification({
                         token: page.creator.fcmToken,
-                        notification: {title: `${user.firstName} ${user.lastName} reacted on your page.`},
+                        notification: {title: `${user.firstName} ${user.lastName} reacted to your page.`},
                         data: {post: page._id.toString(), type: NotificationType.PAGE_REACTED},
                     });
                 }

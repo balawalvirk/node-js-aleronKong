@@ -1,9 +1,9 @@
-import { forwardRef, Module } from '@nestjs/common';
+import {forwardRef, Global, Module} from '@nestjs/common';
 import { MongooseModule } from '@nestjs/mongoose';
 import { ChatModule } from 'src/chat/chat.module';
 import { FirebaseModule } from 'src/firebase/firebase.module';
 import { GroupModule } from 'src/group/group.module';
-import { StripeService } from 'src/helpers';
+import {SocketGateway, StripeService} from 'src/helpers';
 import { NotificationModule } from 'src/notification/notification.module';
 import { OrderModule } from 'src/order/order.module';
 import { ProductModule } from 'src/product/product.module';
@@ -15,6 +15,9 @@ import { UsersService } from './users.service';
 import {GuildService} from "src/guild/guild.service";
 import {Guild, GuildSchema} from "src/guild/guild.schema";
 
+
+
+@Global()
 @Module({
   imports: [
     MongooseModule.forFeature([
@@ -31,7 +34,7 @@ import {Guild, GuildSchema} from "src/guild/guild.schema";
     GroupModule,
   ],
   controllers: [UserController],
-  providers: [UsersService, StripeService, FriendRequestService,GuildService],
+  providers: [UsersService,SocketGateway, StripeService, FriendRequestService,GuildService],
   exports: [UsersService],
 })
 export class UsersModule {}

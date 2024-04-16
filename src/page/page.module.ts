@@ -17,6 +17,11 @@ import {PageComment, PageCommentSchema} from "src/page/comment.schema";
 import {PageReaction, PageReactionSchema} from "src/page/reaction.schema";
 import {PageReactionService} from "src/page/reaction.service";
 import {PageCommentService} from "src/page/comment.service";
+import {MessageService} from "src/chat/message.service";
+import {ChatModule} from "src/chat/chat.module";
+import {OrderModule} from "src/order/order.module";
+import {CartService} from "src/product/cart.service";
+import {Cart, CartSchema} from "src/product/cart.schema";
 
 @Module({
   imports: [
@@ -26,12 +31,15 @@ import {PageCommentService} from "src/page/comment.service";
       MongooseModule.forFeature([{ name: User.name, schema: UserSchema }]),
       MongooseModule.forFeature([{ name: PageComment.name, schema: PageCommentSchema }]),
       MongooseModule.forFeature([{ name: PageReaction.name, schema: PageReactionSchema }]),
+      MongooseModule.forFeature([{ name: Cart.name, schema: CartSchema }]),
       PostsModule,
       NotificationModule,
       FirebaseModule,
+      ChatModule,
+      OrderModule
   ],
   controllers: [PageController],
-  providers: [PageService,PageInvitationService,PageModeratorService,UsersService,StripeService,PageReactionService,PageCommentService,
+  providers: [PageService,PageInvitationService,CartService,PageModeratorService,UsersService,StripeService,PageReactionService,PageCommentService,
       SocketGateway],
   exports: [PageService],
 })
