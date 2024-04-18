@@ -252,8 +252,8 @@ export class UserController {
             receiver: id,
         });
 
-        const notificationData=await this.home(friend,null)
-        this.socketService.triggerMessage('notification', {data:notificationData});
+        const notificationData=await this.home(friend,{pageId:null})
+        this.socketService.triggerMessage(`notification-${(friend._id).toString()}`, {data: notificationData});
 
 
         if (friend.fcmToken) {
@@ -498,8 +498,8 @@ export class UserController {
         });
 
 
-        const notificationData=await this.home(userFound,null)
-        this.socketService.triggerMessage('notification', {data:notificationData});
+        const notificationData=await this.home(userFound,{pageId:null})
+        this.socketService.triggerMessage(`notification-${(userFound._id).toString()}`, {data: notificationData});
 
 
         if (userFound.fcmToken) {
@@ -605,8 +605,8 @@ export class UserController {
 
 
         const userData=await this.usersService.findOneRecord({_id:new mongoose.Types.ObjectId(receiver)})
-        const notificationData=await this.home(userData,null)
-        this.socketService.triggerMessage('notification', {data:notificationData});
+        const notificationData=await this.home(userData._id,{pageId:null})
+        this.socketService.triggerMessage(`notification-${(userData._id).toString()}`, {data: notificationData});
 
 
         await this.firebaseService.sendNotification({

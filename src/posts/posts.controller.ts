@@ -145,11 +145,10 @@ export class PostsController {
                 });
 
 
-                const notificationPage = await this.pageService.findRecordById(addReactionsDto.page);
-                if (notificationPage.creator) {
-                    const userData = await this.userService.findOneRecord({_id: notificationPage.creator});
+                if (post.creator._id) {
+                    const userData = await this.userService.findOneRecord({_id: post.creator._id});
                     if (userData) {
-                        const notificationData = await this.userService.getNotificationData(userData, {pageId: notificationPage._id});
+                        const notificationData = await this.userService.getNotificationData(userData, {pageId: null});
                         this.socketService.triggerMessage(`notification-${(userData._id).toString()}`, {data: notificationData});
                     }
                 }

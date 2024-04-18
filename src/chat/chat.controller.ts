@@ -14,6 +14,7 @@ import {MuteChatDto} from './dto/mute-chat.dto';
 import {MessageService} from './message.service';
 import {MuteService} from 'src/mute/mute.service';
 import {UsersService} from "src/users/users.service";
+import mongoose from "mongoose";
 
 @Controller('chat')
 @UseGuards(JwtAuthGuard)
@@ -94,6 +95,13 @@ export class ChatController {
         //send socket message to members of chat
         this.socketService.triggerMessage(createMessageDto.chat, messageWithPost);
         this.socketService.triggerMessage('new-message', {chat: createMessageDto.chat, lastMessage: messageWithPost});
+
+
+        const userData=await this.usersService.findOneRecord({_id:receiver._id})
+        const notificationData=await this.usersService.getNotificationData(userData,{pageId:null})
+        this.socketService.triggerMessage(`notification-${(userData._id).toString()}`, {data: notificationData});
+
+
 
         //create notification obj in database
 
@@ -216,6 +224,26 @@ export class ChatController {
     @Put(':id/read-messages')
     async readMessages(@Param('id', ParseObjectId) id: string) {
         await this.messageService.updateManyRecords({chat: id, isRead: false}, {isRead: true});
+
+
+        const chatData=await this.chatService.findRecordById(id);
+
+
+        if(chatData && chatData.members){
+
+            const members=chatData.members;
+
+
+            for(let i=0;i<members.length;i++){
+                const userData=await this.usersService.findOneRecord({_id:members[i]});
+                const notificationData=await this.usersService.getNotificationData(userData,{pageId:null})
+                this.socketService.triggerMessage(`notification-${(userData._id).toString()}`, {data: notificationData});
+            }
+        }
+
+
+
+
         return {message: 'Message read successfully.'};
     }
 }
