@@ -818,8 +818,10 @@ export class GroupController {
                 } else {
                     groups = await this.groupService.findAllRecords(
                         {
-                            name: {$regex: query, $options: 'i'},
-                            'members.member': user._id,
+                            $or:[
+                                {name: {$regex: query, $options: 'i'}},
+                                {'members.member': user._id,}
+                            ],
                             _id: {$nin: reportedGroups},
                             creator: {$nin: [...user.blockedUsers, ...user.blockedByOthers]},
                         },
@@ -917,7 +919,7 @@ export class GroupController {
     async findPostsOfGroups(@Param('id', ParseObjectId) id: string, @Query() {limit, page}: FindPostsOfGroupQueryDto, @GetUser() user: UserDocument) {
         const $q = makeQuery({page, limit});
         const options = {sort: {feature: -1, pin: -1, ...$q.sort}, limit: $q.limit, skip: $q.skip};
-        const condition = {group: id, creator: {$nin: user.blockedUsers}};
+        const condition = {group: id, creator: {$nin: [...user.blockedUsers,...user.blockedByOthers]}};
         const posts = await this.postService.find(condition, options);
         const total = await this.postService.countRecords(condition);
         const paginated = {

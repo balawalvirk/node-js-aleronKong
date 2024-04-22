@@ -48,7 +48,8 @@ export class ChatController {
 
     @Get('/recent-chat')
     async recentChat(@GetUser() user: UserDocument) {
-        return await this.chatService.findAll({members: {$in: [user._id]}}, user._id, {sort: {updatedAt: -1}});
+        return await this.chatService.findAll(
+            {members: {$in: [user._id]}}, user._id, {sort: {updatedAt: -1}});
     }
 
     @Get('/find-one/:receiverId')
@@ -64,8 +65,13 @@ export class ChatController {
         //find receiver from chat object
 
 
-        const isUserBlock=(user.blockedUsers).findIndex((u)=>(chatFound.members).indexOf(u)!==-1);
-        const isOtherUserBlock=(user.blockedByOthers).findIndex((u)=>(chatFound.members).indexOf(u)!==-1);
+        if(!chatFound)
+            throw new HttpException('Chat not found.', HttpStatus.NOT_FOUND);
+
+
+
+        const isUserBlock=(chatFound.members).findIndex((u:any)=>(user.blockedUsers).indexOf(u._id)!==-1);
+        const isOtherUserBlock=(chatFound.members).findIndex((u:any)=>(user.blockedByOthers).indexOf(u._id)!==-1);
 
         if(isUserBlock!==-1 || isOtherUserBlock!==-1)
             throw new HttpException('You are blocked from using this feature.', HttpStatus.BAD_REQUEST);
