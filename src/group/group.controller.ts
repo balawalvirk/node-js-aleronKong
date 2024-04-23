@@ -839,7 +839,6 @@ export class GroupController {
                         $and: [{name: {$regex: query, $options: 'i'}}],
                         $or:[
                             {creator: user._id},
-                            {'members.member': user._id,}
                         ]
                     },
                     options
