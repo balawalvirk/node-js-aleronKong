@@ -118,10 +118,6 @@ export class PostsController {
             if (!post) throw new HttpException('Post does not exists', HttpStatus.BAD_REQUEST);
 
 
-            const isUserBlock=(user.blockedUsers).findIndex((u)=>u.toString()===(post.creator._id).toString());
-            const isOtherUserBlock=(user.blockedByOthers).findIndex((u)=>u.toString()===(post.creator._id).toString());
-            if(isUserBlock!==-1 || isOtherUserBlock!==-1)
-                throw new HttpException('You are blocked from accessing this post.', HttpStatus.BAD_REQUEST);
 
 
             const reaction = await this.reactionService.create({
