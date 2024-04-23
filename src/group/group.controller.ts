@@ -836,7 +836,11 @@ export class GroupController {
             if (type.includes('yourGroups')) {
                 const groups = await this.groupService.findAllRecords(
                     {
-                        $and: [{name: {$regex: query, $options: 'i'}}, {creator: user._id}],
+                        $and: [{name: {$regex: query, $options: 'i'}}],
+                        $or:[
+                            {creator: user._id},
+                            {'members.member': user._id,}
+                        ]
                     },
                     options
                 )
