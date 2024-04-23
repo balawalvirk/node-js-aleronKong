@@ -53,6 +53,8 @@ export class PostsService extends BaseService<PostDocument> {
                     {path: 'likes', select: 'firstName lastName avatar fcmToken'},
                     {path: 'fundraising', populate: [{path: 'category'}, {path: 'subCategory'}]},
                     {path: 'tagged', select: 'firstName lastName avatar fcmToken enableNotifications'},
+                    {path: 'mentions', select: 'firstName lastName avatar'},
+
                 ],
             },
         ];
@@ -145,7 +147,9 @@ export class PostsService extends BaseService<PostDocument> {
                             {path: 'user', select: 'firstName lastName avatar'},
                             {path: 'page', select: '_id name profilePhoto'}
                         ]
-                    }
+                    },
+                    {path: 'mentions', select: 'firstName lastName avatar'},
+
                 ],
             },
             {path: 'mentions', select: 'firstName lastName avatar'},

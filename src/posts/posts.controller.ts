@@ -578,7 +578,18 @@ export class PostsController {
     }
 
     @Put(':id/update')
-    async update(@Body() updatePostDto: UpdatePostDto, @Param('id', ParseObjectId) id: string) {
+    async update(@Body() updatePostDto: UpdatePostDto, @Param('id', ParseObjectId) id: string,@GetUser() user: UserDocument) {
+
+        if(updatePostDto.tagged && (updatePostDto.tagged).length>0){
+            let tagged=updatePostDto.tagged;
+            const isUserBlock=(tagged).findIndex((u:any)=>(user.blockedUsers).indexOf(u.toString())!==-1);
+            const isOtherUserBlock=(tagged).findIndex((u:any)=>(user.blockedByOthers).indexOf(u.toString())!==-1);
+            if(isUserBlock!==-1 || isOtherUserBlock!==-1)
+                throw new HttpException('You are blocked from accessing this post.', HttpStatus.BAD_REQUEST);
+
+        }
+
+
         return await this.postsService.update({_id: id}, updatePostDto);
     }
 

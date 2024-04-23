@@ -174,6 +174,22 @@ export class ChatController {
             deletedBy: {$nin: [user._id]}
         }).sort({createdAt: 1})
             .populate('post', '-likes -comments -reactions -tagged');
+
+        const chatData=await this.chatService.findRecordById(chatId);
+
+        if(chatData && chatData.members){
+
+            const members=chatData.members;
+
+
+            for(let i=0;i<members.length;i++){
+                const userData=await this.usersService.findOneRecord({_id:members[i]});
+                const notificationData=await this.usersService.getNotificationData(userData,{pageId:null})
+                this.socketService.triggerMessage(`notification-${(userData._id).toString()}`, {data: notificationData});
+            }
+        }
+
+
         await this.messageService.updateManyRecords({chat: chatId, isRead: false, receiver: user._id}, {isRead: true});
         return messages;
     }
