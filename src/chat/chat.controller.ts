@@ -48,8 +48,10 @@ export class ChatController {
 
     @Get('/recent-chat')
     async recentChat(@GetUser() user: UserDocument) {
-        return await this.chatService.findAll(
-            {members: {$in: [user._id]}}, user._id, {sort: {updatedAt: -1}});
+        let userId=user._id;
+        return (await this.chatService.findAll(
+            {members: {$in: [user._id]}}, user._id, {sort: {updatedAt: -1}}))
+            .filter((c)=>(c?.lastMessage?.deletedBy?c?.lastMessage?.deletedBy:[]).indexOf(userId)===-1);
     }
 
     @Get('/find-one/:receiverId')
