@@ -86,10 +86,17 @@ export class ChatController {
 
 
 
+
+        const receiverChatJoin=this.socketService.getJoinedChatByUserId(receiver._id.toString(),chatFound._id.toString());
+
+
+
+
         const message = await this.messageService.createRecord({
             ...createMessageDto,
             sender: user._id,
-            receiver: receiver._id
+            receiver: receiver._id,
+            isRead:receiverChatJoin?true:false
         });
 
         const messageWithPost = await this.messageService.findRecordById(message._id)
@@ -100,70 +107,81 @@ export class ChatController {
             {_id: createMessageDto.chat},
             {lastMessage: message._id, $push: {messages: message._id}}
         );
+
+
+
+
         //send socket message to members of chat
         this.socketService.triggerMessage(createMessageDto.chat, messageWithPost);
         this.socketService.triggerMessage('new-message', {chat: createMessageDto.chat, lastMessage: messageWithPost});
 
 
-        const userData=await this.usersService.findOneRecord({_id:receiver._id})
-        const notificationData=await this.usersService.getNotificationData(userData,{pageId:null})
-        this.socketService.triggerMessage(`notification-${(userData._id).toString()}`, {data: notificationData});
+        if(!receiverChatJoin){
+            const userData=await this.usersService.findOneRecord({_id:receiver._id})
+            const notificationData=await this.usersService.getNotificationData(userData,{pageId:null})
+            this.socketService.triggerMessage(`notification-${(userData._id).toString()}`, {data: notificationData});
+        }
 
 
 
         //create notification obj in database
 
 
+
         // check if chat has muted object or not
-        if (chat.mutes.length > 0) {
-            //find mute object from chat object
-            const mute = chat.mutes.find((chat) => chat.user === user._id);
-            // check if current user muted the message
-            if (mute) {
-                const today = new Date();
-                // check if mute interval is week or day.
-                if (mute.interval === MuteInterval.DAY || MuteInterval.WEEK) {
-                    //check if current date is greater that the interval date i.e date is in past
-                    if (mute.date.getTime() < today.getTime()) {
-                        //send notification to user fcm token
-                        await this.firebaseService.sendNotification({
-                            token: receiver.fcmToken,
-                            notification: {title: `${user.firstName} ${user.lastName} Has SENT you a message.`},
-                            data: {user: user._id.toString(), type: NotificationType.NEW_MESSAGE},
-                        });
+
+        if(!receiverChatJoin){
+            if (chat.mutes.length > 0) {
+                //find mute object from chat object
+                const mute = chat.mutes.find((chat) => chat.user === user._id);
+                // check if current user muted the message
+                if (mute) {
+                    const today = new Date();
+                    // check if mute interval is week or day.
+                    if (mute.interval === MuteInterval.DAY || MuteInterval.WEEK) {
+                        //check if current date is greater that the interval date i.e date is in past
+                        if (mute.date.getTime() < today.getTime()) {
+                            //send notification to user fcm token
+                            await this.firebaseService.sendNotification({
+                                token: receiver.fcmToken,
+                                notification: {title: `${user.firstName} ${user.lastName} Has SENT you a message.`},
+                                data: {user: user._id.toString(), type: NotificationType.NEW_MESSAGE},
+                            });
 
 
-                        await this.notificationService.createRecord({
-                            message: 'Has SENT you a message.',
-                            sender: user._id,
-                            //@ts-ignore
-                            receiver: receiver._id,
-                            type: NotificationType.NEW_MESSAGE,
-                            user: user._id,
-                        });
+                            await this.notificationService.createRecord({
+                                message: 'Has SENT you a message.',
+                                sender: user._id,
+                                //@ts-ignore
+                                receiver: receiver._id,
+                                type: NotificationType.NEW_MESSAGE,
+                                user: user._id,
+                            });
+                        }
+                    }
+                    // check if date is custom date
+                    else {
+                        //check if date is within duration
+                        if (today.getTime() <= mute.startTime.getTime() && today.getTime() >= mute.endTime.getTime()) {
+                            return;
+                        } else {
+                            await this.firebaseService.sendNotification({
+                                token: receiver.fcmToken,
+                                notification: {title: `${user.firstName} ${user.lastName} Has SENT you a message.`},
+                                data: {user: user._id.toString(), type: NotificationType.NEW_MESSAGE},
+                            });
+                        }
                     }
                 }
-                // check if date is custom date
-                else {
-                    //check if date is within duration
-                    if (today.getTime() <= mute.startTime.getTime() && today.getTime() >= mute.endTime.getTime()) {
-                        return;
-                    } else {
-                        await this.firebaseService.sendNotification({
-                            token: receiver.fcmToken,
-                            notification: {title: `${user.firstName} ${user.lastName} Has SENT you a message.`},
-                            data: {user: user._id.toString(), type: NotificationType.NEW_MESSAGE},
-                        });
-                    }
-                }
+            } else {
+                await this.firebaseService.sendNotification({
+                    token: receiver.fcmToken,
+                    notification: {title: `${user.firstName} ${user.lastName} Has SENT you a message.`},
+                    data: {user: user._id.toString(), type: NotificationType.NEW_MESSAGE},
+                });
             }
-        } else {
-            await this.firebaseService.sendNotification({
-                token: receiver.fcmToken,
-                notification: {title: `${user.firstName} ${user.lastName} Has SENT you a message.`},
-                data: {user: user._id.toString(), type: NotificationType.NEW_MESSAGE},
-            });
         }
+
         return {message: 'message sent successfully.'};
     }
 

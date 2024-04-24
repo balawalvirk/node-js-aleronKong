@@ -1,71 +1,94 @@
-import { Logger } from '@nestjs/common';
+import {Logger} from '@nestjs/common';
 import {
-  WebSocketGateway,
-  WebSocketServer,
-  OnGatewayInit,
-  OnGatewayConnection,
-  OnGatewayDisconnect,
-  SubscribeMessage,
-  MessageBody,
-  ConnectedSocket,
+    WebSocketGateway,
+    WebSocketServer,
+    OnGatewayInit,
+    OnGatewayConnection,
+    OnGatewayDisconnect,
+    SubscribeMessage,
+    MessageBody,
+    ConnectedSocket,
 } from '@nestjs/websockets';
-import { Server, Socket } from 'socket.io';
+import {Server, Socket} from 'socket.io';
 
 @WebSocketGateway({
-  cors: { origin: '*' },
+    cors: {origin: '*'},
 })
 export class SocketGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
-  private onlineUsers: { userId: string; socketId: string }[] = [];
+    private onlineUsers: { userId: string; socketId: string }[] = [];
+    private joinedChats: { userId: string; chatId: string }[] = [];
 
-  @WebSocketServer() wss: Server;
-  private readonly logger = new Logger(SocketGateway.name);
+    @WebSocketServer() wss: Server;
+    private readonly logger = new Logger(SocketGateway.name);
 
-  handleDisconnect(socket: Socket) {
-    this.logger.log(`client disconnected: ${socket.id}`);
-    const user=this.onlineUsers.filter((user)=>user.socketId===socket.id);
-    if(user){
+    handleDisconnect(socket: Socket) {
+        this.logger.log(`client disconnected: ${socket.id}`);
+        const user = this.onlineUsers.filter((user) => user.socketId === socket.id);
+        if (user) {
+
+        }
+
+        this.onlineUsers = this.onlineUsers.filter((user) => user.socketId !== socket.id);
+        this.wss.emit('check-status', this.onlineUsers);
+    }
+
+    afterInit(wss: Server) {
+        this.logger.log('Websocket connection started.');
+    }
+
+    handleConnection(socket: Socket) {
+        this.logger.log(`client connected: ${socket.id}`);
+    }
+
+    @SubscribeMessage('check-status')
+    checkStatus() {
+        this.wss.emit('check-status', this.onlineUsers);
+    }
+
+    @SubscribeMessage('login')
+    login(@MessageBody('userId') userId: string, @ConnectedSocket() socket: Socket) {
+        const isOnline = this.onlineUsers.some((user) => user.userId === userId);
+        if (!isOnline) {
+            this.onlineUsers.push({userId, socketId: socket.id});
+            this.wss.emit('check-status', this.onlineUsers);
+        }
+    }
+
+    @SubscribeMessage('logout')
+    logout(@ConnectedSocket() socket: Socket) {
+        this.logger.log(`client disconnected: ${socket.id}`);
+        this.onlineUsers = this.onlineUsers.filter((user) => user.socketId !== socket.id);
+        this.wss.emit('check-status', this.onlineUsers);
+    }
+
+
+    @SubscribeMessage('join-chat')
+    joinChat(client, payload: any ) {
+        const index = this.joinedChats.findIndex((user) => user.userId === payload.userId);
+        if (index === -1) {
+            this.joinedChats.push({...payload});
+        } else {
+            this.joinedChats[index] = payload;
+        }
+    }
+
+    @SubscribeMessage('leave-chat')
+    leaveChat(@MessageBody('userId') userId: string, @ConnectedSocket() socket: Socket) {
+        const index = this.joinedChats.findIndex((user) => user.userId === userId);
+        if(index!==-1){
+            delete this.joinedChats[index]
+        }
+    }
+
+    triggerMessage(event: string, payload: any, creator?: string) {
+
+        this.wss.emit(event, payload);
 
     }
 
-    this.onlineUsers = this.onlineUsers.filter((user) => user.socketId !== socket.id);
-    this.wss.emit('check-status', this.onlineUsers);
-  }
 
-  afterInit(wss: Server) {
-    this.logger.log('Websocket connection started.');
-  }
+    getJoinedChatByUserId(userId:string,chatId:string) {
+        return (this.joinedChats.filter((user) => user.userId === userId && user.chatId === chatId)).length>0;
 
-  handleConnection(socket: Socket) {
-    this.logger.log(`client connected: ${socket.id}`);
-  }
-
-  @SubscribeMessage('check-status')
-  checkStatus() {
-    this.wss.emit('check-status', this.onlineUsers);
-  }
-
-  @SubscribeMessage('login')
-  login(@MessageBody('userId') userId: string, @ConnectedSocket() socket: Socket) {
-    const isOnline = this.onlineUsers.some((user) => user.userId === userId);
-    if (!isOnline) {
-      this.onlineUsers.push({ userId, socketId: socket.id });
-      this.wss.emit('check-status', this.onlineUsers);
     }
-  }
-
-  @SubscribeMessage('logout')
-  logout(@ConnectedSocket() socket: Socket) {
-    this.logger.log(`client disconnected: ${socket.id}`);
-    this.onlineUsers = this.onlineUsers.filter((user) => user.socketId !== socket.id);
-    this.wss.emit('check-status', this.onlineUsers);
-  }
-
-
-
-
-  triggerMessage(event: string, payload: any,creator?:string) {
-
-      this.wss.emit(event, payload);
-
-  }
 }
