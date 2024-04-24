@@ -840,8 +840,8 @@ export class GroupController {
                         {
                             name: {$regex: query, $options: 'i'},
                             'members.member': user._id,
-                            _id: {$nin: reportedGroups},
-                            creator: {$nin: [...user.blockedUsers, ...user.blockedByOthers]},
+                            // _id: {$nin: reportedGroups},
+                            // creator: {$nin: [...user.blockedUsers, ...user.blockedByOthers]},
                         },
                         options
                     )
