@@ -586,9 +586,16 @@ export class PostsController {
             const isOtherUserBlock=(tagged).findIndex((u:any)=>(user.blockedByOthers).indexOf(u.toString())!==-1);
             if(isUserBlock!==-1 || isOtherUserBlock!==-1)
                 throw new HttpException('You are blocked from accessing this post.', HttpStatus.BAD_REQUEST);
-
         }
 
+
+        if(updatePostDto.mentions && (updatePostDto.mentions).length>0){
+            let mentions=updatePostDto.mentions;
+            const isUserBlock=(mentions).findIndex((u:any)=>(user.blockedUsers).indexOf(u.toString())!==-1);
+            const isOtherUserBlock=(mentions).findIndex((u:any)=>(user.blockedByOthers).indexOf(u.toString())!==-1);
+            if(isUserBlock!==-1 || isOtherUserBlock!==-1)
+                throw new HttpException('You are blocked from accessing this post.', HttpStatus.BAD_REQUEST);
+        }
 
         return await this.postsService.update({_id: id}, updatePostDto);
     }

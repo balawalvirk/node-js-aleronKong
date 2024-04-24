@@ -142,6 +142,26 @@ export class GroupController {
             await this.pageService.findOneRecordAndUpdate({_id: post.page}, {$push: {posts: post._id}});
             return post;
         } else {
+
+
+            if (createPostDto.tagged && (createPostDto.tagged).length > 0) {
+                let tagged = createPostDto.tagged;
+                const isUserBlock = (tagged).findIndex((u: any) => (user.blockedUsers).indexOf(u.toString()) !== -1);
+                const isOtherUserBlock = (tagged).findIndex((u: any) => (user.blockedByOthers).indexOf(u.toString()) !== -1);
+                if (isUserBlock !== -1 || isOtherUserBlock !== -1)
+                    throw new HttpException('You are blocked from accessing this post.', HttpStatus.BAD_REQUEST);
+            }
+
+
+            if (createPostDto.mentions && (createPostDto.mentions).length > 0) {
+                let mentions = createPostDto.mentions;
+                const isUserBlock = (mentions).findIndex((u: any) => (user.blockedUsers).indexOf(u.toString()) !== -1);
+                const isOtherUserBlock = (mentions).findIndex((u: any) => (user.blockedByOthers).indexOf(u.toString()) !== -1);
+                if (isUserBlock !== -1 || isOtherUserBlock !== -1)
+                    throw new HttpException('You are blocked from accessing this post.', HttpStatus.BAD_REQUEST);
+            }
+
+
             const post: any = await this.postService.createPost({...createPostDto, creator: user._id});
             // check if user tagged to any friend
             if (post.tagged) {
@@ -818,10 +838,8 @@ export class GroupController {
                 } else {
                     groups = await this.groupService.findAllRecords(
                         {
-                            $or:[
-                                {name: {$regex: query, $options: 'i'}},
-                                {'members.member': user._id,}
-                            ],
+                            name: {$regex: query, $options: 'i'},
+                            'members.member': user._id,
                             _id: {$nin: reportedGroups},
                             creator: {$nin: [...user.blockedUsers, ...user.blockedByOthers]},
                         },
@@ -837,7 +855,7 @@ export class GroupController {
                 const groups = await this.groupService.findAllRecords(
                     {
                         $and: [{name: {$regex: query, $options: 'i'}}],
-                        $or:[
+                        $or: [
                             {creator: user._id},
                         ]
                     },
@@ -922,7 +940,7 @@ export class GroupController {
     async findPostsOfGroups(@Param('id', ParseObjectId) id: string, @Query() {limit, page}: FindPostsOfGroupQueryDto, @GetUser() user: UserDocument) {
         const $q = makeQuery({page, limit});
         const options = {sort: {feature: -1, pin: -1, ...$q.sort}, limit: $q.limit, skip: $q.skip};
-        const condition = {group: id, creator: {$nin: [...user.blockedUsers,...user.blockedByOthers]}};
+        const condition = {group: id, creator: {$nin: [...user.blockedUsers, ...user.blockedByOthers]}};
         const posts = await this.postService.find(condition, options);
         const total = await this.postService.countRecords(condition);
         const paginated = {

@@ -177,6 +177,9 @@ export class ChatController {
 
         const chatData=await this.chatService.findRecordById(chatId);
 
+        await this.messageService.updateManyRecords({chat: chatId, isRead: false, receiver: user._id}, {isRead: true});
+
+
         if(chatData && chatData.members){
 
             const members=chatData.members;
@@ -190,7 +193,6 @@ export class ChatController {
         }
 
 
-        await this.messageService.updateManyRecords({chat: chatId, isRead: false, receiver: user._id}, {isRead: true});
         return messages;
     }
 

@@ -89,20 +89,20 @@ export class SearchController {
             });
             const totalGroups = await this.groupService.countRecords({name: rjx});
 
-            products = await this.productService.findStoreProducts(
-                {
-                    title: rjx,
-                },
-                {sort: sortBy, limit: 10}
-            );
-            const totalProducts = products.length > 0 ? products.reduce((n, {count}) => n + count, 0) : 0;
+            // products = await this.productService.findStoreProducts(
+            //     {
+            //         title: rjx,
+            //     },
+            //     {sort: sortBy, limit: 10}
+            // );
+            // const totalProducts = products.length > 0 ? products.reduce((n, {count}) => n + count, 0) : 0;
 
-            packages = await this.packageService.findAllRecords(
-                {isGuildPackage: true, title: rjx},
-                {sort: sort === 'name' ? {title: -1} : {createdAt: -1}, limit: 10}
-            );
-
-            const totalPackages = await this.packageService.countRecords({title: rjx, isGuildPackage: true});
+            // packages = await this.packageService.findAllRecords(
+            //     {isGuildPackage: true, title: rjx},
+            //     {sort: sort === 'name' ? {title: -1} : {createdAt: -1}, limit: 10}
+            // );
+            //
+            // const totalPackages = await this.packageService.countRecords({title: rjx, isGuildPackage: true});
 
 
             pages = await this.pageService.findAllRecords({name: rjx}, {
@@ -116,12 +116,12 @@ export class SearchController {
                 users: this.userService.getMutalFriends(users, user),
                 groups,
                 products,
-                total: totalUsers + totalGroups + totalProducts + totalPackages + totalPages,
+                total: totalUsers + totalGroups  + totalPages,
                 totalUsers,
                 totalGroups,
-                totalProducts,
+                totalProducts:0,
                 packages,
-                totalPackages,
+                totalPackages:0,
                 pages,
                 totalPages
             };
