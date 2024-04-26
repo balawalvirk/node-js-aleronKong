@@ -91,6 +91,7 @@ export class ChatController {
 
 
 
+        console.log("receiverChatJoin  = ",receiverChatJoin)
 
         const message = await this.messageService.createRecord({
             ...createMessageDto,
