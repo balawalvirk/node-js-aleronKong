@@ -64,17 +64,19 @@ export class SocketGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 
     @SubscribeMessage('join-chat')
     joinChat(client, payload: any ) {
-        const index = this.joinedChats.findIndex((user) => user.userId === payload.userId);
+        const index = this.joinedChats.findIndex((user) => user?.userId === payload.userId);
         if (index === -1) {
             this.joinedChats.push({...payload});
         } else {
             this.joinedChats[index] = payload;
         }
+
+        console.log(this.joinedChats);
     }
 
     @SubscribeMessage('leave-chat')
     leaveChat(@MessageBody('userId') userId: string, @ConnectedSocket() socket: Socket) {
-        const index = this.joinedChats.findIndex((user) => user.userId === userId);
+        const index = this.joinedChats.findIndex((user) => user?.userId === userId);
         if(index!==-1){
             delete this.joinedChats[index]
         }
