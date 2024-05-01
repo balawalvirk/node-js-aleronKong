@@ -35,6 +35,9 @@ export class SearchController {
         let sortBy:any;
 
 
+        if(!filter) filter='all'
+
+
         if(filter==='all'){
 
             if(sort==="name"){
@@ -56,13 +59,13 @@ export class SearchController {
 
 
         // if nothing is passed then show recommended products
-        if (sort === 'createdAt' && filter === 'all' && !category && query.length === 0) {
-            const products = await this.productService.getSearchProducts();
-            //@ts-ignore
-            return products[0].products;
-        }
+        // if (sort === 'createdAt' && filter === 'all' && !category && query.length === 0) {
+        //     const products = await this.productService.getSearchProducts();
+        //     //@ts-ignore
+        //     return products[0].products;
+        // }
         const rjx = {$regex: query, $options: 'i'};
-        if (filter === 'all' || (query && query.length>0)) {
+        if (filter === 'all' ) {
             const userSearchCondition = {
                 $or: [
                     {
