@@ -21,7 +21,15 @@ export class Chat {
     @Prop({type: [{type: mongoose.Schema.Types.ObjectId, ref: 'Message'}]})
     messages: Message[];
 
+    @Prop()
+    groupName: string;
 
+
+    @Prop({type: mongoose.Schema.Types.ObjectId, ref: 'User'})
+    creator: User;
+
+    @Prop({default: false})
+    isGroup: boolean;
 }
 
 export const ChatSchema = SchemaFactory.createForClass(Chat);

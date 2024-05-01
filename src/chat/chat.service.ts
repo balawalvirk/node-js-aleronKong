@@ -18,6 +18,32 @@ export class ChatService extends BaseService<ChatDocument> {
         });
     }
 
+
+    async createGroup(groupName:string,members: string[], userId: string) {
+        return (await this.ChatModel.create({members,groupName,isGroup:true,creator:userId})).populate({
+            path: 'members',
+            match: {_id: {$ne: userId}},
+            select: 'avatar firstName lastName',
+        });
+    }
+
+
+    async removeMemberFromGroup(chatId,members: string[]) {
+        return await this.ChatModel.findByIdAndUpdate(chatId,{
+                $pullAll: {
+                    members: members,
+                },
+            },{new:true})
+    }
+
+
+
+    async addMemberInGroup(chatId,members) {
+        return await this.ChatModel.findByIdAndUpdate(chatId, {
+            $addToSet: {members: {$each: members}}
+        },{new:true});
+    }
+
     async findAll(query: FilterQuery<ChatDocument>, userId: string, options?: QueryOptions<ChatDocument>) {
         return await this.ChatModel.find(query, {}, options).populate([
             {

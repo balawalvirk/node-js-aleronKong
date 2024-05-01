@@ -15,6 +15,8 @@ import {MessageService} from './message.service';
 import {MuteService} from 'src/mute/mute.service';
 import {UsersService} from "src/users/users.service";
 import mongoose from "mongoose";
+import {CreateGroupDto} from "src/chat/dto/create-group.dto";
+import {AddRemoveGroupDto} from "src/chat/dto/add-remove-group.dto";
 
 @Controller('chat')
 @UseGuards(JwtAuthGuard)
@@ -45,6 +47,54 @@ export class ChatController {
 
         return await this.chatService.create([user._id, receiverId], user._id);
     }
+
+
+    @Post('/:chatId/group/remove-members')
+    async leaveGroup(@Param('chatId') chatId: string, @Body() payload: AddRemoveGroupDto, @GetUser() user: UserDocument) {
+
+        const chat = await this.chatService.findRecordById(chatId);
+
+        if (!chat) throw new HttpException('Chat not found.', HttpStatus.NOT_FOUND);
+
+
+        return await this.chatService.removeMemberFromGroup(chatId,payload.members);
+    }
+
+
+    @Post('/:chatId/group/add')
+    async addNewMemberInGroup(@Param('chatId') chatId: string, @Body() payload: AddRemoveGroupDto, @GetUser() user: UserDocument) {
+
+        const chat = await this.chatService.findRecordById(chatId);
+
+        if (!chat) throw new HttpException('Chat not found.', HttpStatus.NOT_FOUND);
+
+        if ((chat?.creator).toString()!==(user._id).toString()) throw new HttpException('You are not allowed to perform this action.', HttpStatus.BAD_REQUEST);
+
+
+        return await this.chatService.addMemberInGroup(chatId,payload.members);
+    }
+
+    @Delete('/:chatId/group')
+    async deleteGroupChat(@Param('chatId') chatId: string, @GetUser() user: UserDocument) {
+
+        const chat = await this.chatService.findRecordById(chatId);
+
+        if (!chat) throw new HttpException('Chat not found.', HttpStatus.NOT_FOUND);
+
+        if ((chat?.creator).toString()!==(user._id).toString()) throw new HttpException('You are not allowed to perform this action.', HttpStatus.BAD_REQUEST);
+
+         await this.chatService.deleteSingleRecord({_id:chatId});
+
+        return chat;
+    }
+
+
+
+    @Post('/group/create')
+    async createGroup(@Body() createGroupDto: CreateGroupDto, @GetUser() user: UserDocument) {
+        return await this.chatService.createGroup(createGroupDto.groupName,[user._id,...createGroupDto.members || []], user._id);
+    }
+
 
     @Get('/recent-chat')
     async recentChat(@GetUser() user: UserDocument) {
