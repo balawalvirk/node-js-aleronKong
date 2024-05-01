@@ -224,6 +224,8 @@ export class PostsController {
                     {privacy: PostPrivacy.GROUP, group: {$in: allGroups}},
                     {page: {$in: pageFollowings}},
                     {creator: user._id},
+                    {tagged: {$in: [user._id]}},
+
                 ]
                 : [
                     {privacy: PostPrivacy.PUBLIC},
@@ -231,6 +233,8 @@ export class PostsController {
                     {creator: user._id},
                     {page: {$in: pageFollowings}},
                     {privacy: PostPrivacy.GROUP, group: {$in: allGroups}},
+                    {tagged: {$in: [user._id]}},
+
                 ],
         };
 
