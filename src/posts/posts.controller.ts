@@ -225,6 +225,7 @@ export class PostsController {
                     {page: {$in: pageFollowings}},
                     {creator: user._id},
                     {tagged: {$in: [user._id]}},
+                    {mentions: {$in: [user._id]}},
 
                 ]
                 : [
@@ -234,6 +235,7 @@ export class PostsController {
                     {page: {$in: pageFollowings}},
                     {privacy: PostPrivacy.GROUP, group: {$in: allGroups}},
                     {tagged: {$in: [user._id]}},
+                    {mentions: {$in: [user._id]}},
 
                 ],
         };
