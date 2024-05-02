@@ -297,7 +297,7 @@ export class PostsService extends BaseService<PostDocument> {
         let sortOrder;
         if (sort === PostSort.MOST_RECENT) sortOrder = {createdAt: -1};
         else if (sort === PostSort.RECENT_INTERACTIONS) sortOrder = {updatedAt: -1};
-        return {featured: -1, pin: -1, ...sortOrder};
+        return {featured: -1, ...sortOrder};
     }
 
     async findPostMedia(query: FilterQuery<PostDocument>, type: string) {
