@@ -21,7 +21,7 @@ import {ResetPasswordDto} from './dtos/reset-pass.dto';
 import {LoginWithSocialDto, SocialLoginDto} from './dtos/social-login.dto';
 import {EmailService} from 'src/helpers/services/email.service';
 import {CartService} from 'src/product/cart.service';
-import {UserRoles} from 'src/types';
+import {AuthTypes, UserRoles} from 'src/types';
 import {FileInterceptor} from '@nestjs/platform-express';
 import {FileService} from 'src/file/file.service';
 import {ConfigService} from '@nestjs/config';
@@ -209,37 +209,52 @@ export class AuthController {
             if (!decoded.email) {
                 throw new NotFoundException('Invalid token.');
             } else {
-                const user: any = await this.userService.findOne({email: decoded.email});
-                if (user) {
-                    const {access_token} = await this.authService.login(user.email, user._id);
-
-                    if(!user.stripe_id){
-                        const customerAccount = await
-                            this.userService.createCustomerAccount(user.email, `${user.firstName} ${user.lastName}`);
-                        user.stripe_id=customerAccount.id;
+                const userFound: any = await this.userService.findOneRecord({email: decoded.email});
+                if (userFound) {
+                    let paymentMethod = null;
+                    const {access_token} = await this.authService.login(userFound.userName, userFound._id);
+                    const {unReadMessages, unReadNotifications} = await this.authService.findNotifications(userFound._id);
+                    const cart = await this.cartService.findOneRecord({creator: userFound._id});
+                    if (userFound.defaultPaymentMethod) {
+                        paymentMethod = await this.authService.findOnePaymentMethod(userFound.defaultPaymentMethod);
                     }
-                    user._doc.access_token = access_token;
-
-                    user.is_email_verified=true;
-                    await user.save()
-                    return user;
-
+                    return {
+                        access_token,
+                        user: {
+                            ...userFound.toJSON(),
+                            unReadNotifications,
+                            unReadMessages,
+                            defaultPaymentMethod: paymentMethod,
+                            cartItems: cart?.items?.length || 0,
+                        },
+                        newUser: false,
+                    };
                 } else {
-                    const user: any = await this.userService.createRecord({email: decoded.email});
 
                     const customerAccount = await
-                        this.userService.createCustomerAccount(user.email, `${user.firstName} ${user.lastName}`);
-                    user.stripe_id=customerAccount.id;
+                        this.userService.createCustomerAccount(decoded.email, ``);
+
+                    const user: UserDocument = await this.userService.createRecord({
+                        email: decoded.email,
+                        password: await hash(`${new Date().getTime()}`, 10),
+                        authType: AuthTypes.APPLE,
+                        customerId: customerAccount.id,
+                    });
+
                     const {access_token} = await this.authService.login(user.email, user._id);
-                    user._doc.access_token=access_token
-                    return user;
+                    return {
+                        access_token,
+                        user: {...user.toJSON(), unReadNotifications: 0, unReadMessages: 0, cartItems: 0},
+                        newUser: true,
+                    };
+
 
                 }
             }
 
 
         } catch (e) {
-            throw new NotFoundException(e);
+            throw new BadRequestException(e.toString());
         }
 
 

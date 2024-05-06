@@ -1041,9 +1041,16 @@ export class GroupController {
         @Param('id', ParseObjectId) id: string,
         @GetUser() user: UserDocument
     ) {
-        const invitation = await this.invitationService.findOne({_id: id});
+        const invitation: any = await this.invitationService.findOne({_id: id});
         if (!invitation) throw new BadRequestException('Group invitation does not exists.');
         await this.invitationService.deleteSingleRecord({_id: id});
+
+
+        console.log(invitation);
+        const group = await this.groupService.findRecordById(invitation.group._id);
+
+        if (!group)
+            throw new BadRequestException('Group does not exists.');
 
         if (isApproved) {
 
@@ -1072,7 +1079,13 @@ export class GroupController {
                 // @ts-ignore
                 data: {group: invitation.group._id.toString(), type: NotificationType.GROUP_JOIN_REQUEST},
             });
-            await this.groupService.findOneRecordAndUpdate({_id: invitation.group}, {$push: {members: {user: user._id}}});
+
+
+            if (group.privacy === GroupPrivacy.PUBLIC)
+                await this.groupService.findOneRecordAndUpdate({_id: invitation.group}, {$push: {members:  {member:invitation.friend._id}}});
+            else
+                await this.groupService.findOneRecordAndUpdate({_id: invitation.group}, {$push: {requests:{member:invitation.friend._id}}});
+
         }
         return invitation;
     }
