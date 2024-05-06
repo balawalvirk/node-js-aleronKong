@@ -195,13 +195,13 @@ export class ChatController {
                             //send notification to user fcm token
                             await this.firebaseService.sendNotification({
                                 token: receiver.fcmToken,
-                                notification: {title: `${user.firstName} ${user.lastName} has SENT you a message.`},
+                                notification: {title: `${user.firstName} ${user.lastName} has sent you a message.`},
                                 data: {user: user._id.toString(), type: NotificationType.NEW_MESSAGE},
                             });
 
 
                             await this.notificationService.createRecord({
-                                message: 'has SENT you a message.',
+                                message: 'has sent you a message.',
                                 sender: user._id,
                                 //@ts-ignore
                                 receiver: receiver._id,
@@ -218,7 +218,7 @@ export class ChatController {
                         } else {
                             await this.firebaseService.sendNotification({
                                 token: receiver.fcmToken,
-                                notification: {title: `${user.firstName} ${user.lastName} has SENT you a message.`},
+                                notification: {title: `${user.firstName} ${user.lastName} has sent you a message.`},
                                 data: {user: user._id.toString(), type: NotificationType.NEW_MESSAGE},
                             });
                         }
@@ -227,7 +227,7 @@ export class ChatController {
             } else {
                 await this.firebaseService.sendNotification({
                     token: receiver.fcmToken,
-                    notification: {title: `${user.firstName} ${user.lastName} has SENT you a message.`},
+                    notification: {title: `${user.firstName} ${user.lastName} has sent you a message.`},
                     data: {user: user._id.toString(), type: NotificationType.NEW_MESSAGE},
                 });
             }
