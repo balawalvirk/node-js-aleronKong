@@ -1072,7 +1072,7 @@ export class GroupController {
                 // @ts-ignore
                 data: {group: invitation.group._id.toString(), type: NotificationType.GROUP_JOIN_REQUEST},
             });
-            await this.groupService.findOneRecordAndUpdate({_id: invitation.group}, {$push: {requests: {user: user._id}}});
+            await this.groupService.findOneRecordAndUpdate({_id: invitation.group}, {$push: {members: {user: user._id}}});
         }
         return invitation;
     }

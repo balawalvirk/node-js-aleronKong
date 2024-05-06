@@ -28,3 +28,11 @@ export class SocialLoginDto {
   @IsString()
   avatar?: string;
 }
+
+
+
+export class LoginWithSocialDto {
+    @IsString()
+    token: string;
+
+}

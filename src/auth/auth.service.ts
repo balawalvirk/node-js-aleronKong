@@ -64,4 +64,8 @@ export class AuthService {
     const unReadNotifications = Notifications.filter((notification) => notification.type !== NotificationType.NEW_MESSAGE);
     return { unReadMessages, unReadNotifications };
   }
+
+
+
+
 }

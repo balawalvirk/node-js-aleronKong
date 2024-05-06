@@ -310,6 +310,9 @@ export class UserController {
     @Get('suggested-friends/find-all')
     async findAllSuggestedFriends(@GetUser() user: UserDocument, @Query() {limit, page}: PaginationDto) {
         const userFound = await this.usersService.findOneRecord({_id: user._id}).populate({path: 'friends'});
+
+
+        const userFriends=userFound.friends.map((f:any)=>(f._id).toString());
         const suggestedFriends = userFound.friends.map((friend) => friend.friends).flat(Infinity);
         const groups = await this.groupService.findAllRecords({'members.member': user._id});
         const groupMembers = groups
@@ -317,7 +320,8 @@ export class UserController {
             .flat(Infinity)
             //@ts-ignore
             .map((member) => member.member);
-        const allUsers = [...suggestedFriends, ...groupMembers].filter((usr) => usr && !usr.equals(user._id));
+        const allUsers = [...suggestedFriends, ...groupMembers].filter((usr) => usr
+            && !usr.equals(user._id) && userFriends.indexOf(usr.toString())===-1);
 
         const $q = makeQuery({page, limit});
         const condition = {_id: {$in: allUsers}};
