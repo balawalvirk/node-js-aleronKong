@@ -379,8 +379,11 @@ export class PostsController {
         const isOtherUserBlock=(user.blockedByOthers).findIndex((u)=>u.toString()===(post.creator._id).toString());
 
 
-        if(isUserBlock!==-1 || isOtherUserBlock!==-1)
+        if(isUserBlock!==-1)
             throw new HttpException('You are blocked from accessing this post.', HttpStatus.BAD_REQUEST);
+
+        if(isOtherUserBlock!==-1)
+            throw new HttpException(`You can’t comment on this post as ${post.creator.userName} has blocked you.`, HttpStatus.BAD_REQUEST);
 
 
         let page;

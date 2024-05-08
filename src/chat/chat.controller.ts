@@ -125,12 +125,16 @@ export class ChatController {
         const isUserBlock=(chatFound.members).findIndex((u:any)=>(user.blockedUsers).indexOf(u._id)!==-1);
         const isOtherUserBlock=(chatFound.members).findIndex((u:any)=>(user.blockedByOthers).indexOf(u._id)!==-1);
 
-        if(isUserBlock!==-1 || isOtherUserBlock!==-1)
-            throw new HttpException('You are blocked from using this feature.', HttpStatus.BAD_REQUEST);
-
 
         //@ts-ignore
         const receiver: any = chatFound.members.find((member) => !member._id.equals(user._id));
+
+
+        if(isUserBlock!==-1)
+            throw new HttpException('You can’t send message as you have blocked this user.', HttpStatus.BAD_REQUEST);
+
+        if(isOtherUserBlock!==-1)
+            throw new HttpException(`You can’t send message as ${receiver.userName} have  blocked you.`, HttpStatus.BAD_REQUEST);
 
         //@ts-ignore
 

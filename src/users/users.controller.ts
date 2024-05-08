@@ -328,12 +328,15 @@ export class UserController {
         const options = {sort: $q.sort, limit: $q.limit, skip: $q.skip};
         const friends = await this.usersService.findAllRecords(condition, options);
         const total = await this.usersService.countRecords(condition);
+
+        const randomUsers=await this.usersService.findRandomResult(allUsers,5);
+
         const paginated = {
             total,
             pages: Math.round(total / $q.limit),
             page: $q.page,
             limit: $q.limit,
-            data: friends,
+            data: friends.concat(randomUsers),
         };
         return paginated;
     }
@@ -640,6 +643,11 @@ export class UserController {
     @Put('friend-request/:id/approve-reject')
     async approveRejectFriendRequest(@Body('isApproved', new ParseBoolPipe()) isApproved: boolean, @Param('id', ParseObjectId) id: string) {
         const friendRequest = await this.friendRequestService.deleteSingleRecord({_id: id});
+
+        await this.friendRequestService.deleteSingleRecord({_id: id});
+        await this.friendRequestService.deleteSingleRecord({sender: friendRequest.receiver,receiver: friendRequest.sender});
+
+
         if (!friendRequest) throw new BadRequestException('Friend Request does not exists.');
         if (isApproved) {
             await this.usersService.findOneRecordAndUpdate({_id: friendRequest.sender}, {$push: {friends: friendRequest.receiver}});

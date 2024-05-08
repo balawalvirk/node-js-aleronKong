@@ -15,9 +15,8 @@ export class RegisterDto {
   @IsString()
   lastName?: string;
 
-  @IsOptional()
   @IsString()
-  userName?: string;
+  userName: string;
 
   @IsOptional()
   @IsDateString()
