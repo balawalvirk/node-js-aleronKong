@@ -10,6 +10,7 @@ import {
     ConnectedSocket,
 } from '@nestjs/websockets';
 import {Server, Socket} from 'socket.io';
+import {BroadcastService} from "src/broadcast/broadcast.service";
 
 @WebSocketGateway({
     cors: {origin: '*'},
@@ -17,15 +18,16 @@ import {Server, Socket} from 'socket.io';
 export class SocketGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
     private onlineUsers: { userId: string; socketId: string }[] = [];
     private joinedChats: { userId: string; chatId: string }[] = [];
+    private readonly broadcastService: BroadcastService;
 
     @WebSocketServer() wss: Server;
     private readonly logger = new Logger(SocketGateway.name);
 
-    handleDisconnect(socket: Socket) {
+    async handleDisconnect(socket: Socket) {
         this.logger.log(`client disconnected: ${socket.id}`);
         const user = this.onlineUsers.filter((user) => user.socketId === socket.id);
-        if (user) {
-
+        if (user && user.length > 0) {
+            await this.broadcastService.deleteUserLiveBroadcast(user[0].userId);
         }
 
         this.onlineUsers = this.onlineUsers.filter((user) => user.socketId !== socket.id);
@@ -63,7 +65,7 @@ export class SocketGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 
 
     @SubscribeMessage('join-chat')
-    joinChat(client, payload: any ) {
+    joinChat(client, payload: any) {
         const index = this.joinedChats.findIndex((user) => user?.userId === payload.userId);
         if (index === -1) {
             this.joinedChats.push({...payload});
@@ -77,7 +79,7 @@ export class SocketGateway implements OnGatewayInit, OnGatewayConnection, OnGate
     @SubscribeMessage('leave-chat')
     leaveChat(@MessageBody('userId') userId: string, @ConnectedSocket() socket: Socket) {
         const index = this.joinedChats.findIndex((user) => user?.userId === userId);
-        if(index!==-1){
+        if (index !== -1) {
             delete this.joinedChats[index]
         }
     }
@@ -89,8 +91,8 @@ export class SocketGateway implements OnGatewayInit, OnGatewayConnection, OnGate
     }
 
 
-    getJoinedChatByUserId(userId:string,chatId:string) {
-        return (this.joinedChats.filter((user) => user.userId === userId && user.chatId === chatId)).length>0;
+    getJoinedChatByUserId(userId: string, chatId: string) {
+        return (this.joinedChats.filter((user) => user.userId === userId && user.chatId === chatId)).length > 0;
 
     }
 }

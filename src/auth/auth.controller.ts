@@ -206,12 +206,21 @@ export class AuthController {
                 //nonce: "nonce", // optional
             });
 
+
+            const firstName=(decoded.email).split("@")[0].replace(/[^a-z]/gi, '')
+            const lastName=(decoded.email).split("@")[0].replace(/[^0-9]/g, '')
+            const userName=(decoded.email).split("@")[0];
+
+
             if (!decoded.email) {
                 throw new NotFoundException('Invalid token.');
             } else {
+
+
                 const userFound: any = await this.userService.findOneRecord({email: decoded.email});
                 if (userFound) {
                     let paymentMethod = null;
+                    await this.userService.findOneRecordAndUpdate({_id:userFound._id},{firstName,lastName,userName});
                     const {access_token} = await this.authService.login(userFound.userName, userFound._id);
                     const {unReadMessages, unReadNotifications} = await this.authService.findNotifications(userFound._id);
                     const cart = await this.cartService.findOneRecord({creator: userFound._id});
@@ -231,11 +240,16 @@ export class AuthController {
                     };
                 } else {
 
+
+
                     const customerAccount = await
-                        this.userService.createCustomerAccount(decoded.email, ``);
+                        this.userService.createCustomerAccount(decoded.email, `${firstName} ${lastName}`);
 
                     const user: UserDocument = await this.userService.createRecord({
                         email: decoded.email,
+                        firstName,
+                        lastName,
+                        userName,
                         password: await hash(`${new Date().getTime()}`, 10),
                         authType: AuthTypes.APPLE,
                         customerId: customerAccount.id,
