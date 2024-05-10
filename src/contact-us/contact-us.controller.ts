@@ -11,7 +11,6 @@ import {ContactUsService} from "src/contact-us/contact-us.service";
 import {CreateContactusDto} from "src/contact-us/dto/create-contactus.dto";
 
 @Controller('contact-us')
-@UseGuards(JwtAuthGuard)
 export class ContactUsController {
   constructor(private readonly contactUsService: ContactUsService) {}
 
