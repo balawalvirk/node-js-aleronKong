@@ -81,7 +81,7 @@ export class GroupController {
             if (!group) throw new HttpException('Group does not exists.', HttpStatus.BAD_REQUEST);
 
             // check if current user is member of group.
-            const member = group.members.find((member: any) => member.member.toString() == user._id);
+            const member = group.members.find((member: any) => (member?.member?.toString() || "")== (user._id).toString());
             // check if member is banned or not
             if (member?.banned) throw new HttpException('You are not allowed to create post.', HttpStatus.FORBIDDEN);
             const post = await this.postService.createPost({

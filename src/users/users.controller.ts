@@ -41,6 +41,15 @@ import {FriendRequestService} from './friend-request.service';
 import {UsersService} from './users.service';
 import mongoose from "mongoose";
 import {GuildService} from "src/guild/guild.service";
+import {PostsService} from "src/posts/posts.service";
+import {PageService} from "src/page/page.service";
+import {AddressService} from "src/address/address.service";
+import {BroadcastService} from "src/broadcast/broadcast.service";
+import {ChatService} from "src/chat/chat.service";
+import {FundService} from "src/fundraising/fund.service";
+import {PackageService} from "src/package/package.service";
+import {ProductService} from "src/product/product.service";
+import {ReviewService} from "src/review/review.service";
 
 @Controller('user')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -56,6 +65,14 @@ export class UserController {
         private readonly groupService: GroupService,
         private readonly guildService: GuildService,
         private readonly socketService: SocketGateway,
+        private readonly postsService: PostsService,
+        private readonly pageService: PageService,
+        private readonly addressService: AddressService,
+        private readonly broadcastService: BroadcastService,
+        private readonly chatService: ChatService,
+        private readonly packageService: PackageService,
+        private readonly productService: ProductService,
+        private readonly reviewService: ReviewService,
 
     ) {
     }
@@ -655,4 +672,27 @@ export class UserController {
         }
         return friendRequest;
     }
+
+
+
+    @Delete('/')
+    async deleteUser(@GetUser() user: UserDocument,) {
+        await this.usersService.deleteSingleRecord({_id:user._id});
+        await this.pageService.deleteManyRecord({creator:user._id});
+        await this.postsService.deleteManyRecord({creator:user._id});
+        await this.notificationService.deleteManyRecord({sender:user._id});
+        await this.notificationService.deleteManyRecord({receiver:user._id});
+        await this.groupService.deleteManyRecord({creator:user._id});
+        await this.addressService.deleteManyRecord({creator:user._id});
+        await this.broadcastService.deleteManyRecord({user:user._id});
+        await this.chatService.deleteManyRecord({creator:user._id});
+        await this.guildService.deleteManyRecord({creator:user._id});
+        await this.packageService.deleteManyRecord({creator:user._id});
+        await this.packageService.deleteManyRecord({creator:user._id});
+        await this.productService.deleteManyRecord({creator:user._id});
+        await this.reviewService.deleteManyRecord({creator:user._id});
+
+        return {message: 'user account deleted successfully.'};
+    }
+
 }
