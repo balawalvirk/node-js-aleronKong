@@ -22,7 +22,6 @@ import {PageService} from "src/page/page.service";
 import {AddressService} from "src/address/address.service";
 import {Address, AddressSchema} from "src/address/address.schema";
 import {BroadcastService} from "src/broadcast/broadcast.service";
-import {Broadcast, BroadcastSchema} from "src/broadcast/broadcast.schema";
 import { HttpModule } from '@nestjs/axios';
 import {Package, PackageSchema} from "src/package/package.schema";
 import {PackageService} from "src/package/package.service";
@@ -38,7 +37,6 @@ import {Review, ReviewSchema} from "src/review/review.schema";
             {name: Guild.name, schema: GuildSchema},
             {name: Posts.name, schema: PostSchema},
             {name: Address.name, schema: AddressSchema},
-            {name: Broadcast.name, schema: BroadcastSchema},
             {name: Package.name, schema: PackageSchema},
             { name: Review.name, schema: ReviewSchema }
         ]),
@@ -54,7 +52,7 @@ import {Review, ReviewSchema} from "src/review/review.schema";
     ],
     controllers: [UserController],
     providers: [UsersService, SocketGateway, StripeService, FriendRequestService, GuildService, PostsService, PageService, AddressService,
-        BroadcastService,PackageService,ReviewService],
+        PackageService,ReviewService],
     exports: [UsersService],
 })
 export class UsersModule {

@@ -11,6 +11,7 @@ import {
 } from '@nestjs/websockets';
 import {Server, Socket} from 'socket.io';
 import {BroadcastService} from "src/broadcast/broadcast.service";
+import {SocketService} from "src/socket/socket.service";
 
 @WebSocketGateway({
     cors: {origin: '*'},
@@ -21,7 +22,7 @@ export class SocketGateway implements OnGatewayInit, OnGatewayConnection, OnGate
     //private readonly broadcastService: BroadcastService;
 
 
-    constructor(private readonly broadcastService: BroadcastService) {
+    constructor(private readonly broadcastService: BroadcastService,private socketService: SocketService) {
     }
 
     @WebSocketServer() wss: Server;
@@ -43,6 +44,8 @@ export class SocketGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 
     afterInit(wss: Server) {
         this.logger.log('Websocket connection started.');
+        this.socketService.initSocket(wss);
+
     }
 
     handleConnection(socket: Socket) {

@@ -10,6 +10,7 @@ import {PageService} from "src/page/page.service";
 import {Page, PageSchema} from "src/page/page.schema";
 import {Comment, CommentSchema} from "src/posts/comment.schema";
 import {CommentService} from "src/posts/comment.service";
+import {SocketService} from "src/socket/socket.service";
 
 @Global()
 @Module({
@@ -18,7 +19,7 @@ import {CommentService} from "src/posts/comment.service";
         MongooseModule.forFeature([{name: Comment.name, schema: CommentSchema}]),
         HttpModule, PostsModule],
     controllers: [BroadcastController],
-    providers: [BroadcastService, SocketGateway, PageService, CommentService],
+    providers: [BroadcastService, SocketGateway,SocketService, PageService, CommentService],
     exports: [BroadcastService],
 
 })

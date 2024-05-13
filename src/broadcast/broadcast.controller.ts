@@ -78,7 +78,7 @@ export class BroadcastController {
         const {sid} = await this.broadcastService.startRecording(resourceId, cname, broadcast.token);
         const updatedBroadcast:any = await this.broadcastService.findOneRecordAndUpdate(
             {_id: broadcast._id},
-            {$set: {recording: {uid, resourceId, sid}}}
+            {$set: {recording: {uid, resourceId, sid,cname}}}
         );
 
         await this.cacheManager.set((broadcast._id).toString(),JSON.stringify(postData), {ttl:86400});
@@ -102,6 +102,7 @@ export class BroadcastController {
 
     @Delete(':id')
     async remove(@Param('id', ParseObjectId) id: string, @GetUser() user: UserDocument) {
+
         const broadcast = await this.broadcastService.deleteSingleRecord({_id: id});
         if (!broadcast || !broadcast.recording) throw new BadRequestException('Broadcast does not exists.');
         this.socketService.triggerMessage('remove-broadcast', broadcast);

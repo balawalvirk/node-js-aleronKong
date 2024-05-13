@@ -15,6 +15,9 @@ class Recording {
     resourceId: string;
 
     @Prop()
+    cname: string;
+
+    @Prop()
     uid: string;
 }
 

@@ -29,6 +29,7 @@ import * as redisStore from 'cache-manager-redis-store';
 import {GuildModule} from "src/guild/guild.module";
 import {BenefitModule} from "src/benefits/benefit.module";
 import {ContactUsModule} from "src/contact-us/contact-us.module";
+import {SocketModule} from "src/socket/socket.module";
 
 @Module({
     imports: [
@@ -63,7 +64,8 @@ import {ContactUsModule} from "src/contact-us/contact-us.module";
         PageModule,
         GuildModule,
         BenefitModule,
-        ContactUsModule
+        ContactUsModule,
+        SocketModule
     ],
     // global interceptor for transforming response.
     providers: [

@@ -1,5 +1,5 @@
 import {HttpService} from '@nestjs/axios';
-import {Injectable} from '@nestjs/common';
+import {BadRequestException, CACHE_MANAGER, Inject, Injectable} from '@nestjs/common';
 import {ConfigService} from '@nestjs/config';
 import {InjectModel} from '@nestjs/mongoose';
 import {randomBytes} from 'crypto';
@@ -7,6 +7,11 @@ import mongoose, {FilterQuery, Model} from 'mongoose';
 import {BaseService} from 'src/helpers/services/base.service';
 import {IEnvironmentVariables} from 'src/types';
 import {Broadcast, BroadcastDocument} from './broadcast.schema';
+import {PageService} from "src/page/page.service";
+import {CommentService} from "src/posts/comment.service";
+import {PostsService} from "src/posts/posts.service";
+import {SocketService} from "src/socket/socket.service";
+import Cache from 'cache-manager';
 
 @Injectable()
 export class BroadcastService extends BaseService<BroadcastDocument> {
@@ -22,7 +27,14 @@ export class BroadcastService extends BaseService<BroadcastDocument> {
     constructor(
         @InjectModel(Broadcast.name) private broadcastModel: Model<BroadcastDocument>,
         private readonly configService: ConfigService<IEnvironmentVariables>,
-        private readonly httpService: HttpService
+        private readonly httpService: HttpService,
+        private readonly pageService: PageService,
+        private readonly commentService: CommentService,
+        private readonly postService: PostsService,
+        private readonly socketService: SocketService,
+        @Inject(CACHE_MANAGER) private cacheManager: Cache
+
+
     ) {
         super(broadcastModel);
         this.customerId = this.configService.get('AGORA_CUSTOMER_ID');
@@ -41,7 +53,14 @@ export class BroadcastService extends BaseService<BroadcastDocument> {
 
 
     async deleteUserLiveBroadcast(userId:string) {
-        return await this.deleteManyRecord({user:new mongoose.Types.ObjectId(userId)});
+
+
+        const broadcasts=await this.findAllRecords({user:new mongoose.Types.ObjectId(userId)});
+
+        for(let i=0;i<broadcasts.length;i++){
+            const broadcast=broadcasts[i];
+            await this.deleteRecording(broadcast._id);
+        }
     }
 
     uidGenerator(length: number) {
@@ -105,5 +124,37 @@ export class BroadcastService extends BaseService<BroadcastDocument> {
         } catch (error) {
             console.log(error);
         }
+    }
+
+
+
+    async deleteRecording(id){
+        const broadcast = await this.deleteSingleRecord({_id: id});
+        try{
+            if (!broadcast || !broadcast.recording) throw new BadRequestException('Broadcast does not exists.');
+        }catch (e) {
+            return e;
+        }
+        this.socketService.triggerMessage('remove-broadcast', broadcast);
+        const stop = await this.stopRecording(broadcast.recording.resourceId, broadcast.channel, broadcast.recording.sid);
+
+        let url=""
+        if(stop && stop.serverResponse){
+            const prefix = this.configService.get('S3_URL');
+            url = `${prefix}${stop.serverResponse.fileList[0].fileName}`;
+        }
+
+        const postData=await this.cacheManager.get(id.toString());
+        if(postData){
+            const prevComments = (await this.commentService.find({post: JSON.parse(postData)._id})).map((p)=>p._id);
+
+            const createPost:any = await this.postService.createRecord(
+                {...JSON.parse(postData),videos:{url},live:true,comments:prevComments});
+
+            //await this.postService.findOneRecordAndUpdate({_id:new mongoose.Types.ObjectId(postId)},{videos: [url]});
+            await this.cacheManager.del(id.toString())
+        }
+
+        return broadcast;
     }
 }
