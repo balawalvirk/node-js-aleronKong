@@ -3,12 +3,12 @@ import { ChatService } from './chat.service';
 import { MongooseModule } from '@nestjs/mongoose';
 import { Chat, ChatSchema } from './chat.schema';
 import { ChatController } from './chat.controller';
-import { SocketGateway } from 'src/helpers/gateway/socket.gateway';
 import { Message, MessageSchema } from './messages.schema';
 import { MessageService } from './message.service';
 import { NotificationModule } from 'src/notification/notification.module';
 import { FirebaseModule } from 'src/firebase/firebase.module';
 import { MuteModule } from 'src/mute/mute.module';
+import {SocketGateway} from "src/helpers";
 
 @Module({
   imports: [
@@ -18,7 +18,7 @@ import { MuteModule } from 'src/mute/mute.module';
     FirebaseModule,
     MuteModule,
   ],
-  providers: [ChatService, SocketGateway, MessageService],
+  providers: [ChatService, MessageService,SocketGateway],
   controllers: [ChatController],
   exports: [MessageService, ChatService],
 })

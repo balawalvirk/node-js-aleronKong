@@ -18,10 +18,17 @@ import {BroadcastService} from "src/broadcast/broadcast.service";
 export class SocketGateway implements OnGatewayInit, OnGatewayConnection, OnGatewayDisconnect {
     private onlineUsers: { userId: string; socketId: string }[] = [];
     private joinedChats: { userId: string; chatId: string }[] = [];
-    private readonly broadcastService: BroadcastService;
+    //private readonly broadcastService: BroadcastService;
+
+
+    constructor(private readonly broadcastService: BroadcastService) {
+    }
 
     @WebSocketServer() wss: Server;
     private readonly logger = new Logger(SocketGateway.name);
+
+
+
 
     async handleDisconnect(socket: Socket) {
         this.logger.log(`client disconnected: ${socket.id}`);
@@ -49,6 +56,7 @@ export class SocketGateway implements OnGatewayInit, OnGatewayConnection, OnGate
 
     @SubscribeMessage('login')
     login(@MessageBody('userId') userId: string, @ConnectedSocket() socket: Socket) {
+
         const isOnline = this.onlineUsers.some((user) => user.userId === userId);
         if (!isOnline) {
             this.onlineUsers.push({userId, socketId: socket.id});
