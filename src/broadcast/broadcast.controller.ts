@@ -118,7 +118,7 @@ export class BroadcastController {
             const prevComments = (await this.commentService.find({post: JSON.parse(postData)._id})).map((p)=>p._id);
 
             const createPost:any = await this.postService.createRecord(
-                {...JSON.parse(postData),videos:[url],live:true,comments:prevComments});
+                {...JSON.parse(postData),videos:{url},live:true,comments:prevComments});
 
             //await this.postService.findOneRecordAndUpdate({_id:new mongoose.Types.ObjectId(postId)},{videos: [url]});
             await this.cacheManager.del(id)
