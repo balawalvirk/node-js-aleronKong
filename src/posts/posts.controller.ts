@@ -375,8 +375,17 @@ export class PostsController {
 
         let post: any = await this.postsService.findOneRecord({_id: id}).populate('creator');
 
-        const isUserBlock=(user.blockedUsers).findIndex((u)=>u.toString()===(post.creator._id).toString());
-        const isOtherUserBlock=(user.blockedByOthers).findIndex((u)=>u.toString()===(post.creator._id).toString());
+
+        if (!post) {
+            const tempPost = await this.cacheManager.get(id);
+            if (!tempPost)
+                throw new BadRequestException('Post does not exists.');
+            post = JSON.parse(tempPost);
+            post.creator = {_id: post.creator};
+        }
+
+        const isUserBlock=(user.blockedUsers).findIndex((u)=>u.toString()===( post.creator._id).toString());
+        const isOtherUserBlock=(user.blockedByOthers).findIndex((u)=>u.toString()===( post.creator._id).toString());
 
 
         if(isUserBlock!==-1)
@@ -393,13 +402,7 @@ export class PostsController {
             page = await this.pageService.findOneRecord({_id: createCommentDto.page})
         }
 
-        if (!post) {
-            const tempPost = await this.cacheManager.get(id);
-            if (!tempPost)
-                throw new BadRequestException('Post does not exists.');
-            post = JSON.parse(tempPost);
-            post.creator = {_id: post.creator};
-        }
+
 
 
         let comment;
