@@ -7,11 +7,21 @@ import {BenefitService} from "src/benefits/benefit.service";
 import {CreateBenefitDto} from "src/benefits/dto/create-benefit.dto";
 import {UpdateBenefitDto} from "src/benefits/dto/update-benefit.dto";
 import mongoose from "mongoose";
+import getThumb from 'video-thumbnail-url';
 
 @Controller('benefit')
 @UseGuards(JwtAuthGuard)
 export class BenefitController {
   constructor(private readonly benefitService: BenefitService) {}
+
+
+    @Get('/thumbnail')
+    async thumbnail(@GetUser() user: UserDocument) {
+        getThumb('https://middler-v1.s3.amazonaws.com/Snapsave.app_46461856ACBDBDC92CD5E621D4A556A3_video_dashinit.mp4').then(thumb_url => { // thumb_url is  url or null
+            console.log(thumb_url); // http://img.youtube.com/vi/dQw4w9WgXcQ/hqdefault.jpg
+        });
+
+    }
 
   @Post('create')
   async create(@Body() createAddressDto: CreateBenefitDto, @GetUser() user: UserDocument) {
@@ -37,4 +47,5 @@ export class BenefitController {
   async update(@Param('id', ParseObjectId) id: string, @Body() updateAddressDto: UpdateBenefitDto) {
     return await this.benefitService.findOneRecordAndUpdate({ _id: id }, updateAddressDto);
   }
+
 }

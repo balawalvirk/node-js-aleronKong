@@ -43,7 +43,9 @@
     "cache-manager-redis-store": "^2.0.0",
     "class-transformer": "^0.5.1",
     "class-validator": "^0.13.2",
+    "ffmpeg": "^0.0.4",
     "firebase-admin": "^11.10.1",
+    "fluent-ffmpeg": "^2.1.2",
     "helmet": "^6.0.0",
     "module-alias": "^2.2.3",
     "moment": "^2.29.4",
@@ -52,11 +54,13 @@
     "passport-jwt": "^4.0.0",
     "passport-local": "^1.0.0",
     "reflect-metadata": "^0.1.13",
+    "request": "^2.88.2",
     "rimraf": "^3.0.2",
     "rxjs": "^7.2.0",
     "shopify-api-node": "^3.12.3",
     "stripe": "^10.15.0",
-    "verify-apple-id-token": "^3.1.2"
+    "verify-apple-id-token": "^3.1.2",
+    "video-thumbnail-url": "^1.0.1"
   },
   "devDependencies": {
     "@nestjs/cli": "^9.0.0",

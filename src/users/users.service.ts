@@ -105,11 +105,12 @@ export class UsersService extends BaseService<UserDocument> {
             const count=await this.countRecords({_id: {$nin: allUsers}});
 
 
-            const random = Math.floor(Math.random() * count)
 
             let users=[];
 
             for(let i=0;i<limit;i++){
+                const random = Math.floor(Math.random() * count)
+
                 const user=await this.userModal.findOne({_id: {$nin: allUsers}}).skip(random);
                 users.push(user);
             }
