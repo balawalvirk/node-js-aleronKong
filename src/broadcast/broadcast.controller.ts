@@ -26,6 +26,7 @@ import {v4 as uuid} from 'uuid';
 import mongoose from "mongoose";
 import {PageService} from "src/page/page.service";
 import {CommentService} from "src/posts/comment.service";
+import {UpdateThumbnailDto} from "src/broadcast/dto/update-thumbnail.dto";
 
 @Controller('broadcast')
 @UseGuards(JwtAuthGuard)
@@ -88,6 +89,20 @@ export class BroadcastController {
         return {...updatedBroadcast._doc,post:postData,page};
     }
 
+
+
+    @Post(':broadcastId/thumbnail')
+    @Header('Cache-Control', 'private, no-cache, no-store, must-revalidate')
+    @Header('Expires', '-1')
+    @Header('Pragma', 'no-cache')
+    async updateThumbnail(@Body() {thumbnail}: UpdateThumbnailDto, @GetUser() user: UserDocument,@Param('broadcastId', ParseObjectId) id: string) {
+
+        const broadcast=await this.broadcastService.findOneRecordAndUpdate({_id:new mongoose.Types.ObjectId(id)},{thumbnail})
+        return broadcast;
+    }
+
+
+
     @Get('find-all')
     async findAll() {
         return await this.broadcastService.findAllRecords().sort({createdAt: -1})
@@ -119,7 +134,7 @@ export class BroadcastController {
             const prevComments = (await this.commentService.find({post: JSON.parse(postData)._id})).map((p)=>p._id);
 
             const createPost:any = await this.postService.createRecord(
-                {...JSON.parse(postData),videos:{url},live:true,comments:prevComments});
+                {...JSON.parse(postData),videos:{url,thumbnail:broadcast.thumbnail},live:true,comments:prevComments});
 
             //await this.postService.findOneRecordAndUpdate({_id:new mongoose.Types.ObjectId(postId)},{videos: [url]});
             await this.cacheManager.del(id)

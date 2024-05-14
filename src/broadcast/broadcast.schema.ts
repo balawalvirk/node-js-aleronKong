@@ -29,6 +29,11 @@ export class Broadcast {
     @Prop({required: true})
     token: string;
 
+
+    @Prop()
+    thumbnail: string;
+
+
     @Prop({type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true})
     user: User;
 
