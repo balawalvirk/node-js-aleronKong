@@ -1,6 +1,18 @@
-import {Body, Controller, Delete, Get, HttpException, HttpStatus, Param, Post, Put, UseGuards} from '@nestjs/common';
+import {
+    Body,
+    Controller,
+    Delete,
+    Get,
+    HttpException,
+    HttpStatus,
+    Param,
+    Post,
+    Put,
+    Query,
+    UseGuards
+} from '@nestjs/common';
 import {JwtAuthGuard} from 'src/auth/jwt-auth.guard';
-import {ParseObjectId} from 'src/helpers';
+import {makeQuery, ParseObjectId} from 'src/helpers';
 import {GetUser} from 'src/helpers/decorators/user.decorator';
 import {SocketGateway} from 'src/helpers/gateway/socket.gateway';
 import {FirebaseService} from 'src/firebase/firebase.service';
@@ -241,12 +253,24 @@ export class ChatController {
     }
 
     @Get('/message/find-all/:chatId')
-    async findAllMessage(@Param('chatId') chatId: string, @GetUser() user: UserDocument) {
+    async findAllMessage(@Param('chatId') chatId: string, @GetUser() user: UserDocument,@Query('page') page: string, @Query('limit') limit: string) {
+
+        const $q = makeQuery({page, limit});
+        const options = {sort: {pin: -1, ...$q.sort}, limit: $q.limit, skip: $q.skip};
+
+
         const messages = await this.messageService.findAllRecords({
             chat: chatId,
             deletedBy: {$nin: [user._id]}
-        }).sort({createdAt: 1})
+        },options).sort({createdAt: -1})
             .populate('post', '-likes -comments -reactions -tagged');
+
+
+        const total = await this.messageService.countRecords({
+            chat: chatId,
+            deletedBy: {$nin: [user._id]}
+        });
+
 
         const chatData=await this.chatService.findRecordById(chatId);
 
@@ -266,7 +290,15 @@ export class ChatController {
         }
 
 
-        return messages;
+        const paginated = {
+            total,
+            pages: Math.floor(total / $q.limit),
+            page: $q.page,
+            limit: $q.limit,
+            data: messages,
+        };
+
+        return paginated;
     }
 
     @Delete('/delete/:id')
