@@ -280,6 +280,11 @@ export class UserController {
                 data: {user: user._id.toString(), type: NotificationType.USER_FOLLOWING},
             });
         }
+
+
+        this.socketService.triggerMessage(`friends-${(updatedUser._id).toString()}`, {data: updatedUser.friends});
+
+
         return updatedUser;
     }
 
@@ -289,6 +294,8 @@ export class UserController {
         const isFriend = user.friends.find((friend) => friend.equals(id));
         if (!isFriend) throw new BadRequestException('User is not your friend.');
         await this.usersService.findOneRecordAndUpdate({_id: user._id}, {$pull: {friends: id}});
+        const updatedUser=await this.usersService.findRecordById(user._id);
+        this.socketService.triggerMessage(`friends-${(updatedUser._id).toString()}`, {data: updatedUser.friends});
         return await this.usersService.findOneRecordAndUpdate({_id: id}, {$pull: {friends: user._id}});
     }
 

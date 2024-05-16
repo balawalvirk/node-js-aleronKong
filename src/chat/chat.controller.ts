@@ -253,15 +253,20 @@ export class ChatController {
     }
 
     @Get('/message/find-all/:chatId')
-    async findAllMessage(@Param('chatId') chatId: string, @GetUser() user: UserDocument,@Query('page') page: string, @Query('limit') limit: string) {
+    async findAllMessage(@Param('chatId') chatId: string, @GetUser() user: UserDocument,@Query('page') page: string, @Query('limit') limit: string,
+                         @Query('messages') messagesQuery: string[]) {
 
         const $q = makeQuery({page, limit});
         const options = {sort: {pin: -1, ...$q.sort}, limit: $q.limit, skip: $q.skip};
 
 
+        const messagesToIgnore=(messagesQuery || []).map((m:string)=>new mongoose.Types.ObjectId(m))
+
+
         const messages = await this.messageService.findAllRecords({
             chat: chatId,
-            deletedBy: {$nin: [user._id]}
+            deletedBy: {$nin: [user._id]},
+            _id:{$nin:messagesToIgnore}
         },options).sort({createdAt: -1})
             .populate('post', '-likes -comments -reactions -tagged');
 
