@@ -283,6 +283,7 @@ export class UserController {
 
 
         this.socketService.triggerMessage(`friends-${(updatedUser._id).toString()}`, {data: updatedUser.friends});
+        this.socketService.triggerMessage(`friends-${(updatedUser._id).toString()}`, {data: updatedUser.friends});
 
 
         return updatedUser;
@@ -295,8 +296,11 @@ export class UserController {
         if (!isFriend) throw new BadRequestException('User is not your friend.');
         await this.usersService.findOneRecordAndUpdate({_id: user._id}, {$pull: {friends: id}});
         const updatedUser=await this.usersService.findRecordById(user._id);
+        const friend=await this.usersService.findOneRecordAndUpdate({_id: id}, {$pull: {friends: user._id}});
         this.socketService.triggerMessage(`friends-${(updatedUser._id).toString()}`, {data: updatedUser.friends});
-        return await this.usersService.findOneRecordAndUpdate({_id: id}, {$pull: {friends: user._id}});
+        this.socketService.triggerMessage(`friends-${(friend._id).toString()}`, {data: friend.friends});
+
+        return friend
     }
 
     @Get('friend/find-all')
@@ -674,8 +678,12 @@ export class UserController {
 
         if (!friendRequest) throw new BadRequestException('Friend Request does not exists.');
         if (isApproved) {
-            await this.usersService.findOneRecordAndUpdate({_id: friendRequest.sender}, {$push: {friends: friendRequest.receiver}});
-            await this.usersService.findOneRecordAndUpdate({_id: friendRequest.receiver}, {$push: {friends: friendRequest.sender}});
+            const sender=await this.usersService.findOneRecordAndUpdate({_id: friendRequest.sender}, {$push: {friends: friendRequest.receiver}});
+            const receiver=await this.usersService.findOneRecordAndUpdate({_id: friendRequest.receiver}, {$push: {friends: friendRequest.sender}});
+
+            this.socketService.triggerMessage(`friends-${(sender._id).toString()}`, {data: sender.friends});
+            this.socketService.triggerMessage(`friends-${(receiver._id).toString()}`, {data: receiver.friends});
+
         }
         return friendRequest;
     }
