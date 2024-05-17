@@ -98,7 +98,7 @@ export class UsersService extends BaseService<UserDocument> {
     }
 
 
-    async findRandomResult(allUsers,limit) {
+    async findRandomResult(allUsers,userId,limit) {
 
 
 
@@ -108,7 +108,7 @@ export class UsersService extends BaseService<UserDocument> {
 
 
             let randomResult=await this.userModal.aggregate([
-                {$match:{_id: {$nin: allUsers}}},
+                {$match:{_id: {$nin: allUsers.concat([userId])}}},
                 { $sample: { size: limit } }
             ])
 
