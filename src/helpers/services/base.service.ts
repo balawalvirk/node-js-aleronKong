@@ -58,5 +58,5 @@ export class BaseService<T> {
    */
   findOneRecordAndUpdate = (filter: FilterQuery<T>, update: UpdateQuery<T>) => this.model.findOneAndUpdate(filter, update, { new: true });
 
-  updateManyRecords = (filter?: FilterQuery<T>, update?: UpdateQuery<T>) => this.model.updateMany(filter, update, { new: true });
+  updateManyRecords = (filter?: FilterQuery<T>, update?: UpdateQuery<T>) => this.model.updateMany(filter, update, { new: true,multiple:true });
 }

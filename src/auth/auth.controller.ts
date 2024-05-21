@@ -122,6 +122,17 @@ export class AuthController {
     @Post('social-login')
     async socialLogin(@Body() socialLoginDto: SocialLoginDto) {
         const userFound = await this.userService.findOneRecord({email: socialLoginDto.email});
+
+        if (socialLoginDto.userName) {
+            const userNameExist = await this.userService.findOne({userName: socialLoginDto.userName});
+
+            if (userNameExist) {
+                throw new BadRequestException("username already exist");
+                return;
+            }
+        }
+
+
         if (!userFound) {
             const customerAccount = await this.userService.createCustomerAccount(
                 socialLoginDto.email,

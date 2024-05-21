@@ -27,6 +27,12 @@ import {Package, PackageSchema} from "src/package/package.schema";
 import {PackageService} from "src/package/package.service";
 import {ReviewService} from "src/review/review.service";
 import {Review, ReviewSchema} from "src/review/review.schema";
+import {ModeratorService} from "src/group/moderator.service";
+import {GroupInvitationService} from "src/group/invitation.service";
+import {ReactionService} from "src/posts/reaction.service";
+import {Moderator, ModeratorSchema} from "src/group/moderator.schema";
+import {GroupInvitation, GroupInvitationSchema} from "src/group/invitation.schema";
+import {Reaction, ReactionSchema} from "src/posts/reaction.schema";
 
 
 @Global()
@@ -38,7 +44,10 @@ import {Review, ReviewSchema} from "src/review/review.schema";
             {name: Posts.name, schema: PostSchema},
             {name: Address.name, schema: AddressSchema},
             {name: Package.name, schema: PackageSchema},
-            { name: Review.name, schema: ReviewSchema }
+            { name: Review.name, schema: ReviewSchema },
+            {name: Moderator.name, schema: ModeratorSchema},
+            {name: GroupInvitation.name, schema: GroupInvitationSchema},
+            {name: Reaction.name, schema: ReactionSchema}
         ]),
         MongooseModule.forFeature([{name: Page.name, schema: PageSchema}]),
         MongooseModule.forFeature([{name: FriendRequest.name, schema: FriendRequestSchema}]),
@@ -52,7 +61,7 @@ import {Review, ReviewSchema} from "src/review/review.schema";
     ],
     controllers: [UserController],
     providers: [UsersService, SocketGateway, StripeService, FriendRequestService, GuildService, PostsService, PageService, AddressService,
-        PackageService,ReviewService],
+        PackageService,ReviewService,ModeratorService,GroupInvitationService,ReactionService],
     exports: [UsersService],
 })
 export class UsersModule {

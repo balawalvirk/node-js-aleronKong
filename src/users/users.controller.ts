@@ -50,6 +50,9 @@ import {FundService} from "src/fundraising/fund.service";
 import {PackageService} from "src/package/package.service";
 import {ProductService} from "src/product/product.service";
 import {ReviewService} from "src/review/review.service";
+import {ModeratorService} from "src/group/moderator.service";
+import {GroupInvitationService} from "src/group/invitation.service";
+import {ReactionService} from "src/posts/reaction.service";
 
 @Controller('user')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -73,6 +76,10 @@ export class UserController {
         private readonly packageService: PackageService,
         private readonly productService: ProductService,
         private readonly reviewService: ReviewService,
+        private readonly moderatorService: ModeratorService,
+        private readonly invitationService: GroupInvitationService,
+        private readonly reactionService: ReactionService,
+
 
     ) {
     }
@@ -706,6 +713,28 @@ export class UserController {
         await this.packageService.deleteManyRecord({creator:user._id});
         await this.productService.deleteManyRecord({creator:user._id});
         await this.reviewService.deleteManyRecord({creator:user._id});
+
+
+        await this.usersService.updateManyRecords({friends:{$in: [user._id]}},{$pull: {friends: user._id}});
+        await this.groupService.updateManyRecords({"members.member":{$in: [user._id]}},{$pull: {"members.member": user._id}});
+
+        const moderators=(await this.moderatorService.findAllRecords({user:user._id})).map((d)=>d._id);
+        await this.moderatorService.deleteManyRecord({user:user._id});
+        await this.groupService.updateManyRecords({"moderators":{$in: moderators}},{$pull: {"moderators": {$in: moderators}}});
+
+
+        await this.invitationService.deleteManyRecord({$or:[{user:user._id,friend:user._id}]});
+
+
+        const reactions=(await this.reactionService.findAllRecords({user:user._id})).map((d)=>d._id);
+        await this.reactionService.deleteManyRecord({user:user._id});
+        await this.postsService.updateManyRecords({"reactions":{$in: reactions}},{$pull: {"reactions": {$in: reactions}}});
+
+
+        await this.postsService.updateManyRecords({tagged:{$in: [user._id]}},{$pull: {tagged: user._id}});
+        await this.postsService.updateManyRecords({mentions:{$in: [user._id]}},{$pull: {mentions: user._id}});
+
+
 
         return {message: 'user account deleted successfully.'};
     }
