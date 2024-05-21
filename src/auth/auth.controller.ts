@@ -27,7 +27,7 @@ import {FileService} from 'src/file/file.service';
 import {ConfigService} from '@nestjs/config';
 import {GuildService} from "src/guild/guild.service";
 import verifyAppleToken from "verify-apple-id-token";
-
+const axios=require('axios');
 @Controller('auth')
 export class AuthController {
     constructor(
@@ -79,7 +79,7 @@ export class AuthController {
         if (emailExists) throw new BadRequestException('User already exists with this email.');
 
         const userNameExist = await this.userService.findOneRecord({userName: registerDto.userName});
-        if (userNameExist) throw new BadRequestException('User already exists with this email.');
+        if (userNameExist) throw new BadRequestException('User already exists with this username.');
 
 
 
@@ -213,6 +213,68 @@ export class AuthController {
 
 
 
+    async handleSocialLogin(decoded:any){
+        const firstName=(decoded.email).split("@")[0].replace(/[^a-z]/gi, '')
+        const lastName=(decoded.email).split("@")[0].replace(/[^0-9]/g, '')
+        const userName=(decoded.email).split("@")[0];
+
+
+        if (!decoded.email) {
+            throw new NotFoundException('Invalid token.');
+        } else {
+
+
+            const userFound: any = await this.userService.findOneRecord({email: decoded.email});
+            if (userFound) {
+                let paymentMethod = null;
+                await this.userService.findOneRecordAndUpdate({_id:userFound._id},{firstName,lastName,userName});
+                const {access_token} = await this.authService.login(userFound.userName, userFound._id);
+                const {unReadMessages, unReadNotifications} = await this.authService.findNotifications(userFound._id);
+                const cart = await this.cartService.findOneRecord({creator: userFound._id});
+                if (userFound.defaultPaymentMethod) {
+                    paymentMethod = await this.authService.findOnePaymentMethod(userFound.defaultPaymentMethod);
+                }
+                return {
+                    access_token,
+                    user: {
+                        ...userFound.toJSON(),
+                        unReadNotifications,
+                        unReadMessages,
+                        defaultPaymentMethod: paymentMethod,
+                        cartItems: cart?.items?.length || 0,
+                    },
+                    newUser: false,
+                };
+            } else {
+
+
+
+                const customerAccount = await
+                    this.userService.createCustomerAccount(decoded.email, `${firstName} ${lastName}`);
+
+                const user: UserDocument = await this.userService.createRecord({
+                    email: decoded.email,
+                    firstName,
+                    lastName,
+                    userName,
+                    password: await hash(`${new Date().getTime()}`, 10),
+                    authType: AuthTypes.APPLE,
+                    customerId: customerAccount.id,
+                });
+
+                const {access_token} = await this.authService.login(user.email, user._id);
+                return {
+                    access_token,
+                    user: {...user.toJSON(), unReadNotifications: 0, unReadMessages: 0, cartItems: 0},
+                    newUser: true,
+                };
+
+
+            }
+        }
+    }
+
+
     @Post('apple')
     async loginApple(@Body() payload: LoginWithSocialDto) {
 
@@ -224,71 +286,47 @@ export class AuthController {
             });
 
 
-            const firstName=(decoded.email).split("@")[0].replace(/[^a-z]/gi, '')
-            const lastName=(decoded.email).split("@")[0].replace(/[^0-9]/g, '')
-            const userName=(decoded.email).split("@")[0];
-
-
-            if (!decoded.email) {
-                throw new NotFoundException('Invalid token.');
-            } else {
-
-
-                const userFound: any = await this.userService.findOneRecord({email: decoded.email});
-                if (userFound) {
-                    let paymentMethod = null;
-                    await this.userService.findOneRecordAndUpdate({_id:userFound._id},{firstName,lastName,userName});
-                    const {access_token} = await this.authService.login(userFound.userName, userFound._id);
-                    const {unReadMessages, unReadNotifications} = await this.authService.findNotifications(userFound._id);
-                    const cart = await this.cartService.findOneRecord({creator: userFound._id});
-                    if (userFound.defaultPaymentMethod) {
-                        paymentMethod = await this.authService.findOnePaymentMethod(userFound.defaultPaymentMethod);
-                    }
-                    return {
-                        access_token,
-                        user: {
-                            ...userFound.toJSON(),
-                            unReadNotifications,
-                            unReadMessages,
-                            defaultPaymentMethod: paymentMethod,
-                            cartItems: cart?.items?.length || 0,
-                        },
-                        newUser: false,
-                    };
-                } else {
-
-
-
-                    const customerAccount = await
-                        this.userService.createCustomerAccount(decoded.email, `${firstName} ${lastName}`);
-
-                    const user: UserDocument = await this.userService.createRecord({
-                        email: decoded.email,
-                        firstName,
-                        lastName,
-                        userName,
-                        password: await hash(`${new Date().getTime()}`, 10),
-                        authType: AuthTypes.APPLE,
-                        customerId: customerAccount.id,
-                    });
-
-                    const {access_token} = await this.authService.login(user.email, user._id);
-                    return {
-                        access_token,
-                        user: {...user.toJSON(), unReadNotifications: 0, unReadMessages: 0, cartItems: 0},
-                        newUser: true,
-                    };
-
-
-                }
-            }
-
+            return await this.handleSocialLogin(decoded)
 
         } catch (e) {
             throw new BadRequestException(e.toString());
         }
 
 
+
+    }
+
+
+
+    @Post('google')
+    async loginGoogle(@Body() payload: LoginWithSocialDto) {
+
+        try {
+            const response: any = await axios.get(`${process.env.BASE_URL_GOOGLE_AUTH}${payload.token}`);
+            const decoded=response.data;
+
+            return await this.handleSocialLogin(decoded)
+
+        } catch (e) {
+            throw new BadRequestException(e.toString());
+        }
+
+    }
+
+
+    @Post('facebook')
+    async loginFacebook(@Body() payload: LoginWithSocialDto) {
+
+        try {
+            const response: any = await axios.get(`${process.env.FACEBOOK_AUTH_URL}access_token=${payload.token}&debug=all&fields=id%2Cname%2Cemail%2Cfirst_name%2Clast_name
+            &format=json&method=get&pretty=0&suppress_http_code=1`);
+            const decoded=response.data;
+
+            return await this.handleSocialLogin(decoded)
+
+        } catch (e) {
+            throw new BadRequestException(e.toString());
+        }
 
     }
 
