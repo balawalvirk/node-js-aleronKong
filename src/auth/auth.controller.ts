@@ -77,6 +77,12 @@ export class AuthController {
     async register(@Body() registerDto: RegisterDto, @Ip() ip: string, @UploadedFile() avatar: Express.Multer.File) {
         const emailExists = await this.userService.findOneRecord({email: registerDto.email});
         if (emailExists) throw new BadRequestException('User already exists with this email.');
+
+        const userNameExist = await this.userService.findOneRecord({userName: registerDto.userName});
+        if (userNameExist) throw new BadRequestException('User already exists with this email.');
+
+
+
         let user: UserDocument;
         // check if avatar is coming from client side
         if (avatar) {

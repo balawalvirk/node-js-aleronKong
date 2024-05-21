@@ -23,8 +23,14 @@ export class Message {
     @Prop()
     gif: string;
 
-    @Prop({type: [String]})
-    videos: string[];
+    @Prop({
+        type: [{
+            thumbnail:{type:String,default:""},
+            url:{type:String,default:""}
+        }],
+        default:[]
+    })
+    videos;
 
     @Prop({type: [String]})
     images: string[];

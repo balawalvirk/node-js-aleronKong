@@ -1,4 +1,16 @@
-import {IsMongoId, IsOptional, IsString} from 'class-validator';
+import {IsArray, IsMongoId, IsOptional, IsString, ValidateNested} from 'class-validator';
+import {Type} from "class-transformer";
+
+
+
+
+class Video {
+    @IsString()
+    url: string;
+
+    @IsString()
+    thumbnail: string;
+}
 
 export class CreateMessageDto {
     @IsOptional()
@@ -18,8 +30,12 @@ export class CreateMessageDto {
     gif?: string;
 
     @IsOptional()
-    @IsString({each: true})
-    videos?: string[];
+    @IsArray()
+    @ValidateNested()
+    @Type(() => Video)
+    videos?: Video;
+
+
 
     @IsOptional()
     @IsString({each: true})
