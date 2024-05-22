@@ -213,7 +213,7 @@ export class AuthController {
 
 
 
-    async handleSocialLogin(decoded:any){
+    async handleSocialLogin(decoded:any,type){
         const firstName=(decoded.email).split("@")[0].replace(/[^a-z]/gi, '')
         const lastName=(decoded.email).split("@")[0].replace(/[^0-9]/g, '')
         const userName=(decoded.email).split("@")[0];
@@ -227,7 +227,9 @@ export class AuthController {
             const userFound: any = await this.userService.findOneRecord({email: decoded.email});
             if (userFound) {
                 let paymentMethod = null;
-                await this.userService.findOneRecordAndUpdate({_id:userFound._id},{firstName,lastName,userName});
+                await this.userService.findOneRecordAndUpdate({_id:userFound._id},{firstName,lastName,userName,authType: type});
+                const updatedUser: any = await this.userService.findOneRecord({email: decoded.email});
+
                 const {access_token} = await this.authService.login(userFound.userName, userFound._id);
                 const {unReadMessages, unReadNotifications} = await this.authService.findNotifications(userFound._id);
                 const cart = await this.cartService.findOneRecord({creator: userFound._id});
@@ -237,7 +239,7 @@ export class AuthController {
                 return {
                     access_token,
                     user: {
-                        ...userFound.toJSON(),
+                        ...updatedUser.toJSON(),
                         unReadNotifications,
                         unReadMessages,
                         defaultPaymentMethod: paymentMethod,
@@ -258,7 +260,7 @@ export class AuthController {
                     lastName,
                     userName,
                     password: await hash(`${new Date().getTime()}`, 10),
-                    authType: AuthTypes.APPLE,
+                    authType: type,
                     customerId: customerAccount.id,
                 });
 
@@ -286,7 +288,7 @@ export class AuthController {
             });
 
 
-            return await this.handleSocialLogin(decoded)
+            return await this.handleSocialLogin(decoded,AuthTypes.APPLE)
 
         } catch (e) {
             throw new BadRequestException(e.toString());
@@ -305,7 +307,7 @@ export class AuthController {
             const response: any = await axios.get(`${process.env.BASE_URL_GOOGLE_AUTH}${payload.token}`);
             const decoded=response.data;
 
-            return await this.handleSocialLogin(decoded)
+            return await this.handleSocialLogin(decoded,AuthTypes.GOOGLE)
 
         } catch (e) {
             throw new BadRequestException(e.toString());
@@ -322,7 +324,7 @@ export class AuthController {
             &format=json&method=get&pretty=0&suppress_http_code=1`);
             const decoded=response.data;
 
-            return await this.handleSocialLogin(decoded)
+            return await this.handleSocialLogin(decoded,AuthTypes.FACEBOOK)
 
         } catch (e) {
             throw new BadRequestException(e.toString());
