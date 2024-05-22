@@ -232,7 +232,6 @@ export class AuthController {
 
                 if(userFound.authType!==type){
                     throw new BadRequestException("Account is already created with this email");
-                    return;
                 }
 
 
@@ -302,7 +301,7 @@ export class AuthController {
             return await this.handleSocialLogin(decoded,AuthTypes.APPLE)
 
         } catch (e) {
-            throw new BadRequestException(e.toString());
+            return e
         }
 
 
@@ -321,7 +320,7 @@ export class AuthController {
             return await this.handleSocialLogin(decoded,AuthTypes.GOOGLE)
 
         } catch (e) {
-            throw new BadRequestException(e.toString());
+            return e
         }
 
     }
@@ -338,7 +337,7 @@ export class AuthController {
             return await this.handleSocialLogin(decoded,AuthTypes.FACEBOOK)
 
         } catch (e) {
-            throw new BadRequestException(e.toString());
+            return e
         }
 
     }
