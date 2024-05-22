@@ -15,10 +15,10 @@ export type GroupDocument = Group & mongoose.Document;
 
 @Schema({timestamps: true})
 export class Group {
-    @Prop({required: true})
+    @Prop({required: false})
     coverPhoto: string;
 
-    @Prop({required: true})
+    @Prop({required: false})
     profilePhoto: string;
 
     @Prop({required: true})
