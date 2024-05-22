@@ -226,13 +226,17 @@ export class AuthController {
 
             const userFound: any = await this.userService.findOneRecord({email: decoded.email});
 
-            if(userFound.authType!==type){
-                throw new BadRequestException("Account is already created with this email");
-                return;
-            }
-
 
             if (userFound) {
+
+
+                if(userFound.authType!==type){
+                    throw new BadRequestException("Account is already created with this email");
+                    return;
+                }
+
+
+
                 let paymentMethod = null;
                 await this.userService.findOneRecordAndUpdate({_id:userFound._id},{firstName,lastName,userName,authType: type});
                 const updatedUser: any = await this.userService.findOneRecord({email: decoded.email});
