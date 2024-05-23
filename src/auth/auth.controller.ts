@@ -237,7 +237,7 @@ export class AuthController {
 
 
                 let paymentMethod = null;
-                await this.userService.findOneRecordAndUpdate({_id:userFound._id},{firstName,lastName,userName,authType: type});
+                await this.userService.findOneRecordAndUpdate({_id:userFound._id},{authType: type});
                 const updatedUser: any = await this.userService.findOneRecord({email: decoded.email});
 
                 const {access_token} = await this.authService.login(userFound.userName, userFound._id);
@@ -301,7 +301,7 @@ export class AuthController {
             return await this.handleSocialLogin(decoded,AuthTypes.APPLE)
 
         } catch (e) {
-            return e
+            throw new BadRequestException(e.message)
         }
 
 
@@ -320,7 +320,7 @@ export class AuthController {
             return await this.handleSocialLogin(decoded,AuthTypes.GOOGLE)
 
         } catch (e) {
-            return e
+            throw new BadRequestException(e.message)
         }
 
     }
@@ -337,7 +337,7 @@ export class AuthController {
             return await this.handleSocialLogin(decoded,AuthTypes.FACEBOOK)
 
         } catch (e) {
-            return e
+            throw new BadRequestException(e.message)
         }
 
     }
