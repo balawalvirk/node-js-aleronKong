@@ -213,9 +213,9 @@ export class AuthController {
 
 
 
-    async handleSocialLogin(decoded:any,type){
-        const firstName=(decoded.email).split("@")[0].replace(/[^a-z]/gi, '')
-        const lastName=(decoded.email).split("@")[0].replace(/[^0-9]/g, '')
+    async handleSocialLogin(decoded:any,type,parsedFirstName,parsedLastName){
+        const firstName=parsedFirstName || (decoded.email).split("@")[0].replace(/[^a-z]/gi, '')
+        const lastName= parsedLastName || (decoded.email).split("@")[0].replace(/[^0-9]/g, '')
         const userName=(decoded.email).split("@")[0];
 
 
@@ -268,7 +268,6 @@ export class AuthController {
                     email: decoded.email,
                     firstName,
                     lastName,
-                    userName,
                     password: await hash(`${new Date().getTime()}`, 10),
                     authType: type,
                     customerId: customerAccount.id,
@@ -298,7 +297,7 @@ export class AuthController {
             });
 
 
-            return await this.handleSocialLogin(decoded,AuthTypes.APPLE)
+            return await this.handleSocialLogin(decoded,AuthTypes.APPLE,null,null)
 
         } catch (e) {
             throw new BadRequestException(e.message)
@@ -317,7 +316,7 @@ export class AuthController {
             const response: any = await axios.get(`${process.env.BASE_URL_GOOGLE_AUTH}${payload.token}`);
             const decoded=response.data;
 
-            return await this.handleSocialLogin(decoded,AuthTypes.GOOGLE)
+            return await this.handleSocialLogin(decoded,AuthTypes.GOOGLE,decoded.given_name,decoded.family_name)
 
         } catch (e) {
             throw new BadRequestException(e.message)
@@ -334,7 +333,7 @@ export class AuthController {
             &format=json&method=get&pretty=0&suppress_http_code=1`);
             const decoded=response.data;
 
-            return await this.handleSocialLogin(decoded,AuthTypes.FACEBOOK)
+            return await this.handleSocialLogin(decoded,AuthTypes.FACEBOOK,decoded.first_name ,decoded.last_name)
 
         } catch (e) {
             throw new BadRequestException(e.message)
