@@ -90,6 +90,11 @@ export class Page {
     @Prop({type: [{type: mongoose.Schema.Types.ObjectId, ref: 'PageComment'}]})
     comments: Comment[];
 
+
+    @Prop({required: false})
+    coverPhotoRepositioned: string;
+
+
 }
 
 export const PageSchema = SchemaFactory.createForClass(Page);

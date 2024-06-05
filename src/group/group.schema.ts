@@ -36,6 +36,8 @@ export class Group {
     @Prop({type: [MemberSchema]})
     members: Member[];
 
+    @Prop({required: false})
+    coverPhotoRepositioned: string;
 
 
     @Prop({type: [{type: mongoose.Schema.Types.ObjectId, ref: 'Posts'}]})
