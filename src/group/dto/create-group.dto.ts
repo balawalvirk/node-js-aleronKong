@@ -22,4 +22,10 @@ export class CreateGroupDto {
 
     @IsEnum(GroupPrivacy)
     privacy: string;
+
+
+    @IsOptional()
+    @IsString()
+    coverPhotoRepositioned: string;
+
 }

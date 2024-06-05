@@ -1,15 +1,22 @@
-import { IsString } from 'class-validator';
+import {IsOptional, IsString} from 'class-validator';
 
 export class CreatePageDto {
-  @IsString()
-  coverPhoto: string;
+    @IsString()
+    coverPhoto: string;
 
-  @IsString()
-  profilePhoto: string;
+    @IsString()
+    profilePhoto: string;
 
-  @IsString()
-  description: string;
+    @IsString()
+    description: string;
 
-  @IsString()
-  name: string;
+    @IsString()
+    name: string;
+
+
+    @IsOptional()
+    @IsString()
+    coverPhotoRepositioned: string;
+
+
 }
