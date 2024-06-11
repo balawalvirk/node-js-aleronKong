@@ -10,6 +10,14 @@ class Video {
     @IsString()
     thumbnail: string;
 
+    @IsOptional()
+    @IsNumber()
+    width: string;
+
+
+    @IsOptional()
+    @IsNumber()
+    height: string;
 
 }
 

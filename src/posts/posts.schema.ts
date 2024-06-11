@@ -35,7 +35,10 @@ export class Posts {
     @Prop({
         type: [{
             thumbnail:{type:String,default:""},
-            url:{type:String,default:""}
+            url:{type:String,default:""},
+            width:{type:Number,default:0},
+            height:{type:Number,default:0}
+
         }],
         default:[]
     })
