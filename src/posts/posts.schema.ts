@@ -21,8 +21,16 @@ export class Posts {
     @Prop({type: [{type: mongoose.Schema.Types.ObjectId, ref: 'Comment'}]})
     comments: Comment[];
 
-    @Prop({type: [String]})
-    images: string[];
+    @Prop({
+        type: [{
+            thumbnail:{type:String,default:""},
+            url:{type:String,default:""},
+            width:{type:Number,default:0},
+            height:{type:Number,default:0}
+
+        }],
+        default:[]
+    })    images: string[];
 
     @Prop({
         type: [{

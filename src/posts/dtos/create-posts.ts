@@ -9,6 +9,27 @@ class Video {
 
     @IsString()
     thumbnail: string;
+
+
+}
+
+
+class Image {
+    @IsString()
+    url: string;
+
+    @IsString()
+    thumbnail: string;
+
+    @IsOptional()
+    @IsNumber()
+    width: string;
+
+
+    @IsOptional()
+    @IsNumber()
+    height: string;
+
 }
 
 
@@ -18,7 +39,7 @@ export class CreatePostsDto {
     content: string;
 
     @IsOptional()
-    @IsString({each: true})
+    @Type(() => Image)
     images?: string;
 
     @IsOptional()
