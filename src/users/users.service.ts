@@ -98,19 +98,16 @@ export class UsersService extends BaseService<UserDocument> {
     }
 
 
-    async findRandomResult(allUsers,userId,limit) {
+    async findRandomResult(allUsers, userId, limit) {
 
 
-
-            const count=await this.countRecords({_id: {$nin: allUsers}});
-
+        const mappedUsers = (allUsers.concat([userId])).map((user) => new mongoose.Types.ObjectId(user));
 
 
-
-            let randomResult=await this.userModal.aggregate([
-                {$match:{_id: {$nin: allUsers.concat([userId])}}},
-                { $sample: { size: limit } }
-            ])
+        let randomResult = await this.userModal.aggregate([
+            {$match: {_id: {$nin: mappedUsers}}},
+            {$sample: {size: limit}}
+        ])
 
         // let users=[];
         //
@@ -120,7 +117,7 @@ export class UsersService extends BaseService<UserDocument> {
         //         const user=await this.userModal.findOne({_id: {$nin: allUsers}}).skip(random);
         //         users.push(user);
         //     }
-            return randomResult;
+        return randomResult;
 
     }
 

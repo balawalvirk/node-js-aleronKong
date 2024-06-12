@@ -364,7 +364,7 @@ export class UserController {
         const friends = await this.usersService.findAllRecords(condition, options);
         const total = await this.usersService.countRecords(condition);
 
-        const randomUsers=await this.usersService.findRandomResult(allUsers,user._id,parseInt(limit) || 10);
+        const randomUsers=await this.usersService.findRandomResult(allUsers.concat(userFriends),user._id,parseInt(limit) || 10);
 
         const paginated = {
             total,
