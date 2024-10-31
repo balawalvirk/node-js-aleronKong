@@ -214,14 +214,19 @@ export class AuthController {
 
 
     async handleSocialLogin(decoded:any,type,parsedFirstName,parsedLastName){
+
+        if (!decoded.email) {
+            throw new NotFoundException('Invalid token.');
+            return;
+        }
+
+
         const firstName=parsedFirstName || (decoded.email).split("@")[0].replace(/[^a-z]/gi, '')
         const lastName= parsedLastName || (decoded.email).split("@")[0].replace(/[^0-9]/g, '')
         const userName=(decoded.email).split("@")[0];
 
 
-        if (!decoded.email) {
-            throw new NotFoundException('Invalid token.');
-        } else {
+
 
 
             const userFound: any = await this.userService.findOneRecord({email: decoded.email});
@@ -260,7 +265,6 @@ export class AuthController {
             } else {
 
 
-
                 const customerAccount = await
                     this.userService.createCustomerAccount(decoded.email, `${firstName} ${lastName}`);
 
@@ -279,10 +283,8 @@ export class AuthController {
                     user: {...user.toJSON(), unReadNotifications: 0, unReadMessages: 0, cartItems: 0},
                     newUser: true,
                 };
-
-
             }
-        }
+
     }
 
 

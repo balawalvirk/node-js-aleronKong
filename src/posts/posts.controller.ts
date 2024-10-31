@@ -650,27 +650,22 @@ export class PostsController {
     // ====================================================================reactions apis===================================================================
 
 
-    @Delete('reaction/:id/delete')
+    @Delete(':id/reaction/delete')
     async deleteReaction(@Param('id', ParseObjectId) id: string,@GetUser() user: UserDocument) {
-        const isUserBlock=(user.blockedUsers).findIndex((u)=>u.toString()===id);
-        const isOtherUserBlock=(user.blockedByOthers).findIndex((u)=>u.toString()===id);
-
-        if(isUserBlock!==-1 || isOtherUserBlock!==-1)
-            throw new HttpException('You are blocked from accessing this post.', HttpStatus.BAD_REQUEST);
 
 
-        const reaction = await this.reactionService.deleteSingleRecord({_id: id});
+        const reaction = await this.reactionService.deleteSingleRecord({post: id,user:user._id});
         if (!reaction) throw new HttpException('Reaction does not exists', HttpStatus.BAD_REQUEST);
         if (reaction.post) await this.postsService.findOneRecordAndUpdate({_id: reaction.post}, {$pull: {reactions: reaction._id}});
         else if (reaction.comment) await this.commentService.findOneRecordAndUpdate({_id: reaction.comment}, {$pull: {reactions: reaction._id}});
         return reaction;
     }
 
-    @Put('reaction/:id/update')
-    async updateReaction(@Param('id', ParseObjectId) id: string, @Body() updateReactionsDto: UpdateReactionsDto) {
-        const updated = await this.reactionService.update({_id: id}, {emoji: updateReactionsDto.emoji});
+    @Put(':id/reaction/update')
+    async updateReaction(@Param('id', ParseObjectId) id: string, @Body() updateReactionsDto: UpdateReactionsDto,
+                         @GetUser() user: UserDocument) {
+        const updated = await this.reactionService.update({post: id,user:user._id}, {emoji: updateReactionsDto.emoji});
         const page = await this.pageService.findOneRecord({_id: updated.page});
-
         updated.page = page;
         return updated;
     }
