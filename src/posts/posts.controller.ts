@@ -67,6 +67,39 @@ export class PostsController {
     ) {
     }
 
+
+
+    @Put('reaction/update')
+    async updateReaction(@Body() payload: UpdateReactionsDto, @GetUser() user: UserDocument) {
+        let page;
+
+
+        let pageQuery={};
+        if(payload.page){
+
+            page = await this.pageService.findOneRecord({_id: payload.page})
+            pageQuery={page:payload.page}
+        }
+        if(payload.post){
+
+            let reaction = await this.reactionService.update({post: payload.post,user:user._id,...pageQuery},
+                {emoji: payload.emoji});
+            if (!reaction) throw new HttpException('Reaction does not exists', HttpStatus.BAD_REQUEST);
+            reaction.page=page;
+            return reaction;
+        }else if(payload.comment){
+            let reaction = await this.reactionService.update({comment: payload.comment,user:user._id,...pageQuery},
+                {emoji: payload.emoji});
+            if (!reaction) throw new HttpException('Reaction does not exists', HttpStatus.BAD_REQUEST);
+            reaction.page=page;
+            return reaction;
+
+
+        }
+
+        return {};
+    }
+
     @Roles(UserRoles.ADMIN)
     @Get('find-all')
     @UsePipes(new ValidationPipe({transform: true}))
@@ -678,37 +711,7 @@ export class PostsController {
         return {};
     }
 
-    @Put(':id/reaction/update')
-    async updateReaction(@Param('id', ParseObjectId) id: string, @Body() payload: UpdateReactionsDto,
-                         @GetUser() user: UserDocument) {
-        let page;
 
-
-        let pageQuery={};
-        if(payload.page){
-
-            page = await this.pageService.findOneRecord({_id: payload.page})
-            pageQuery={page:payload.page}
-        }
-        if(payload.post){
-
-            let reaction = await this.reactionService.update({post: payload.post,user:user._id,...pageQuery},
-                {emoji: payload.emoji});
-            if (!reaction) throw new HttpException('Reaction does not exists', HttpStatus.BAD_REQUEST);
-            reaction.page=page;
-            return reaction;
-        }else if(payload.comment){
-            let reaction = await this.reactionService.update({comment: payload.comment,user:user._id,...pageQuery},
-                {emoji: payload.emoji});
-            if (!reaction) throw new HttpException('Reaction does not exists', HttpStatus.BAD_REQUEST);
-            reaction.page=page;
-            return reaction;
-
-
-        }
-
-        return {};
-    }
 
     @Get('tagged/find-all')
     async findTaggedPosts(@GetUser() user: UserDocument) {
