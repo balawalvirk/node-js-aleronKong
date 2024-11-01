@@ -46,6 +46,7 @@ import Cache from 'cache-manager';
 import {PageService} from "src/page/page.service";
 import mongoose from "mongoose";
 import {UserController} from "src/users/users.controller";
+import {DeleteReactionDto} from "src/posts/dtos/delete-reaction.dto";
 
 @Controller('post')
 @UseGuards(JwtAuthGuard, RolesGuard)
@@ -86,82 +87,6 @@ export class PostsController {
         return paginated;
     }
 
-
-    @Post('reaction/create')
-    async addReactions(@Body() addReactionsDto: AddReactionsDto, @GetUser() user: UserDocument) {
-        // check if user is adding reaction in comment
-
-        let page;
-
-
-        if (addReactionsDto.page) {
-            page = await this.pageService.findOneRecord({_id: addReactionsDto.page})
-
-        }
-
-        if (addReactionsDto.comment) {
-
-
-            const comment = await this.commentService.findOneRecord({_id: addReactionsDto.comment}).populate('creator');
-            if (!comment) throw new BadRequestException('Comment does not exist.');
-            const reaction = await this.reactionService.create({
-                user: user._id,
-                emoji: addReactionsDto.emoji,
-                comment: comment._id,
-                page: addReactionsDto.page
-            });
-            await this.commentService.findOneRecordAndUpdate({_id: comment._id}, {$push: {reactions: reaction._id}});
-            reaction.page = page
-            return reaction;
-        } else {
-            const post:any = await this.postsService.findOneRecord({_id: addReactionsDto.post}).populate('creator');
-            if (!post) throw new HttpException('Post does not exists', HttpStatus.BAD_REQUEST);
-
-
-
-
-            const reaction = await this.reactionService.create({
-                user: user._id,
-                emoji: addReactionsDto.emoji,
-                post: post._id,
-                page: addReactionsDto.page
-
-            });
-            await this.postsService.findOneRecordAndUpdate({_id: post._id}, {$push: {reactions: reaction._id}});
-            //@ts-ignore
-            if (user._id != post.creator._id.toString()) {
-                await this.notificationService.createRecord({
-                    post: post._id,
-                    message: 'reacted to your post.',
-                    type: NotificationType.POST_REACTED,
-                    sender: user._id,
-                    //@ts-ignore
-                    receiver: post.creator._id,
-                    page: addReactionsDto.page
-                });
-
-
-                if (post.creator._id) {
-                    const userData = await this.userService.findOneRecord({_id: post.creator._id});
-                    if (userData) {
-                        const notificationData = await this.userService.getNotificationData(userData, {pageId: null});
-                        this.socketService.triggerMessage(`notification-${(userData._id).toString()}`, {data: notificationData});
-                    }
-                }
-
-
-                if (post.creator.fcmToken) {
-                    await this.firebaseService.sendNotification({
-                        token: post.creator.fcmToken,
-                        notification: {title: `${user.firstName} ${user.lastName} reacted to your post.`},
-                        data: {post: post._id.toString(), type: NotificationType.POST_REACTED},
-                    });
-                }
-            }
-            reaction.page = page;
-            return reaction;
-        }
-    }
 
     @Get(':id/find-one')
     async findOne(@Param('id', ParseObjectId) id: string) {
@@ -650,24 +575,139 @@ export class PostsController {
     // ====================================================================reactions apis===================================================================
 
 
-    @Delete(':id/reaction/delete')
-    async deleteReaction(@Param('id', ParseObjectId) id: string,@GetUser() user: UserDocument) {
 
 
-        const reaction = await this.reactionService.deleteSingleRecord({post: id,user:user._id});
-        if (!reaction) throw new HttpException('Reaction does not exists', HttpStatus.BAD_REQUEST);
-        if (reaction.post) await this.postsService.findOneRecordAndUpdate({_id: reaction.post}, {$pull: {reactions: reaction._id}});
-        else if (reaction.comment) await this.commentService.findOneRecordAndUpdate({_id: reaction.comment}, {$pull: {reactions: reaction._id}});
-        return reaction;
+    @Post('reaction/create')
+    async addReactions(@Body() addReactionsDto: AddReactionsDto, @GetUser() user: UserDocument) {
+        // check if user is adding reaction in comment
+
+        let page;
+
+
+        if (addReactionsDto.page) {
+            page = await this.pageService.findOneRecord({_id: addReactionsDto.page})
+
+        }
+
+        if (addReactionsDto.comment) {
+
+
+            const comment = await this.commentService.findOneRecord({_id: addReactionsDto.comment}).populate('creator');
+            if (!comment) throw new BadRequestException('Comment does not exist.');
+            const reaction = await this.reactionService.create({
+                user: user._id,
+                emoji: addReactionsDto.emoji,
+                comment: comment._id,
+                page: addReactionsDto.page
+            });
+            await this.commentService.findOneRecordAndUpdate({_id: comment._id}, {$push: {reactions: reaction._id}});
+            reaction.page = page
+            return reaction;
+        } else {
+            const post:any = await this.postsService.findOneRecord({_id: addReactionsDto.post}).populate('creator');
+            if (!post) throw new HttpException('Post does not exists', HttpStatus.BAD_REQUEST);
+
+
+
+
+            const reaction = await this.reactionService.create({
+                user: user._id,
+                emoji: addReactionsDto.emoji,
+                post: post._id,
+                page: addReactionsDto.page
+
+            });
+            await this.postsService.findOneRecordAndUpdate({_id: post._id}, {$push: {reactions: reaction._id}});
+            //@ts-ignore
+            if (user._id != post.creator._id.toString()) {
+                await this.notificationService.createRecord({
+                    post: post._id,
+                    message: 'reacted to your post.',
+                    type: NotificationType.POST_REACTED,
+                    sender: user._id,
+                    //@ts-ignore
+                    receiver: post.creator._id,
+                    page: addReactionsDto.page
+                });
+
+
+                if (post.creator._id) {
+                    const userData = await this.userService.findOneRecord({_id: post.creator._id});
+                    if (userData) {
+                        const notificationData = await this.userService.getNotificationData(userData, {pageId: null});
+                        this.socketService.triggerMessage(`notification-${(userData._id).toString()}`, {data: notificationData});
+                    }
+                }
+
+
+                if (post.creator.fcmToken) {
+                    await this.firebaseService.sendNotification({
+                        token: post.creator.fcmToken,
+                        notification: {title: `${user.firstName} ${user.lastName} reacted to your post.`},
+                        data: {post: post._id.toString(), type: NotificationType.POST_REACTED},
+                    });
+                }
+            }
+            reaction.page = page;
+            return reaction;
+        }
+    }
+
+
+    @Delete('reaction/delete')
+    async deleteReaction(@Body() payload: DeleteReactionDto,@GetUser() user: UserDocument) {
+        let page={};
+        if(payload.page){
+            page={page:payload.page}
+        }
+        if(payload.post){
+
+            let reaction = await this.reactionService.deleteSingleRecord({post: payload.post,user:user._id,...page});
+            if (!reaction) throw new HttpException('Reaction does not exists', HttpStatus.BAD_REQUEST);
+            await this.postsService.findOneRecordAndUpdate({_id: reaction.post}, {$pull: {reactions: reaction._id}});
+            return reaction;
+        }else if(payload.comment){
+            let reaction = await this.reactionService.deleteSingleRecord({comment: payload.comment,user:user._id,...page});
+            if (!reaction) throw new HttpException('Reaction does not exists', HttpStatus.BAD_REQUEST);
+            await this.commentService.findOneRecordAndUpdate({_id: payload.comment}, {$pull: {reactions: reaction._id}});
+
+            return reaction;
+
+
+        }
+        return {};
     }
 
     @Put(':id/reaction/update')
-    async updateReaction(@Param('id', ParseObjectId) id: string, @Body() updateReactionsDto: UpdateReactionsDto,
+    async updateReaction(@Param('id', ParseObjectId) id: string, @Body() payload: UpdateReactionsDto,
                          @GetUser() user: UserDocument) {
-        const updated = await this.reactionService.update({post: id,user:user._id}, {emoji: updateReactionsDto.emoji});
-        const page = await this.pageService.findOneRecord({_id: updated.page});
-        updated.page = page;
-        return updated;
+        let page;
+
+
+        let pageQuery={};
+        if(payload.page){
+
+            page = await this.pageService.findOneRecord({_id: payload.page})
+            pageQuery={page:payload.page}
+        }
+        if(payload.post){
+
+            let reaction = await this.reactionService.update({post: payload.post,user:user._id,...pageQuery},
+                {emoji: payload.emoji});
+            if (!reaction) throw new HttpException('Reaction does not exists', HttpStatus.BAD_REQUEST);
+            reaction.page=page;
+            return reaction;
+        }else if(payload.comment){
+            let reaction = await this.reactionService.update({comment: payload.comment,user:user._id,...pageQuery},
+                {emoji: payload.emoji});
+            if (!reaction) throw new HttpException('Reaction does not exists', HttpStatus.BAD_REQUEST);
+            reaction.page=page;
+            return reaction;
+
+
+        }
+
+        return {};
     }
 
     @Get('tagged/find-all')
