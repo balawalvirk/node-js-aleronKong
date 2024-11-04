@@ -74,7 +74,7 @@ export class PostsController {
         let page;
 
 
-        let pageQuery={};
+        let pageQuery={page:null};
         if(payload.page){
 
             page = await this.pageService.findOneRecord({_id: payload.page})
@@ -689,7 +689,7 @@ export class PostsController {
 
     @Delete('reaction/delete')
     async deleteReaction(@Body() payload: DeleteReactionDto,@GetUser() user: UserDocument) {
-        let page={};
+        let page={page:null};
         if(payload.page){
             page={page:payload.page}
         }
