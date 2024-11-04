@@ -67,7 +67,12 @@ export class CommentService extends BaseService<CommentDocument> {
                                 path: 'creator',
                                 select: 'firstName lastName avatar isGuildMember userName fcmToken enableNotifications'
                             },
-                            {path: 'reactions', populate: {path: 'user', select: 'firstName lastName avatar'}},
+                            {
+                                path: 'reactions', populate: [
+                                    {path: 'user', select: 'firstName lastName avatar'},
+                                    {path: 'page', select: '_id name profilePhoto'},
+                                ]
+                            },
                             {path: 'mentions', select: 'firstName lastName avatar'},
                             {path: 'page', select: '_id name profilePhoto'},
                             // third level of population
@@ -79,6 +84,7 @@ export class CommentService extends BaseService<CommentDocument> {
                                         path: 'creator',
                                         select: 'firstName lastName avatar isGuildMember userName fcmToken enableNotifications'
                                     },
+                                    {path: 'page', select: '_id name profilePhoto'},
                                     {
                                         path: 'reactions', populate: [
                                             {path: 'user', select: 'firstName lastName avatar'},
@@ -104,6 +110,7 @@ export class CommentService extends BaseService<CommentDocument> {
                                                 ]
                                             },
                                             {path: 'mentions', select: 'firstName lastName avatar'},
+                                            {path: 'page', select: '_id name profilePhoto'},
                                         ],
                                     },
                                 ],
