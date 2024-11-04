@@ -32,8 +32,11 @@ export class CommentService extends BaseService<CommentDocument> {
 
   async find(query: FilterQuery<CommentDocument>, options?: QueryOptions<CommentDocument>) {
     return await this.commentModel.find(query, {}, options).populate([
-      { path: 'creator', select: 'firstName lastName avatar isGuildMember userName fcmToken enableNotifications' },
-      { path: 'reactions', populate: { path: 'user', select: 'firstName lastName avatar' } },
+      { path: 'creator', select: 'firstName lastName avatar isGuildMember userName fcmToken enableNotifications'},
+      { path: 'reactions', populate: [
+          { path: 'user', select: 'firstName lastName avatar' },
+              { path: 'page', select: '_id name profilePhoto' }
+          ] },
       { path: 'mentions', select: 'firstName lastName avatar' },
         { path: 'page', select: '_id name profilePhoto' },
 
