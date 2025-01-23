@@ -92,6 +92,9 @@ export class Posts {
 
     @Prop({type: mongoose.Schema.Types.ObjectId, ref: 'Page'})
     page: Page;
+
+
+
 }
 
 export const PostSchema = SchemaFactory.createForClass(Posts);

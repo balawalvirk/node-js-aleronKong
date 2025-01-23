@@ -205,14 +205,15 @@ export class PostsService extends BaseService<PostDocument> {
             },
             { $unset: ["group_details"] },
             {
+                $sort:{createdAt:-1}
+            },
+            {
                 $skip: (options.perPage) * (options.page-1)
             },
             {
                 $limit: options.perPage
             },
-            {
-                $sort:options.sort
-            },
+
         ])
 
 
