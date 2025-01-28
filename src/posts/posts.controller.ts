@@ -157,11 +157,16 @@ export class PostsController {
         const $q = makeQuery({page, limit});
         const options = {sort: this.postsService.getHomePostSort(sort), limit: $q.limit, skip: $q.skip};
         const followings = (await this.userService.findAllRecords({friends: {$in: [user._id]}}).select('_id')).map((user) => user._id);
+        let followedPagesPosts: any = (await this.pageService.findAllRecords({'followers.follower': user._id}).select('posts'))
+            .reduce((accumulator,current)=>accumulator.concat(current.posts || []),[])
+        let groupJoinedPosts: any = (await this.groupService.findAllRecords({'members.member': user._id}).select('posts'))
+            .reduce((accumulator,current)=>accumulator.concat(current.posts || []),[])
+
 
         let pageFollowings = []
         let groups = [];
         let pageGroups = [];
-        let allGroups = []
+        let allGroups = [];
 
 
         const reports = await this.reportService.findAllRecords({reporter: user._id, type: ReportType.USER});
@@ -174,7 +179,11 @@ export class PostsController {
             creator: {$nin: [...user.blockedUsers,...user.blockedByOthers, ...reportedUsers]},
             isBlocked: false,
             status: PostStatus.ACTIVE,
-            $or: user.isGuildMember
+            $or:[
+                {creator:user.friends},
+                {_id:followedPagesPosts.concat(groupJoinedPosts)}
+            ]
+            /*$or: user.isGuildMember
                 ? [
                     {privacy: PostPrivacy.PUBLIC},
                     {privacy: PostPrivacy.FOLLOWERS, creator: {$in: followings}},
@@ -196,6 +205,7 @@ export class PostsController {
                     {mentions: {$in: [user._id]}},
 
                 ],
+                */
         };
 
         const posts = await this.postsService.findHomePosts(condition, options);
