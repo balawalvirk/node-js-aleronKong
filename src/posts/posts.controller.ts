@@ -745,19 +745,40 @@ export class PostsController {
         if (filter === EngagedPostFilter.ALL) {
             const comments = (await this.commentService.findAllRecords({creator: user._id}).select('_id')).map((comment) => comment._id);
             const reactions = (await this.reactionService.findAllRecords({user: user._id}).select('_id')).map((reaction) => reaction._id);
-            const condition = {$or: [{reactions: {$in: [reactions]}}, {comments: {$in: comments}}]};
-            posts = await this.postsService.find(condition, options);
-            total = await this.postsService.countRecords(condition);
+
+            if(comments.length>0 || reactions.length>0){
+                const condition = {$or: [{reactions: {$in: [reactions]}}, {comments: {$in: comments}}]};
+                posts = await this.postsService.find(condition, options);
+                total = await this.postsService.countRecords(condition);
+            }else{
+                posts=[];
+                total=0;
+            }
+
         } else if (filter === EngagedPostFilter.LIKED) {
             const reactions = (await this.reactionService.findAllRecords({user: user._id}).select('_id')).map((reaction) => reaction._id);
-            const condition = {$or: [{reactions: {$in: [reactions]}}]};
-            posts = await this.postsService.find(condition);
-            total = await this.postsService.countRecords(condition);
+
+            if( reactions.length>0){
+                const condition = {$or: [{reactions: {$in: [reactions]}}]};
+                posts = await this.postsService.find(condition);
+                total = await this.postsService.countRecords(condition);
+            }else{
+                posts=[];
+                total=0;
+            }
+
         } else if (filter === EngagedPostFilter.COMMENTED) {
             const comments = (await this.commentService.findAllRecords({creator: user._id}).select('_id')).map((comment) => comment._id);
-            const condition = {comments: {$in: comments}};
-            posts = await this.postsService.find(condition);
-            total = await this.postsService.countRecords(condition);
+
+
+            if( comments.length>0){
+                const condition = {comments: {$in: comments}};
+                posts = await this.postsService.find(condition);
+                total = await this.postsService.countRecords(condition);
+            }else{
+                posts=[];
+                total=0;
+            }
         }
 
         return {

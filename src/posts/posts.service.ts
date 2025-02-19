@@ -302,7 +302,9 @@ export class PostsService extends BaseService<PostDocument> {
     }
 
     async findPostMedia(query: FilterQuery<PostDocument>, type: string) {
-        const posts = await this.postModel.find(query).select('images videos');
+        const posts = await this.postModel.find(query)
+            .sort({createdAt: -1})
+            .select('images videos');
 
         // retrive all videos
         if (type === MediaType.VIDEO) {
