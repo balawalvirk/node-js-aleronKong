@@ -389,16 +389,19 @@ export class AuthController {
     async loginFacebook(@Body() payload: LoginWithSocialDto) {
 
         try {
+            const response: any = await axios.get(`${process.env.FACEBOOK_AUTH_URL}access_token=${payload.token}&debug=all&fields=id%2Cname%2Cemail%2Cfirst_name%2Clast_name
+            &format=json&method=get&pretty=0&suppress_http_code=1`);
+            const decoded=response.data;
 
 
             const validateFacebookAccessToken=await this.validateFacebookTokenJose(payload.token)
 
 
-            if(!validateFacebookAccessToken)
+            if(!validateFacebookAccessToken && !decoded.email)
                 throw new BadRequestException("invalid token")
 
 
-            return await this.handleSocialLogin(validateFacebookAccessToken,AuthTypes.FACEBOOK,validateFacebookAccessToken.given_name ,
+            return await this.handleSocialLogin(validateFacebookAccessToken || decoded,AuthTypes.FACEBOOK,validateFacebookAccessToken.given_name ,
                 validateFacebookAccessToken.family_name)
 
         } catch (e) {
