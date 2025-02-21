@@ -27,6 +27,7 @@ import {FileService} from 'src/file/file.service';
 import {ConfigService} from '@nestjs/config';
 import {GuildService} from "src/guild/guild.service";
 import verifyAppleToken from "verify-apple-id-token";
+import {createRemoteJWKSet, jwtVerify} from "jose";
 const axios=require('axios');
 @Controller('auth')
 export class AuthController {
@@ -193,7 +194,7 @@ export class AuthController {
         const mail = {
             to: email,
             subject: 'Change Password request',
-            from: 'awaismehr001@gmail.com',
+            from: process.env.SENDER_EMAIL,
             text: 'Hello World from NestJS Sendgrid',
             html: `<h1>password reset otp</h1> <br/> ${otp.otp} </br> This otp will expires in 5 minuutes`,
         };
@@ -217,9 +218,62 @@ export class AuthController {
 
 
 
+
+    async validateFacebookAccessToken (accessToken) {
+        try {
+
+            const APP_ID = process.env.FACEBOOK_APP_ID;
+            const APP_SECRET = process.env.FACEBOOK_APP_SECRET;
+
+
+            const appAccessToken = `${APP_ID}|${APP_SECRET}`;
+            const url = `https://graph.facebook.com/debug_token?input_token=${accessToken}&access_token=${appAccessToken}`;
+
+            const response = await axios.get(url);
+            const data = response.data.data;
+
+            if (data.is_valid && data.app_id === APP_ID) {
+                console.log('✅ Token is valid:', data);
+                return data;
+            } else {
+                return null;
+            }
+        } catch (err) {
+            console.error(err.message);
+            return null;
+        }
+    }
+
+
+    async  validateFacebookTokenJose(idToken) {
+        try {
+
+            const FACEBOOK_ISSUER = 'https://www.facebook.com';
+            const FACEBOOK_JWKS_URI = 'https://www.facebook.com/.well-known/oauth/openid/jwks/';
+            const FACEBOOK_CLIENT_ID = process.env.FACEBOOK_APP_ID; // Replace with your app ID
+
+
+            // Create Remote JWK Set
+            const JWKS = createRemoteJWKSet(new URL(FACEBOOK_JWKS_URI));
+
+            // Verify Token
+            const { payload } = await jwtVerify(idToken, JWKS, {
+                issuer: FACEBOOK_ISSUER,
+                audience: FACEBOOK_CLIENT_ID,
+            });
+
+            console.log('✅ Token is valid:', payload);
+            return payload;
+        } catch (err) {
+            console.error('❌ Invalid Token:', err.message);
+            return null;
+        }
+    }
+
+
     async handleSocialLogin(decoded:any,type,parsedFirstName,parsedLastName){
 
-        if (!decoded.email) {
+        if (!decoded ||  !decoded.email) {
             throw new NotFoundException('Invalid token.');
             return;
         }
@@ -335,11 +389,17 @@ export class AuthController {
     async loginFacebook(@Body() payload: LoginWithSocialDto) {
 
         try {
-            const response: any = await axios.get(`${process.env.FACEBOOK_AUTH_URL}access_token=${payload.token}&debug=all&fields=id%2Cname%2Cemail%2Cfirst_name%2Clast_name
-            &format=json&method=get&pretty=0&suppress_http_code=1`);
-            const decoded=response.data;
 
-            return await this.handleSocialLogin(decoded,AuthTypes.FACEBOOK,decoded.first_name ,decoded.last_name)
+
+            const validateFacebookAccessToken=await this.validateFacebookTokenJose(payload.token)
+
+
+            if(!validateFacebookAccessToken)
+                throw new BadRequestException("invalid token")
+
+
+            return await this.handleSocialLogin(validateFacebookAccessToken,AuthTypes.FACEBOOK,validateFacebookAccessToken.given_name ,
+                validateFacebookAccessToken.family_name)
 
         } catch (e) {
             throw new BadRequestException(e.message)
