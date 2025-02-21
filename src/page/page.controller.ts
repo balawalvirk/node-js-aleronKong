@@ -554,7 +554,7 @@ export class PageController {
 
         await this.firebaseService.sendNotification({
             token: invitation.friend.fcmToken,
-            notification: {title: `has sent you a page invitation request.`},
+            notification: {body: `has sent you a page invitation request.`},
             //@ts-ignore
             data: {
                 page: invitation.page._id.toString(), type: NotificationType.PAGE_INVITATION,

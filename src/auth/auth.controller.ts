@@ -1,7 +1,7 @@
 import {
     BadRequestException,
     Body,
-    Controller,
+    Controller, InternalServerErrorException,
     Ip, NotFoundException,
     Post,
     UnauthorizedException,
@@ -197,8 +197,12 @@ export class AuthController {
             text: 'Hello World from NestJS Sendgrid',
             html: `<h1>password reset otp</h1> <br/> ${otp.otp} </br> This otp will expires in 5 minuutes`,
         };
-        await this.emailService.send(mail);
-        return {message: 'Otp sent to your email.'};
+        try{
+            await this.emailService.send(mail);
+            return {message: 'Otp sent to your email.'};
+        }catch (e) {
+            throw new InternalServerErrorException(e);
+        }
     }
 
     @Post('reset-password')

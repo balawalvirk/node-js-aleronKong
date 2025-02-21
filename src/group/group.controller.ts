@@ -322,7 +322,7 @@ export class GroupController {
             if (group.creator.fcmToken) {
                 await this.firebaseService.sendNotification({
                     token: group.creator.fcmToken,
-                    notification: {title: `${user.firstName} ${user.lastName} has sent a join request for ${group.name} group`},
+                    notification: {body: `${user.firstName} ${user.lastName} has sent a join request for ${group.name} group`},
                     data: {group: group._id.toString(), type: NotificationType.GROUP_JOIN_REQUEST},
                 });
             }
@@ -406,7 +406,7 @@ export class GroupController {
             if (group.creator.fcmToken) {
                 await this.firebaseService.sendNotification({
                     token: group.creator.fcmToken,
-                    notification: {title: `${user.firstName} ${user.lastName} has sent a join request for ${group.name} group`},
+                    notification: {body: `${user.firstName} ${user.lastName} has sent a join request for ${group.name} group`},
                     data: {group: group._id.toString(), type: NotificationType.GROUP_JOIN_REQUEST},
                 });
             }
@@ -1022,7 +1022,7 @@ export class GroupController {
 
         await this.firebaseService.sendNotification({
             token: invitation.friend.fcmToken,
-            notification: {title: `${user.firstName} ${user.lastName} has sent you a group invitation request.`},
+            notification: {body: `${user.firstName} ${user.lastName} has sent you a group invitation request.`},
             //@ts-ignore
             data: {group: invitation.group._id.toString(), type: NotificationType.GROUP_INVITATION},
         });
@@ -1075,7 +1075,7 @@ export class GroupController {
 
             await this.firebaseService.sendNotification({
                 token: invitation.group.creator.fcmToken,
-                notification: {title: `${user.firstName} ${user.lastName} has sent a join request for ${invitation.group.name} group`},
+                notification: {body: `${user.firstName} ${user.lastName} has sent a join request for ${invitation.group.name} group`},
                 // @ts-ignore
                 data: {group: invitation.group._id.toString(), type: NotificationType.GROUP_JOIN_REQUEST},
             });
