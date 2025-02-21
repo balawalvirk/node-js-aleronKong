@@ -376,7 +376,8 @@ export class AuthController {
             const response: any = await axios.get(`${process.env.BASE_URL_GOOGLE_AUTH}${payload.token}`);
             const decoded=response.data;
 
-            return await this.handleSocialLogin(decoded,AuthTypes.GOOGLE,decoded.given_name,decoded.family_name)
+
+            return await this.handleSocialLogin(decoded,AuthTypes.GOOGLE,decoded?.given_name,decoded?.family_name)
 
         } catch (e) {
             throw new BadRequestException(e.message)
@@ -400,9 +401,22 @@ export class AuthController {
             if(!validateFacebookAccessToken && !decoded.email)
                 throw new BadRequestException("invalid token")
 
+            let firstName,lastName;
 
-            return await this.handleSocialLogin(validateFacebookAccessToken || decoded,AuthTypes.FACEBOOK,validateFacebookAccessToken.given_name ,
-                validateFacebookAccessToken.family_name)
+            if(decoded && decoded.email){
+                firstName=decoded.first_name;
+                lastName=decoded.last_name;
+            }
+
+
+            if(validateFacebookAccessToken){
+                firstName=validateFacebookAccessToken.given_name;
+                lastName=validateFacebookAccessToken.family_name;
+            }
+
+
+            return await this.handleSocialLogin(validateFacebookAccessToken || decoded,AuthTypes.FACEBOOK,firstName ,
+                lastName)
 
         } catch (e) {
             throw new BadRequestException(e.message)
