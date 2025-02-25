@@ -91,19 +91,12 @@ export class GroupController {
             });
             await this.groupService
                 .findOneRecordAndUpdate({_id: post.group}, {$push: {posts: post._id}})
-                .populate({path: 'creator', select: 'fcmToken'});
+                .populate({path: 'creator', select: 'fcmToken enableNotifications'});
 
             //@ts-ignore
             if (user._id != group.creator._id.toString()) {
 
-                await this.notificationService.createRecord({
-                    type: NotificationType.NEW_GROUP_POST,
-                    group: group._id,
-                    message: `has posted in your ${group.name} group`,
-                    sender: user._id,
-                    //@ts-ignore
-                    receiver: group.creator._id,
-                });
+
 
 
                 const userData = await this.usersService.findOneRecord({_id: group.creator._id});
@@ -117,12 +110,25 @@ export class GroupController {
                 const mute = await this.muteService.findOneRecord({group: group._id, user: group.creator._id});
 
                 if (!this.groupService.isGroupMuted(mute)) {
-                    if (group.creator.fcmToken) {
+
+
+
+                    if (group.creator.fcmToken && group.creator.enableNotifications) {
                         await this.firebaseService.sendNotification({
                             token: group.creator.fcmToken,
                             notification: {title: `${user.firstName} ${user.lastName} has posted in your ${group.name} group`},
                             data: {group: group._id.toString(), type: NotificationType.NEW_GROUP_POST},
                         });
+
+                        await this.notificationService.createRecord({
+                            type: NotificationType.NEW_GROUP_POST,
+                            group: group._id,
+                            message: `has posted in your ${group.name} group`,
+                            sender: user._id,
+                            //@ts-ignore
+                            receiver: group.creator._id,
+                        });
+
                     }
                 }
             }
@@ -166,14 +172,7 @@ export class GroupController {
             // check if user tagged to any friend
             if (post.tagged) {
                 for (const taggedUser of post.tagged) {
-                    await this.notificationService.createRecord({
-                        type: NotificationType.USER_TAGGED,
-                        post: post._id,
-                        message: `has tagged you in a post.`,
-                        sender: user._id,
-                        //@ts-ignore
-                        receiver: taggedUser._id,
-                    });
+
 
 
                     const userData = await this.usersService.findOneRecord({_id: taggedUser._id});
@@ -186,11 +185,21 @@ export class GroupController {
                     // check if user has enabled notifications
                     if (taggedUser.enableNotifications) {
                         // check if user has firebase token
-                        if (taggedUser.fcmToken) {
+                        if (taggedUser.fcmToken && taggedUser.enableNotifications) {
                             await this.firebaseService.sendNotification({
                                 token: taggedUser.fcmToken,
                                 notification: {title: `${user.firstName} ${user.lastName} has tagged you in post.`},
                                 data: {post: post._id.toString(), type: NotificationType.USER_TAGGED},
+                            });
+
+
+                            await this.notificationService.createRecord({
+                                type: NotificationType.USER_TAGGED,
+                                post: post._id,
+                                message: `has tagged you in a post.`,
+                                sender: user._id,
+                                //@ts-ignore
+                                receiver: taggedUser._id,
                             });
                         }
                     }
@@ -288,7 +297,7 @@ export class GroupController {
     async joinGroup(@GetUser() user: UserDocument, @Param('id') id: string) {
         const group: any = await this.groupService.findOneRecord({_id: id}).populate({
             path: 'creator',
-            select: 'fcmToken'
+            select: 'fcmToken enableNotifications'
         });
         if (!group) throw new HttpException('Group does not exists.', HttpStatus.BAD_REQUEST);
 
@@ -301,14 +310,7 @@ export class GroupController {
             //check if user request is already in request array  of this group
             const requestFound = group.requests.filter((request) => request.member === user._id);
             if (requestFound.length > 0) throw new HttpException('Your request to join group is pending.', HttpStatus.BAD_REQUEST);
-            await this.notificationService.createRecord({
-                type: NotificationType.GROUP_JOIN_REQUEST,
-                group: group._id,
-                message: `has sent a join request for ${group.name} group`,
-                sender: user._id,
-                //@ts-ignore
-                receiver: group.creator._id,
-            });
+
 
 
             const userData = await this.usersService.findOneRecord({_id: group.creator._id});
@@ -319,11 +321,21 @@ export class GroupController {
 
 
             //@ts-ignore
-            if (group.creator.fcmToken) {
+            if (group.creator.fcmToken && group.creator.enableNotifications) {
                 await this.firebaseService.sendNotification({
                     token: group.creator.fcmToken,
                     notification: {body: `${user.firstName} ${user.lastName} has sent a join request for ${group.name} group`},
                     data: {group: group._id.toString(), type: NotificationType.GROUP_JOIN_REQUEST},
+                });
+
+
+                await this.notificationService.createRecord({
+                    type: NotificationType.GROUP_JOIN_REQUEST,
+                    group: group._id,
+                    message: `has sent a join request for ${group.name} group`,
+                    sender: user._id,
+                    //@ts-ignore
+                    receiver: group.creator._id,
                 });
             }
 
@@ -335,14 +347,6 @@ export class GroupController {
         }
 
 
-        await this.notificationService.createRecord({
-            type: NotificationType.GROUP_JOINED,
-            group: group._id,
-            message: `has joined your ${group.name} group`,
-            sender: user._id,
-            //@ts-ignore
-            receiver: group.creator._id,
-        });
 
 
         const userData = await this.usersService.findOneRecord({_id: group.creator._id});
@@ -357,12 +361,25 @@ export class GroupController {
             .lean();
 
         //@ts-ignore
-        if (group.creator.fcmToken) {
+
+
+
+        if(group.creator.enableNotifications && group.creator.fcmToken){
+            await this.notificationService.createRecord({
+                type: NotificationType.GROUP_JOINED,
+                group: group._id,
+                message: `has joined your ${group.name} group`,
+                sender: user._id,
+                //@ts-ignore
+                receiver: group.creator._id,
+            });
+
             await this.firebaseService.sendNotification({
                 token: group.creator.fcmToken,
                 notification: {title: `${user.firstName} ${user.lastName} has joined your ${group.name} group`},
                 data: {group: group._id.toString(), type: NotificationType.GROUP_JOINED},
             });
+
         }
 
 
@@ -374,12 +391,12 @@ export class GroupController {
     async joinPageGroup(@GetUser() user: UserDocument, @Param('id') id: string, @Param('pageId') pageId: string) {
         const group: any = await this.groupService.findOneRecord({_id: id}).populate({
             path: 'creator',
-            select: 'fcmToken'
+            select: 'fcmToken enableNotifications'
         });
         if (!group) throw new HttpException('Group does not exists.', HttpStatus.BAD_REQUEST);
         const page = await this.pageService.findOneRecord({_id: pageId}).populate({
             path: 'creator',
-            select: 'fcmToken'
+            select: 'fcmToken enableNotifications'
         });
         if (!page) throw new HttpException('Page does not exists.', HttpStatus.BAD_REQUEST);
 
@@ -392,23 +409,27 @@ export class GroupController {
             //check if user request is already in request array  of this group
             const requestFound = group.requests.filter((request) => request.page && (request.page).toString() === (page._id).toString());
             if (requestFound.length > 0) throw new HttpException('Your request to join group is pending.', HttpStatus.BAD_REQUEST);
-            await this.notificationService.createRecord({
-                type: NotificationType.GROUP_JOIN_REQUEST,
-                group: group._id,
-                message: `has sent a join request for ${group.name} group`,
-                sender: user._id,
-                //@ts-ignore
-                receiver: group.creator._id,
-                page: page._id
-            });
+
 
             //@ts-ignore
-            if (group.creator.fcmToken) {
+            if (group.creator.fcmToken && group.creator.enableNotifications) {
                 await this.firebaseService.sendNotification({
                     token: group.creator.fcmToken,
-                    notification: {body: `${user.firstName} ${user.lastName} has sent a join request for ${group.name} group`},
+                    notification: {body: `${page.name} has sent a join request for ${group.name} group`},
                     data: {group: group._id.toString(), type: NotificationType.GROUP_JOIN_REQUEST},
                 });
+
+
+                await this.notificationService.createRecord({
+                    type: NotificationType.GROUP_JOIN_REQUEST,
+                    group: group._id,
+                    message: `has sent a join request for ${group.name} group`,
+                    sender: user._id,
+                    //@ts-ignore
+                    receiver: group.creator._id,
+                    page: page._id
+                });
+
             }
             const updated: any = await this.groupService.findOneRecordAndUpdate({_id: id},
                 {$push: {requests: {page: page._id}}})
@@ -426,16 +447,6 @@ export class GroupController {
         }
 
 
-        await this.notificationService.createRecord({
-            type: NotificationType.GROUP_JOINED,
-            group: group._id,
-            message: `has joined your ${group.name} group`,
-            sender: user._id,
-            //@ts-ignore
-            receiver: group.creator._id,
-            page: page._id
-        });
-
 
         const userData = await this.usersService.findOneRecord({_id: group.creator._id});
         if (userData) {
@@ -449,12 +460,25 @@ export class GroupController {
             .lean();
 
         //@ts-ignore
-        if (group.creator.fcmToken) {
+        if (group.creator.fcmToken &&  group.creator.enableNotifications) {
             await this.firebaseService.sendNotification({
                 token: group.creator.fcmToken,
-                notification: {title: `${user.firstName} ${user.lastName} has joined your ${group.name} group`},
+                notification: {title: `${page.name} has joined your ${group.name} group`},
                 data: {group: group._id.toString(), type: NotificationType.GROUP_JOINED},
             });
+
+
+            await this.notificationService.createRecord({
+                type: NotificationType.GROUP_JOINED,
+                group: group._id,
+                message: `has joined your ${group.name} group`,
+                sender: user._id,
+                //@ts-ignore
+                receiver: group.creator._id,
+                page: page._id
+            });
+
+
         }
 
         return updatedGroup;
@@ -588,7 +612,8 @@ export class GroupController {
         @Param('userId', ParseObjectId) userId: string,
         @GetUser() user: UserDocument
     ) {
-        const group = await this.groupService.findOneRecord({_id: id});
+        const group = await this.groupService.findOneRecord({_id: id})
+            .populate('creator','fcmToken enableNotifications');
         if (!group) throw new HttpException('Group does not exist.', HttpStatus.BAD_REQUEST);
 
         if (group.creator.toString() == user._id) {
@@ -599,13 +624,7 @@ export class GroupController {
                 });
 
 
-                await this.notificationService.createRecord({
-                    group: group._id,
-                    sender: user._id,
-                    receiver: userId,
-                    message: `Your request to join group is approved`,
-                    type: NotificationType.GROUP_JOIN_REQUEST_APPROVED,
-                });
+
 
 
                 const userData = await this.usersService.findOneRecord({_id: userId});
@@ -615,24 +634,28 @@ export class GroupController {
                 }
 
 
-                if (group.creator.fcmToken) {
+                if (group.creator.fcmToken && group.creator.enableNotifications ) {
                     await this.firebaseService.sendNotification({
                         token: group.creator.fcmToken,
                         notification: {title: `Your request to join group is approved`},
                         data: {group: group._id.toString(), type: NotificationType.GROUP_JOIN_REQUEST_APPROVED},
                     });
+
+
+                    await this.notificationService.createRecord({
+                        group: group._id,
+                        sender: user._id,
+                        receiver: userId,
+                        message: `Your request to join group is approved`,
+                        type: NotificationType.GROUP_JOIN_REQUEST_APPROVED,
+                    });
+
                 }
                 return 'Request approved successfully.';
             } else {
                 await this.groupService.findOneRecordAndUpdate({_id: id}, {$pull: {requests: {member: userId}}});
 
-                await this.notificationService.createRecord({
-                    group: group._id,
-                    sender: user._id,
-                    receiver: userId,
-                    message: `Your request to join group is rejected`,
-                    type: NotificationType.GROUP_JOIN_REQUEST_REJECTED,
-                });
+
 
 
                 const userData = await this.usersService.findOneRecord({_id: userId});
@@ -642,11 +665,20 @@ export class GroupController {
                 }
 
 
-                if (group.creator.fcmToken) {
+                if (group.creator.fcmToken && group.creator.enableNotifications) {
                     await this.firebaseService.sendNotification({
                         token: group.creator.fcmToken,
                         notification: {title: `Your request to join group is rejected`},
                         data: {group: group._id.toString(), type: NotificationType.GROUP_JOIN_REQUEST_REJECTED},
+                    });
+
+
+                    await this.notificationService.createRecord({
+                        group: group._id,
+                        sender: user._id,
+                        receiver: userId,
+                        message: `Your request to join group is rejected`,
+                        type: NotificationType.GROUP_JOIN_REQUEST_REJECTED,
                     });
                 }
 
@@ -662,13 +694,6 @@ export class GroupController {
                     $push: {members: {member: userId}}
                 });
 
-                await this.notificationService.createRecord({
-                    group: group._id,
-                    sender: user._id,
-                    receiver: userId,
-                    message: `Your request to join group is approved`,
-                    type: NotificationType.GROUP_JOIN_REQUEST_APPROVED,
-                });
 
                 const userData = await this.usersService.findOneRecord({_id: userId});
                 if (userData) {
@@ -677,12 +702,22 @@ export class GroupController {
                 }
 
 
-                if (group.creator.fcmToken) {
+                if (group.creator.fcmToken && group.creator.enableNotifications) {
                     await this.firebaseService.sendNotification({
                         token: group.creator.fcmToken,
                         notification: {title: `Your request to join group is approved`},
                         data: {group: group._id.toString(), type: NotificationType.GROUP_JOIN_REQUEST_APPROVED},
                     });
+
+
+                    await this.notificationService.createRecord({
+                        group: group._id,
+                        sender: user._id,
+                        receiver: userId,
+                        message: `Your request to join group is approved`,
+                        type: NotificationType.GROUP_JOIN_REQUEST_APPROVED,
+                    });
+
                 }
 
                 return 'Request approved successfully.';
@@ -690,13 +725,6 @@ export class GroupController {
                 await this.groupService.findOneRecordAndUpdate({_id: id}, {$pull: {requests: {member: userId}}});
 
 
-                await this.notificationService.createRecord({
-                    group: group._id,
-                    sender: user._id,
-                    receiver: userId,
-                    message: `Your request to join group is rejected`,
-                    type: NotificationType.GROUP_JOIN_REQUEST_REJECTED,
-                });
 
                 const userData = await this.usersService.findOneRecord({_id: userId});
                 if (userData) {
@@ -705,12 +733,22 @@ export class GroupController {
                 }
 
 
-                if (group.creator.fcmToken) {
+                if (group.creator.fcmToken && group.creator.enableNotifications) {
                     await this.firebaseService.sendNotification({
                         token: group.creator.fcmToken,
                         notification: {title: `Your request to join group is rejected`},
                         data: {group: group._id.toString(), type: NotificationType.GROUP_JOIN_REQUEST_REJECTED},
                     });
+
+
+                    await this.notificationService.createRecord({
+                        group: group._id,
+                        sender: user._id,
+                        receiver: userId,
+                        message: `Your request to join group is rejected`,
+                        type: NotificationType.GROUP_JOIN_REQUEST_REJECTED,
+                    });
+
                 }
 
                 return 'Request rejected successfully.';
@@ -736,13 +774,6 @@ export class GroupController {
             });
 
 
-            await this.notificationService.createRecord({
-                group: group._id,
-                sender: user._id,
-                page: pageId,
-                message: `Your request to join group is approved`,
-                type: NotificationType.GROUP_JOIN_REQUEST_APPROVED,
-            });
 
 
             const notificationPage = await this.pageService.findRecordById(pageId);
@@ -755,24 +786,26 @@ export class GroupController {
             }
 
 
-            if (group.creator.fcmToken) {
+            if (group.creator.fcmToken && group.creator.enableNotifications) {
                 await this.firebaseService.sendNotification({
                     token: group.creator.fcmToken,
                     notification: {title: `Your request to join group is approved`},
                     data: {group: group._id.toString(), type: NotificationType.GROUP_JOIN_REQUEST_APPROVED},
                 });
+
+
+                await this.notificationService.createRecord({
+                    group: group._id,
+                    sender: user._id,
+                    page: pageId,
+                    message: `Your request to join group is approved`,
+                    type: NotificationType.GROUP_JOIN_REQUEST_APPROVED,
+                });
+
             }
             return 'Request approved successfully.';
         } else {
             await this.groupService.findOneRecordAndUpdate({_id: id}, {$pull: {requests: {page: pageId}}});
-
-            await this.notificationService.createRecord({
-                group: group._id,
-                sender: user._id,
-                page: pageId,
-                message: `Your request to join group is rejected`,
-                type: NotificationType.GROUP_JOIN_REQUEST_REJECTED,
-            });
 
             const notificationPage = await this.pageService.findRecordById(pageId);
             if (notificationPage.creator) {
@@ -784,12 +817,22 @@ export class GroupController {
             }
 
 
-            if (group.creator.fcmToken) {
+            if (group.creator.fcmToken && group.creator.enableNotifications) {
                 await this.firebaseService.sendNotification({
                     token: group.creator.fcmToken,
                     notification: {title: `Your request to join group is rejected`},
                     data: {group: group._id.toString(), type: NotificationType.GROUP_JOIN_REQUEST_REJECTED},
                 });
+
+
+                await this.notificationService.createRecord({
+                    group: group._id,
+                    sender: user._id,
+                    page: pageId,
+                    message: `Your request to join group is rejected`,
+                    type: NotificationType.GROUP_JOIN_REQUEST_REJECTED,
+                });
+
             }
 
             return 'Request rejected successfully.';
@@ -1010,22 +1053,28 @@ export class GroupController {
         }
 
 
-        await this.notificationService.createRecord({
-            type: NotificationType.GROUP_INVITATION,
-            //@ts-ignore
-            group: invitation.group._id,
-            message: `has sent you a group invitation request.`,
-            sender: user._id,
-            //@ts-ignore
-            receiver: invitation.friend._id,
-        });
 
-        await this.firebaseService.sendNotification({
-            token: invitation.friend.fcmToken,
-            notification: {body: `${user.firstName} ${user.lastName} has sent you a group invitation request.`},
-            //@ts-ignore
-            data: {group: invitation.group._id.toString(), type: NotificationType.GROUP_INVITATION},
-        });
+
+
+        if(userData.fcmToken && userData.enableNotifications){
+
+            await this.notificationService.createRecord({
+                type: NotificationType.GROUP_INVITATION,
+                //@ts-ignore
+                group: invitation.group._id,
+                message: `has sent you a group invitation request.`,
+                sender: user._id,
+                //@ts-ignore
+                receiver: userData.enableNotifications,
+            });
+
+            await this.firebaseService.sendNotification({
+                token: userData.fcmToken,
+                notification: {body: `${user.firstName} ${user.lastName} has sent you a group invitation request.`},
+                //@ts-ignore
+                data: {group: invitation.group._id.toString(), type: NotificationType.GROUP_INVITATION},
+            });
+        }
 
         return invitation;
     }
@@ -1062,23 +1111,27 @@ export class GroupController {
             }
 
 
-            await this.notificationService.createRecord({
-                type: NotificationType.GROUP_JOIN_REQUEST,
-                // @ts-ignore
-                group: invitation.group._id,
-                message: `has sent a join request for ${invitation.group.name} group`,
-                sender: user._id,
-                //@ts-ignore
-                receiver: invitation.user,
-            });
+
             //@ts-ignore
 
-            await this.firebaseService.sendNotification({
-                token: invitation.group.creator.fcmToken,
-                notification: {body: `${user.firstName} ${user.lastName} has sent a join request for ${invitation.group.name} group`},
-                // @ts-ignore
-                data: {group: invitation.group._id.toString(), type: NotificationType.GROUP_JOIN_REQUEST},
-            });
+            if(userData.fcmToken && userData.enableNotifications){
+                await this.firebaseService.sendNotification({
+                    token: userData.fcmToken,
+                    notification: {body: `${user.firstName} ${user.lastName} has sent a join request for ${invitation.group.name} group`},
+                    // @ts-ignore
+                    data: {group: invitation.group._id.toString(), type: NotificationType.GROUP_JOIN_REQUEST},
+                });
+
+                await this.notificationService.createRecord({
+                    type: NotificationType.GROUP_JOIN_REQUEST,
+                    // @ts-ignore
+                    group: invitation.group._id,
+                    message: `has sent a join request for ${invitation.group.name} group`,
+                    sender: user._id,
+                    //@ts-ignore
+                    receiver: userData._id,
+                });
+            }
 
 
             if (group.privacy === GroupPrivacy.PUBLIC)

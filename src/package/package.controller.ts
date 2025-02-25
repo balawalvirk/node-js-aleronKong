@@ -197,11 +197,15 @@ export class PackageController {
                 this.socketService.triggerMessage(`notification-${(userData._id).toString()}`, {data: notificationData});
             }
 
-            await this.firebaseService.sendNotification({
-                token: pkg.creator.fcmToken,
-                notification: {title: `${user.firstName} ${user.lastName} subscribed your package.`},
-                data: {user: user._id.toString(), type: NotificationType.USER_SUPPORTING},
-            });
+            if(userData.fcmToken && userData.enableNotifications){
+                await this.firebaseService.sendNotification({
+                    token: pkg.creator.fcmToken,
+                    notification: {title: `${user.firstName} ${user.lastName} subscribed your package.`},
+                    data: {user: user._id.toString(), type: NotificationType.USER_SUPPORTING},
+                });
+            }
+
+
         }
 
         return await this.packageService.findOneRecordAndUpdate({_id: id}, {$push: {buyers: {user:user._id}}});

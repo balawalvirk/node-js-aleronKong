@@ -122,8 +122,19 @@ export class PostsController {
 
 
     @Get(':id/find-one')
-    async findOne(@Param('id', ParseObjectId) id: string) {
-        return await this.postsService.findOne({_id: id});
+    async findOne(@Param('id', ParseObjectId) id: string,@GetUser() user: UserDocument) {
+
+        const post:any=await this.postsService.findOne({_id: id});
+
+        if(post.privacy===PostPrivacy.FOLLOWERS){
+
+            const postCreatorFriends=await this.userService.findOne({_id:post.creator._id,friends:user._id})
+
+            if(!postCreatorFriends)
+            throw new BadRequestException('Post does not exists.');
+        }
+
+        return post;
     }
 
     //find post of a specific user
@@ -180,7 +191,7 @@ export class PostsController {
             isBlocked: false,
             status: PostStatus.ACTIVE,
             $or:[
-                {creator:user.friends},
+                {creator:{$in:user.friends}},
                 {_id:followedPagesPosts.concat(groupJoinedPosts)}
             ]
             /*$or: user.isGuildMember
@@ -208,7 +219,7 @@ export class PostsController {
                 */
         };
 
-        const posts = await this.postsService.findHomePosts(condition, options);
+        const {total,posts} = await this.postsService.findHomePosts(user._id,condition, options);
 
         const totalPosts = await Promise.all(
             posts.map(async (post) => {
@@ -217,7 +228,6 @@ export class PostsController {
             })
         );
 
-        const total = await this.postsService.countRecords(condition);
         const paginated = {
             total,
             pages: Math.ceil(total / $q.limit),
@@ -258,20 +268,19 @@ export class PostsController {
             ],
         };
 
-        let posts = await this.postsService.findHomePosts(condition, options);
+        let {total,posts} = await this.postsService.findHomePosts(user._id,condition, options);
 
 
-        posts = await this.postsService.getRandomPosts();
+        //let randomPosts = await this.postsService.getRandomPosts(user._id);
 
 
         const totalPosts = await Promise.all(
-            posts.map(async (post) => {
+            (posts).map(async (post) => {
                 const totalComments = await this.commentService.countRecords({post: post._id});
                 return {...post, totalComments};
             })
         );
 
-        const total = await this.postsService.countRecords(condition);
         const paginated = {
             total,
             pages: Math.ceil(total / $q.limit),
@@ -298,14 +307,7 @@ export class PostsController {
 
         //@ts-ignore
         if (user._id != post.creator._id.toString()) {
-            await this.notificationService.createRecord({
-                post: post._id,
-                message: 'liked your post.',
-                type: NotificationType.POST_LIKED,
-                sender: user._id,
-                //@ts-ignore
-                receiver: post.creator._id,
-            });
+
 
 
             const userData = await this.userService.findOneRecord({_id: post.creator._id});
@@ -314,12 +316,23 @@ export class PostsController {
                 this.socketService.triggerMessage(`notification-${(userData._id).toString()}`, {data: notificationData});
             }
 
-            if (post.creator.fcmToken) {
+            if (userData.fcmToken && userData.newPostsNotifications) {
                 await this.firebaseService.sendNotification({
-                    token: post.creator.fcmToken,
+                    token: userData.fcmToken,
                     notification: {title: `${user.firstName} ${user.lastName} liked your post.`},
                     data: {post: post._id.toString(), type: NotificationType.POST_LIKED},
                 });
+
+
+                await this.notificationService.createRecord({
+                    post: post._id,
+                    message: 'liked your post.',
+                    type: NotificationType.POST_LIKED,
+                    sender: user._id,
+                    //@ts-ignore
+                    receiver: userData._id,
+                });
+
             }
         }
 
@@ -383,15 +396,6 @@ export class PostsController {
                 .findOneRecordAndUpdate({_id: createCommentDto.comment}, {$push: {replies: comment._id}})
                 .populate('creator');
 
-            await this.notificationService.createRecord({
-                post: post._id,
-                message: 'replied to you comment.',
-                type: NotificationType.COMMENT_REPLIED,
-                sender: user._id,
-                //@ts-ignore
-                receiver: updatedComment.creator._id,
-                page: page && page._id
-            });
 
 
             const userData = await this.userService.findOneRecord({_id: updatedComment.creator._id});
@@ -401,11 +405,27 @@ export class PostsController {
             }
 
 
-            await this.firebaseService.sendNotification({
-                token: updatedComment.creator.fcmToken,
-                notification: {title: `${user.firstName} ${user.lastName} replied to you comment.`},
-                data: {post: post._id.toString(), type: NotificationType.COMMENT_REPLIED},
-            });
+
+            if(userData.fcmToken && userData.newPostsNotifications){
+                await this.firebaseService.sendNotification({
+                    token: userData.fcmToken,
+                    notification: {title: `${user.firstName} ${user.lastName} replied to you comment.`},
+                    data: {post: post._id.toString(), type: NotificationType.COMMENT_REPLIED},
+                });
+                await this.notificationService.createRecord({
+                    post: post._id,
+                    message: 'replied to you comment.',
+                    type: NotificationType.COMMENT_REPLIED,
+                    sender: user._id,
+                    //@ts-ignore
+                    receiver: userData._id,
+                    page: page && page._id
+                });
+
+
+            }
+
+
 
             comment.page = page;
             this.socketService.triggerMessage(`post-comment-reply-${(post._id).toString()}`, comment);
@@ -420,15 +440,6 @@ export class PostsController {
 
             //@ts-ignore
             if (user._id != post.creator._id.toString()) {
-                await this.notificationService.createRecord({
-                    post: post._id,
-                    message: 'commented on your post.',
-                    type: NotificationType.POST_COMMENTED,
-                    sender: user._id,
-                    //@ts-ignore
-                    receiver: post.creator._id,
-                    page: page && page._id
-                });
 
 
                 const userData = await this.userService.findOneRecord({_id: post.creator._id});
@@ -439,12 +450,24 @@ export class PostsController {
 
 
                 // check if user has fcm token then send notification to that user.
-                if (post.creator.fcmToken) {
+                if (userData.fcmToken && userData.newPostsNotifications) {
                     await this.firebaseService.sendNotification({
-                        token: post.creator.fcmToken,
+                        token: userData.fcmToken,
                         notification: {title: `${user.firstName} ${user.lastName} commented on your post.`},
                         data: {post: post._id.toString(), type: NotificationType.POST_COMMENTED},
                     });
+
+                    await this.notificationService.createRecord({
+                        post: post._id,
+                        message: 'commented on your post.',
+                        type: NotificationType.POST_COMMENTED,
+                        sender: user._id,
+                        //@ts-ignore
+                        receiver: userData._id,
+                        page: page && page._id
+                    });
+
+
                 }
             }
 
@@ -663,19 +686,11 @@ export class PostsController {
             await this.postsService.findOneRecordAndUpdate({_id: post._id}, {$push: {reactions: reaction._id}});
             //@ts-ignore
             if (user._id != post.creator._id.toString()) {
-                await this.notificationService.createRecord({
-                    post: post._id,
-                    message: 'reacted to your post.',
-                    type: NotificationType.POST_REACTED,
-                    sender: user._id,
-                    //@ts-ignore
-                    receiver: post.creator._id,
-                    page: addReactionsDto.page
-                });
 
 
+                let userData;
                 if (post.creator._id) {
-                    const userData = await this.userService.findOneRecord({_id: post.creator._id});
+                    userData = await this.userService.findOneRecord({_id: post.creator._id});
                     if (userData) {
                         const notificationData = await this.userService.getNotificationData(userData, {pageId: null});
                         this.socketService.triggerMessage(`notification-${(userData._id).toString()}`, {data: notificationData});
@@ -683,12 +698,24 @@ export class PostsController {
                 }
 
 
-                if (post.creator.fcmToken) {
+                if ( userData && userData.fcmToken && userData.newPostsNotifications) {
                     await this.firebaseService.sendNotification({
-                        token: post.creator.fcmToken,
+                        token: userData.fcmToken,
                         notification: {title: `${user.firstName} ${user.lastName} reacted to your post.`},
                         data: {post: post._id.toString(), type: NotificationType.POST_REACTED},
                     });
+
+
+                    await this.notificationService.createRecord({
+                        post: post._id,
+                        message: 'reacted to your post.',
+                        type: NotificationType.POST_REACTED,
+                        sender: user._id,
+                        //@ts-ignore
+                        receiver: userData._id,
+                        page: addReactionsDto.page
+                    });
+
                 }
             }
             reaction.page = page;
@@ -760,7 +787,7 @@ export class PostsController {
 
             if( reactions.length>0){
                 const condition = {$or: [{reactions: {$in: [reactions]}}]};
-                posts = await this.postsService.find(condition);
+                posts = await this.postsService.find(user.id,condition);
                 total = await this.postsService.countRecords(condition);
             }else{
                 posts=[];
@@ -773,7 +800,7 @@ export class PostsController {
 
             if( comments.length>0){
                 const condition = {comments: {$in: comments}};
-                posts = await this.postsService.find(condition);
+                posts = await this.postsService.find(user.id,condition);
                 total = await this.postsService.countRecords(condition);
             }else{
                 posts=[];

@@ -268,24 +268,26 @@ export class UserController {
         if (!friend) throw new NotFoundException('Friend not found.');
 
         const updatedUser = await this.usersService.findOneRecordAndUpdate({_id: user._id}, {$push: {friends: id}});
-        await this.notificationService.createRecord({
-            user: user._id,
-            message: 'started following you.',
-            type: NotificationType.USER_FOLLOWING,
-            sender: user._id,
-            receiver: id,
-        });
 
         const notificationData=await this.home(friend,{pageId:null})
         this.socketService.triggerMessage(`notification-${(friend._id).toString()}`, {data: notificationData});
 
 
-        if (friend.fcmToken) {
+        if (friend.fcmToken && friend.enableNotifications) {
             await this.firebaseService.sendNotification({
                 token: friend.fcmToken,
                 notification: {title: `${user.firstName} ${user.lastName} started following you.`},
                 data: {user: user._id.toString(), type: NotificationType.USER_FOLLOWING},
             });
+
+            await this.notificationService.createRecord({
+                user: user._id,
+                message: 'started following you.',
+                type: NotificationType.USER_FOLLOWING,
+                sender: user._id,
+                receiver: id,
+            });
+
         }
 
 
@@ -478,21 +480,24 @@ export class UserController {
         );
 
         const admin = await this.usersService.findOneRecord({role: {$in: [UserRoles.ADMIN]}});
-        await this.notificationService.createRecord({
-            type: NotificationType.SELLER_REQUEST,
-            message: 'A new request for seller approval.',
-            sender: user._id,
-            user: user._id,
-            receiver: admin._id,
-        });
 
 
-        if (admin.fcmToken) {
+        if (admin.fcmToken && admin.enableNotifications) {
             await this.firebaseService.sendNotification({
                 token: admin.fcmToken,
                 notification: {title: 'A new request for seller approval.'},
                 data: {user: user._id, type: NotificationType.SELLER_REQUEST},
             });
+
+            await this.notificationService.createRecord({
+                type: NotificationType.SELLER_REQUEST,
+                message: 'A new request for seller approval.',
+                sender: user._id,
+                user: user._id,
+                receiver: admin._id,
+            });
+
+
         }
         return 'Your request for seller is under consideration.';
     }
@@ -533,23 +538,24 @@ export class UserController {
 
 
 
-        await this.notificationService.createRecord({
-            type: NotificationType.SELLER_REQUEST_APPROVED_REJECTED,
-            message: `Your seller request has been ${sellerRequest}`,
-            receiver: userFound._id,
-        });
-
-
         const notificationData=await this.home(userFound,{pageId:null})
         this.socketService.triggerMessage(`notification-${(userFound._id).toString()}`, {data: notificationData});
 
 
-        if (userFound.fcmToken) {
+        if (userFound.fcmToken && userFound.enableNotifications) {
             await this.firebaseService.sendNotification({
                 token: userFound.fcmToken,
                 notification: {title: `Your seller request has been ${sellerRequest}`},
                 data: {user: userFound._id, type: NotificationType.SELLER_REQUEST_APPROVED_REJECTED},
             });
+
+
+            await this.notificationService.createRecord({
+                type: NotificationType.SELLER_REQUEST_APPROVED_REJECTED,
+                message: `Your seller request has been ${sellerRequest}`,
+                receiver: userFound._id,
+            });
+
         }
 
         return 'Request approved successfully.';
@@ -637,13 +643,6 @@ export class UserController {
         if (friendRequestExists) throw new BadRequestException('Friend request for this user exists already.');
         const friendRequest = await this.friendRequestService.create({receiver, sender: user._id});
 
-        await this.notificationService.createRecord({
-            sender: user._id,
-            receiver: receiver,
-            user: user._id,
-            message: 'sent you a friend request.',
-            type: NotificationType.FRIEND_REQUEST,
-        });
 
 
         const userData=await this.usersService.findOneRecord({_id:new mongoose.Types.ObjectId(receiver)})
@@ -651,11 +650,25 @@ export class UserController {
         this.socketService.triggerMessage(`notification-${(userData._id).toString()}`, {data: notificationData});
 
 
-        await this.firebaseService.sendNotification({
-            token: friendRequest.receiver.fcmToken,
-            notification: {title: `${user.firstName} ${user.lastName} sent you a friend request.`},
-            data: {user: user._id.toString(), type: NotificationType.FRIEND_REQUEST},
-        });
+        if(friendRequest.receiver.fcmToken && friendRequest.receiver.enableNotifications ){
+
+            await this.firebaseService.sendNotification({
+                token: friendRequest.receiver.fcmToken,
+                notification: {title: `${user.firstName} ${user.lastName} sent you a friend request.`},
+                data: {user: user._id.toString(), type: NotificationType.FRIEND_REQUEST},
+            });
+
+
+            await this.notificationService.createRecord({
+                sender: user._id,
+                receiver: receiver,
+                user: user._id,
+                message: 'sent you a friend request.',
+                type: NotificationType.FRIEND_REQUEST,
+            });
+
+        }
+
 
         return friendRequest;
     }

@@ -2,7 +2,7 @@ import {Injectable} from '@nestjs/common';
 import {InjectModel} from '@nestjs/mongoose';
 import mongoose, {FilterQuery, Model, QueryOptions, UpdateQuery} from 'mongoose';
 import {BaseService} from 'src/helpers/services/base.service';
-import {MediaType, PostSort} from 'src/types';
+import {MediaType, PostPrivacy, PostSort} from 'src/types';
 import {PostDocument, Posts} from './posts.schema';
 
 @Injectable()
@@ -157,8 +157,56 @@ export class PostsService extends BaseService<PostDocument> {
     }
 
 
-    async find(query: FilterQuery<PostDocument>, options?: QueryOptions<PostDocument>) {
-        const posts = await this.postModel.find(query, {}, options).populate(this.getHomePostpopulateFields()).lean();
+    async find(user_id:any,query: FilterQuery<PostDocument>, options?: QueryOptions<PostDocument>) {
+
+
+        const posts = await this.postModel.aggregate([
+            {$match: query},
+            {
+                $lookup: {
+                    from: "users",
+                    let: {user: '$creator'},
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: {
+                                    $and: [
+                                        {$eq: ['$$user', '$_id']},
+                                    ]
+                                }
+                            },
+                        },
+                    ],
+                    as: 'creator_data'
+                },
+            },
+            {
+                $match: {
+                    $or: [
+                        {privacy:PostPrivacy.PUBLIC},
+                        {
+                            $and:[
+                                {privacy:PostPrivacy.FOLLOWERS},
+                                {"creator_data.friends":user_id}
+                            ]
+                        }
+                    ],
+                }
+            },
+            { $unset: ["creator_data"] },
+            {
+                $sort:options.sort
+            },
+            {
+                $skip: (options.perPage) * (options.page-1)
+            },
+            {
+                $limit: options.perPage
+            },
+        ])
+
+        await this.postModel.populate(posts,this.getHomePostpopulateFields());
+
         return posts.map((post) => ({
             ...post,
             totalComments: post.comments.length,
@@ -170,6 +218,24 @@ export class PostsService extends BaseService<PostDocument> {
     async findPostsFilteredByPrivacy(user_id:any,query: FilterQuery<PostDocument>, options?: QueryOptions<PostDocument>) {
         const posts = await this.postModel.aggregate([
             {$match: query},
+            {
+                $lookup: {
+                    from: "users",
+                    let: {user: '$creator'},
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: {
+                                    $and: [
+                                        {$eq: ['$$user', '$_id']},
+                                    ]
+                                }
+                            },
+                        },
+                    ],
+                    as: 'creator_data'
+                },
+            },
             {
                 $lookup: {
                     from: "groups",
@@ -190,20 +256,36 @@ export class PostsService extends BaseService<PostDocument> {
             },
             {
                 $match: {
-                    $or: [
-                        {"group_details":{$size: 0}},
-                        {"group_details.privacy": "public"},
+
+                    $and:[
                         {
-                            $and: [
-                                {"group_details.privacy": "private"},
-                                {"group_details.creator":user_id},
-                                {"group.members":{$in:[user_id]}}
+                            $or:[
+                                {"group_details":{$size: 0}},
+                                {"group_details.privacy": "public"},
+                                {
+                                    $and: [
+                                        {"group_details.privacy": "private"},
+                                        {"group_details.creator":user_id},
+                                        {"group.members":{$in:[user_id]}}
+                                    ]
+                                },
+                            ]
+                        },
+                        {
+                            $or:[
+                                {privacy:{$ne:PostPrivacy.FOLLOWERS}},
+                                {
+                                    $and:[
+                                        {privacy:PostPrivacy.FOLLOWERS},
+                                        {"creator_data.friends":user_id}
+                                    ]
+                                }
                             ]
                         }
                     ]
                 }
             },
-            { $unset: ["group_details"] },
+            { $unset: ["group_details","creator_data"] },
             {
                 $sort:options.sort
             },
@@ -222,6 +304,24 @@ export class PostsService extends BaseService<PostDocument> {
             {$match: query},
             {
                 $lookup: {
+                    from: "users",
+                    let: {user: '$creator'},
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: {
+                                    $and: [
+                                        {$eq: ['$$user', '$_id']},
+                                    ]
+                                }
+                            },
+                        },
+                    ],
+                    as: 'creator_data'
+                },
+            },
+            {
+                $lookup: {
                     from: "groups",
                     let: {group: '$group'},
                     pipeline: [
@@ -240,20 +340,36 @@ export class PostsService extends BaseService<PostDocument> {
             },
             {
                 $match: {
-                    $or: [
-                        {"group_details":{$size: 0}},
-                        {"group_details.privacy": "public"},
+
+                    $and:[
                         {
-                            $and: [
-                                {"group_details.privacy": "private"},
-                                {"group_details.creator":user_id},
-                                {"group.members":{$in:[user_id]}}
+                            $or:[
+                                {"group_details":{$size: 0}},
+                                {"group_details.privacy": "public"},
+                                {
+                                    $and: [
+                                        {"group_details.privacy": "private"},
+                                        {"group_details.creator":user_id},
+                                        {"group.members":{$in:[user_id]}}
+                                    ]
+                                },
+                            ]
+                        },
+                        {
+                            $or:[
+                                {privacy:{$ne:PostPrivacy.FOLLOWERS}},
+                                {
+                                    $and:[
+                                        {privacy:PostPrivacy.FOLLOWERS},
+                                        {"creator_data.friends":user_id}
+                                    ]
+                                }
                             ]
                         }
                     ]
                 }
             },
-            { $unset: ["group_details"] },
+            { $unset: ["group_details","creator_data"] },
         ])).length
 
         await this.postModel.populate(posts,this.getHomePostpopulateFields());
@@ -264,14 +380,140 @@ export class PostsService extends BaseService<PostDocument> {
         })),total};
     }
 
-    async findHomePosts(query: FilterQuery<PostDocument>, options?: QueryOptions<PostDocument>) {
-        const posts = await this.postModel.find(query, {}, options).populate(this.getHomePostpopulateFields()).lean();
-        return posts.map((post) => ({...post, comments: post.comments.slice(0, 3)}));
+    async findHomePosts(user_id:any,query: FilterQuery<PostDocument>, options?: QueryOptions<PostDocument>) {
+
+
+        const posts = await this.postModel.aggregate([
+            {$match: query},
+            {
+                $lookup: {
+                    from: "users",
+                    let: {user: '$creator'},
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: {
+                                    $and: [
+                                        {$eq: ['$$user', '$_id']},
+                                    ]
+                                }
+                            },
+                        },
+                    ],
+                    as: 'creator_data'
+                },
+            },
+            {
+                $match: {
+                    $or: [
+                        {privacy:{$ne:PostPrivacy.FOLLOWERS}},
+                        {
+                            $and:[
+                                {privacy:PostPrivacy.FOLLOWERS},
+                                {"creator_data.friends":user_id}
+                            ]
+                        }
+                    ],
+                }
+            },
+            { $unset: ["creator_data"] },
+            {
+                $sort:options.sort
+            },
+            {
+                $skip: (options.limit||10) * ((options.page||1)-1)
+            },
+            {
+                $limit: options.limit||10
+            },
+        ])
+
+
+
+        const total = (await this.postModel.aggregate([
+            {$match: query},
+            {
+                $lookup: {
+                    from: "users",
+                    let: {user: '$creator'},
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: {
+                                    $and: [
+                                        {$eq: ['$$user', '$_id']},
+                                    ]
+                                }
+                            },
+                        },
+                    ],
+                    as: 'creator_data'
+                },
+            },
+            {
+                $match: {
+                    $or: [
+                        {privacy:{$ne:PostPrivacy.FOLLOWERS}},
+                        {
+                            $and:[
+                                {privacy:PostPrivacy.FOLLOWERS},
+                                {"creator_data.friends":user_id}
+                            ]
+                        }
+                    ],
+                }
+            },
+            { $unset: ["creator_data"] },
+        ])).length
+
+        await this.postModel.populate(posts,this.getHomePostpopulateFields());
+
+
+        return {total,posts:posts.map((post) => ({...post, comments: post.comments.slice(0, 3)}))};
     }
 
 
-    async getRandomPosts() {
-        const posts = await this.postModel.aggregate([{$match: {"page": {$exists: true}}}, {$sample: {size: 10}}]);
+    async getRandomPosts(user_id:any) {
+
+
+        const posts = await this.postModel.aggregate([
+            {$match: {"page": {$exists: true}}}, {$sample: {size: 10}},
+            {
+                $lookup: {
+                    from: "users",
+                    let: {user: '$creator'},
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: {
+                                    $and: [
+                                        {$eq: ['$$user', '$_id']},
+                                    ]
+                                }
+                            },
+                        },
+                    ],
+                    as: 'creator_data'
+                },
+            },
+            {
+                $match: {
+                    $or: [
+                        {privacy:{$ne:PostPrivacy.FOLLOWERS}},
+                        {
+                            $and:[
+                                {privacy:PostPrivacy.FOLLOWERS},
+                                {"creator_data.friends":user_id}
+                            ]
+                        }
+                    ],
+                }
+            },
+            { $unset: ["creator_data"] }
+
+        ])
+
+
         await this.postModel.populate(posts, this.getHomePostpopulateFields());
 
         return posts.map((post) => ({...post, comments: post.comments.slice(0, 3)}));

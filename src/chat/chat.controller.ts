@@ -209,21 +209,28 @@ export class ChatController {
                         //check if current date is greater that the interval date i.e date is in past
                         if (mute.date.getTime() < today.getTime()) {
                             //send notification to user fcm token
-                            await this.firebaseService.sendNotification({
-                                token: receiver.fcmToken,
-                                notification: {body: `${user.firstName} ${user.lastName} has sent you a message.`},
-                                data: {user: user._id.toString(), type: NotificationType.NEW_MESSAGE},
-                            });
 
 
-                            await this.notificationService.createRecord({
-                                message: 'has sent you a message.',
-                                sender: user._id,
-                                //@ts-ignore
-                                receiver: receiver._id,
-                                type: NotificationType.NEW_MESSAGE,
-                                user: user._id,
-                            });
+                            if(receiver.enableNotifications && receiver.fcmToken){
+
+                                await this.firebaseService.sendNotification({
+                                    token: receiver.fcmToken,
+                                    notification: {body: `${user.firstName} ${user.lastName} has sent you a message.`},
+                                    data: {user: user._id.toString(), type: NotificationType.NEW_MESSAGE},
+                                });
+
+                                await this.notificationService.createRecord({
+                                    message: 'has sent you a message.',
+                                    sender: user._id,
+                                    //@ts-ignore
+                                    receiver: receiver._id,
+                                    type: NotificationType.NEW_MESSAGE,
+                                    user: user._id,
+                                });
+
+                            }
+
+
                         }
                     }
                     // check if date is custom date
@@ -232,20 +239,27 @@ export class ChatController {
                         if (today.getTime() <= mute.startTime.getTime() && today.getTime() >= mute.endTime.getTime()) {
                             return;
                         } else {
-                            await this.firebaseService.sendNotification({
-                                token: receiver.fcmToken,
-                                notification: {body: `${user.firstName} ${user.lastName} has sent you a message.`},
-                                data: {user: user._id.toString(), type: NotificationType.NEW_MESSAGE},
-                            });
+
+                            if(receiver.enableNotifications && receiver.fcmToken){
+                                await this.firebaseService.sendNotification({
+                                    token: receiver.fcmToken,
+                                    notification: {body: `${user.firstName} ${user.lastName} has sent you a message.`},
+                                    data: {user: user._id.toString(), type: NotificationType.NEW_MESSAGE},
+                                });
+                            }
+
                         }
                     }
                 }
             } else {
-                await this.firebaseService.sendNotification({
-                    token: receiver.fcmToken,
-                    notification: {body: `${user.firstName} ${user.lastName} has sent you a message.`},
-                    data: {user: user._id.toString(), type: NotificationType.NEW_MESSAGE},
-                });
+
+                if(receiver.enableNotifications && receiver.fcmToken){
+                    await this.firebaseService.sendNotification({
+                        token: receiver.fcmToken,
+                        notification: {body: `${user.firstName} ${user.lastName} has sent you a message.`},
+                        data: {user: user._id.toString(), type: NotificationType.NEW_MESSAGE},
+                    });
+                }
             }
         }
 
