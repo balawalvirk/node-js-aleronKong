@@ -183,7 +183,7 @@ export class PostsService extends BaseService<PostDocument> {
             {
                 $match: {
                     $or: [
-                        {privacy:PostPrivacy.PUBLIC},
+                        {privacy:{$ne:PostPrivacy.FOLLOWERS}},
                         {
                             $and:[
                                 {privacy:PostPrivacy.FOLLOWERS},
@@ -198,20 +198,59 @@ export class PostsService extends BaseService<PostDocument> {
                 $sort:options.sort
             },
             {
-                $skip: (options.perPage) * (options.page-1)
+                $skip: (options.limit || 10) * ((options.page || 1) -1)
             },
             {
-                $limit: options.perPage
+                $limit: options.limit || 10
             },
         ])
 
+
+        const total = (await this.postModel.aggregate([
+            {$match: query},
+            {
+                $lookup: {
+                    from: "users",
+                    let: {user: '$creator'},
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: {
+                                    $and: [
+                                        {$eq: ['$$user', '$_id']},
+                                    ]
+                                }
+                            },
+                        },
+                    ],
+                    as: 'creator_data'
+                },
+            },
+            {
+                $match: {
+                    $or: [
+                        {privacy:{$ne:PostPrivacy.FOLLOWERS}},
+                        {
+                            $and:[
+                                {privacy:PostPrivacy.FOLLOWERS},
+                                {"creator_data.friends":user_id}
+                            ]
+                        }
+                    ],
+                }
+            },
+            { $unset: ["creator_data"] },
+        ])).length
+
+
+
         await this.postModel.populate(posts,this.getHomePostpopulateFields());
 
-        return posts.map((post) => ({
+        return {total,posts:posts.map((post) => ({
             ...post,
             totalComments: post.comments.length,
             comments: post.comments.slice(0, 3)
-        }));
+        }))}
     }
 
 

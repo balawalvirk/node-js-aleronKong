@@ -775,8 +775,7 @@ export class PostsController {
 
             if(comments.length>0 || reactions.length>0){
                 const condition = {$or: [{reactions: {$in: [reactions]}}, {comments: {$in: comments}}]};
-                posts = await this.postsService.find(condition, options);
-                total = await this.postsService.countRecords(condition);
+                ({posts,total} = await this.postsService.find(user._id,condition, options));
             }else{
                 posts=[];
                 total=0;
@@ -787,8 +786,10 @@ export class PostsController {
 
             if( reactions.length>0){
                 const condition = {$or: [{reactions: {$in: [reactions]}}]};
-                posts = await this.postsService.find(user.id,condition);
-                total = await this.postsService.countRecords(condition);
+                ({posts,total} = await this.postsService.find(user.id,condition));
+
+
+
             }else{
                 posts=[];
                 total=0;
@@ -800,8 +801,7 @@ export class PostsController {
 
             if( comments.length>0){
                 const condition = {comments: {$in: comments}};
-                posts = await this.postsService.find(user.id,condition);
-                total = await this.postsService.countRecords(condition);
+                ({posts,total} = await this.postsService.find(user.id,condition));
             }else{
                 posts=[];
                 total=0;

@@ -42,6 +42,7 @@ import {PageCommentService} from "src/page/comment.service";
 import {AddReactionsDto} from "src/posts/dtos/add-reactions.dto";
 import {UpdateReactionsDto} from "src/posts/dtos/update-reaction.dto";
 import {UpdatePageCommentDto} from "src/page/dto/update-comment.dto";
+import mongoose from "mongoose";
 
 @Controller('page')
 @UseGuards(JwtAuthGuard)
@@ -415,8 +416,7 @@ export class PageController {
         }
 
 
-        const posts = await this.postService.find(condition, options);
-        const total = await this.postService.countRecords(condition);
+        const {posts,total} = await this.postService.find(user._id,condition, options);
         const paginated = {
             total,
             pages: Math.floor(total / $q.limit),
@@ -442,9 +442,8 @@ export class PageController {
     async findPostsOfPage(@Param('id', ParseObjectId) id: string, @Query() {limit, page}: PaginationDto, @GetUser() user: UserDocument) {
         const $q = makeQuery({page, limit});
         const options = {sort: {feature: -1, pin: -1, ...$q.sort}, limit: $q.limit, skip: $q.skip};
-        const condition = {page: id, creator: {$nin: user.blockedUsers}};
-        const posts = await this.postService.find(condition, options);
-        const total = await this.postService.countRecords(condition);
+        const condition = {page: new mongoose.Types.ObjectId(id), creator: {$nin: user.blockedUsers}};
+        const {posts,total} = await this.postService.find(user._id,condition, options);
         const paginated = {
             total,
             pages: Math.ceil(total / $q.limit),
