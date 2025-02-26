@@ -11,6 +11,7 @@ export class NotificationService extends BaseService<NotificationDocument> {
   }
 
   async find(query: FilterQuery<NotificationDocument>, options?: QueryOptions<NotificationDocument>) {
-    return await this.notificationModel.find(query, {}, options).populate({ path: 'sender', select: 'firstName lastName avatar' });
+    return await this.notificationModel.find(query, {}, options).populate(
+        [{ path: 'sender', select: 'firstName lastName avatar' },{ path: 'page' }]);
   }
 }
