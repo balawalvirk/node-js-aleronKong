@@ -425,6 +425,7 @@ export class GroupController {
                     group: group._id,
                     message: `has sent a join request for ${group.name} group`,
                     sender: user._id,
+                    sender_page:page._id,
                     //@ts-ignore
                     receiver: group.creator._id,
                     page: page._id
@@ -473,6 +474,7 @@ export class GroupController {
                 group: group._id,
                 message: `has joined your ${group.name} group`,
                 sender: user._id,
+                sender_page:page._id,
                 //@ts-ignore
                 receiver: group.creator._id,
                 page: page._id

@@ -22,6 +22,10 @@ export class Notification {
 
 
     @Prop({type: mongoose.Schema.Types.ObjectId, ref: 'Page'})
+    sender_page: Page;
+
+
+    @Prop({type: mongoose.Schema.Types.ObjectId, ref: 'Page'})
     page: Page;
 
 
