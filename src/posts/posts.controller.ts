@@ -384,6 +384,14 @@ export class PostsController {
         }
 
 
+        let title;
+
+
+        if(page){
+            title=page.name;
+        }else{
+            title=`${user.firstName} ${user.lastName}`;
+        }
 
 
         let comment;
@@ -409,7 +417,7 @@ export class PostsController {
             if(userData.fcmToken && userData.newPostsNotifications){
                 await this.firebaseService.sendNotification({
                     token: userData.fcmToken,
-                    notification: {title: `${user.firstName} ${user.lastName} replied to you comment.`},
+                    notification: {title: `${title} replied to you comment.`},
                     data: {post: post._id.toString(), type: NotificationType.COMMENT_REPLIED},
                 });
                 await this.notificationService.createRecord({
@@ -417,6 +425,7 @@ export class PostsController {
                     message: 'replied to you comment.',
                     type: NotificationType.COMMENT_REPLIED,
                     sender: user._id,
+                    sender_page:page && page._id,
                     //@ts-ignore
                     receiver: userData._id,
                     page: page && page._id
@@ -453,7 +462,7 @@ export class PostsController {
                 if (userData.fcmToken && userData.newPostsNotifications) {
                     await this.firebaseService.sendNotification({
                         token: userData.fcmToken,
-                        notification: {title: `${user.firstName} ${user.lastName} commented on your post.`},
+                        notification: {title: `${title} commented on your post.`},
                         data: {post: post._id.toString(), type: NotificationType.POST_COMMENTED},
                     });
 
@@ -462,6 +471,7 @@ export class PostsController {
                         message: 'commented on your post.',
                         type: NotificationType.POST_COMMENTED,
                         sender: user._id,
+                        sender_page: page && page._id,
                         //@ts-ignore
                         receiver: userData._id,
                         page: page && page._id
@@ -649,10 +659,12 @@ export class PostsController {
 
         let page;
 
+        let title=`${user.firstName} ${user.lastName}`;
 
         if (addReactionsDto.page) {
-            page = await this.pageService.findOneRecord({_id: addReactionsDto.page})
+            page = await this.pageService.findOneRecord({_id: addReactionsDto.page});
 
+            title=page.name;
         }
 
         if (addReactionsDto.comment) {
@@ -701,7 +713,7 @@ export class PostsController {
                 if ( userData && userData.fcmToken && userData.newPostsNotifications) {
                     await this.firebaseService.sendNotification({
                         token: userData.fcmToken,
-                        notification: {title: `${user.firstName} ${user.lastName} reacted to your post.`},
+                        notification: {title: `${title} reacted to your post.`},
                         data: {post: post._id.toString(), type: NotificationType.POST_REACTED},
                     });
 
@@ -711,6 +723,7 @@ export class PostsController {
                         message: 'reacted to your post.',
                         type: NotificationType.POST_REACTED,
                         sender: user._id,
+                        sender_page:addReactionsDto.page,
                         //@ts-ignore
                         receiver: userData._id,
                         page: addReactionsDto.page

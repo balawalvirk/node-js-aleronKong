@@ -257,10 +257,11 @@ export class PageController {
                 type: NotificationType.PAGE_FOLLOW_ACCEPTED,
                 // @ts-ignore
                 page: id,
-                message: `${user.firstName} ${user.lastName} has started following the ${page.name} page`,
+                message: `has started following the ${page.name} page`,
                 sender: user._id,
                 //@ts-ignore
-                receiver: page.creator._id
+                receiver: page.creator._id,
+                sender_page:id,
             });
             //@ts-ignore
 
@@ -571,12 +572,13 @@ export class PageController {
                 sender: user._id,
                 //@ts-ignore
                 receiver: invitation.friend._id,
-                invitation: invitation._id
+                invitation: invitation._id,
+                sender_page:invitation.page._id
             });
 
             await this.firebaseService.sendNotification({
                 token: invitation.friend.fcmToken,
-                notification: {body: `has sent you a page invitation request.`},
+                notification: {body: `${invitation.page} has sent you a page invitation request.`},
                 //@ts-ignore
                 data: {
                     page: invitation.page._id.toString(), type: NotificationType.PAGE_INVITATION,
@@ -786,13 +788,14 @@ export class PageController {
                     message: 'replied to you comment.',
                     type: NotificationType.COMMENT_REPLIED,
                     sender: user._id,
+                    sender_page:page._id,
                     //@ts-ignore
                     receiver: updatedComment.creator._id,
                 });
 
                 await this.firebaseService.sendNotification({
                     token: updatedComment.creator.fcmToken,
-                    notification: {title: `${user.firstName} ${user.lastName} replied to you comment.`},
+                    notification: {title: `${page.name} replied to you comment.`},
                     data: {page: page._id.toString(), type: NotificationType.COMMENT_REPLIED},
                 });
 
