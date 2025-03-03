@@ -185,9 +185,19 @@ export class PostsService extends BaseService<PostDocument> {
                     $or: [
                         {privacy:{$ne:PostPrivacy.FOLLOWERS}},
                         {
-                            $and:[
-                                {privacy:PostPrivacy.FOLLOWERS},
-                                {"creator_data.friends":user_id}
+                            $or:[
+                                {
+                                    $and:[
+                                        {privacy:PostPrivacy.FOLLOWERS},
+                                        {"creator_data.friends":user_id}
+                                    ]
+                                },
+                                {
+                                    $and:[
+                                        {privacy:PostPrivacy.FOLLOWERS},
+                                        {creator:user_id}
+                                    ]
+                                },
                             ]
                         }
                     ],
@@ -231,9 +241,19 @@ export class PostsService extends BaseService<PostDocument> {
                     $or: [
                         {privacy:{$ne:PostPrivacy.FOLLOWERS}},
                         {
-                            $and:[
-                                {privacy:PostPrivacy.FOLLOWERS},
-                                {"creator_data.friends":user_id}
+                            $or:[
+                                {
+                                    $and:[
+                                        {privacy:PostPrivacy.FOLLOWERS},
+                                        {"creator_data.friends":user_id}
+                                    ]
+                                },
+                                {
+                                    $and:[
+                                        {privacy:PostPrivacy.FOLLOWERS},
+                                        {creator:user_id}
+                                    ]
+                                },
                             ]
                         }
                     ],
@@ -314,9 +334,19 @@ export class PostsService extends BaseService<PostDocument> {
                             $or:[
                                 {privacy:{$ne:PostPrivacy.FOLLOWERS}},
                                 {
-                                    $and:[
-                                        {privacy:PostPrivacy.FOLLOWERS},
-                                        {"creator_data.friends":user_id}
+                                    $or:[
+                                        {
+                                            $and:[
+                                                {privacy:PostPrivacy.FOLLOWERS},
+                                                {"creator_data.friends":user_id}
+                                            ]
+                                        },
+                                        {
+                                            $and:[
+                                                {privacy:PostPrivacy.FOLLOWERS},
+                                                {creator:user_id}
+                                            ]
+                                        },
                                     ]
                                 }
                             ]
@@ -398,9 +428,19 @@ export class PostsService extends BaseService<PostDocument> {
                             $or:[
                                 {privacy:{$ne:PostPrivacy.FOLLOWERS}},
                                 {
-                                    $and:[
-                                        {privacy:PostPrivacy.FOLLOWERS},
-                                        {"creator_data.friends":user_id}
+                                    $or:[
+                                        {
+                                            $and:[
+                                                {privacy:PostPrivacy.FOLLOWERS},
+                                                {"creator_data.friends":user_id}
+                                            ]
+                                        },
+                                        {
+                                            $and:[
+                                                {privacy:PostPrivacy.FOLLOWERS},
+                                                {creator:user_id}
+                                            ]
+                                        },
                                     ]
                                 }
                             ]
@@ -420,7 +460,6 @@ export class PostsService extends BaseService<PostDocument> {
     }
 
     async findHomePosts(user_id:any,query: FilterQuery<PostDocument>, options?: QueryOptions<PostDocument>) {
-
 
         const posts = await this.postModel.aggregate([
             {$match: query},
@@ -447,9 +486,19 @@ export class PostsService extends BaseService<PostDocument> {
                     $or: [
                         {privacy:{$ne:PostPrivacy.FOLLOWERS}},
                         {
-                            $and:[
-                                {privacy:PostPrivacy.FOLLOWERS},
-                                {"creator_data.friends":user_id}
+                            $or:[
+                                {
+                                    $and:[
+                                        {privacy:PostPrivacy.FOLLOWERS},
+                                        {"creator_data.friends":user_id}
+                                    ]
+                                },
+                                {
+                                    $and:[
+                                        {privacy:PostPrivacy.FOLLOWERS},
+                                        {creator:user_id}
+                                    ]
+                                },
                             ]
                         }
                     ],
@@ -494,9 +543,19 @@ export class PostsService extends BaseService<PostDocument> {
                     $or: [
                         {privacy:{$ne:PostPrivacy.FOLLOWERS}},
                         {
-                            $and:[
-                                {privacy:PostPrivacy.FOLLOWERS},
-                                {"creator_data.friends":user_id}
+                            $or:[
+                                {
+                                    $and:[
+                                        {privacy:PostPrivacy.FOLLOWERS},
+                                        {"creator_data.friends":user_id}
+                                    ]
+                                },
+                                {
+                                    $and:[
+                                        {privacy:PostPrivacy.FOLLOWERS},
+                                        {creator:user_id}
+                                    ]
+                                },
                             ]
                         }
                     ],
@@ -540,9 +599,19 @@ export class PostsService extends BaseService<PostDocument> {
                     $or: [
                         {privacy:{$ne:PostPrivacy.FOLLOWERS}},
                         {
-                            $and:[
-                                {privacy:PostPrivacy.FOLLOWERS},
-                                {"creator_data.friends":user_id}
+                            $or:[
+                                {
+                                    $and:[
+                                        {privacy:PostPrivacy.FOLLOWERS},
+                                        {"creator_data.friends":user_id}
+                                    ]
+                                },
+                                {
+                                    $and:[
+                                        {privacy:PostPrivacy.FOLLOWERS},
+                                        {creator:user_id}
+                                    ]
+                                },
                             ]
                         }
                     ],

@@ -193,7 +193,7 @@ export class PostsController {
             $or:[
                 {creator:{$in:user.friends}},
                 {_id:followedPagesPosts.concat(groupJoinedPosts)}
-            ]
+            ],
             /*$or: user.isGuildMember
                 ? [
                     {privacy: PostPrivacy.PUBLIC},
@@ -316,7 +316,7 @@ export class PostsController {
                 this.socketService.triggerMessage(`notification-${(userData._id).toString()}`, {data: notificationData});
             }
 
-            if (userData.fcmToken && userData.newPostsNotifications) {
+            if (userData && userData.fcmToken && userData.enableNotifications) {
                 await this.firebaseService.sendNotification({
                     token: userData.fcmToken,
                     notification: {title: `${user.firstName} ${user.lastName} liked your post.`},
@@ -414,7 +414,7 @@ export class PostsController {
 
 
 
-            if(userData.fcmToken && userData.newPostsNotifications){
+            if(userData.fcmToken && userData.enableNotifications){
                 await this.firebaseService.sendNotification({
                     token: userData.fcmToken,
                     notification: {title: `${title} replied to you comment.`},
@@ -459,7 +459,7 @@ export class PostsController {
 
 
                 // check if user has fcm token then send notification to that user.
-                if (userData.fcmToken && userData.newPostsNotifications) {
+                if (userData.fcmToken && userData.enableNotifications) {
                     await this.firebaseService.sendNotification({
                         token: userData.fcmToken,
                         notification: {title: `${title} commented on your post.`},
@@ -710,7 +710,7 @@ export class PostsController {
                 }
 
 
-                if ( userData && userData.fcmToken && userData.newPostsNotifications) {
+                if ( userData && userData.fcmToken && userData.enableNotifications) {
                     await this.firebaseService.sendNotification({
                         token: userData.fcmToken,
                         notification: {title: `${title} reacted to your post.`},
@@ -765,7 +765,7 @@ export class PostsController {
 
     @Get('tagged/find-all')
     async findTaggedPosts(@GetUser() user: UserDocument) {
-        return await this.postsService.find({tagged: {$in: [user._id]}}, {sort: {createdAt: -1}});
+        return await this.postsService.find(user._id,{tagged: {$in: [user._id]}}, {sort: {createdAt: -1}});
     }
 
     @Get('media')
