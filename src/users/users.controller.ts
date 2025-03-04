@@ -641,7 +641,7 @@ export class UserController {
     async createFriendRequest(@GetUser() user: UserDocument, @Body('receiver', ParseObjectId) receiver: string) {
         const friendRequestExists = await this.friendRequestService.findOneRecord({receiver, sender: user._id});
         if (friendRequestExists) throw new BadRequestException('Friend request for this user exists already.');
-        const friendRequest = await this.friendRequestService.create({receiver, sender: user._id});
+        const friendRequest:any = await this.friendRequestService.create({receiver, sender: user._id});
 
 
 
