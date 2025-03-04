@@ -650,7 +650,7 @@ export class UserController {
         this.socketService.triggerMessage(`notification-${(userData._id).toString()}`, {data: notificationData});
 
 
-        if(friendRequest.receiver.fcmToken && friendRequest.receiver.enableNotifications ){
+        if(friendRequest.receiver.fcmToken && friendRequest.receiver.enableNSotifications ){
 
             await this.firebaseService.sendNotification({
                 token: friendRequest.receiver.fcmToken,

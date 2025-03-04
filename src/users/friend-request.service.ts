@@ -11,17 +11,17 @@ export class FriendRequestService extends BaseService<FriendRequestDocument> {
   }
 
   async create(data: {} | FriendRequestDocument) {
-    return (await this.friendRequestModel.create(data)).populate({ path: 'receiver', select: 'fcmToken firstName lastName avatar' });
+    return (await this.friendRequestModel.create(data)).populate({ path: 'receiver', select: 'fcmToken firstName lastName avatar enableNotifications' });
   }
 
   async findOne(query: FilterQuery<FriendRequestDocument>) {
-    return await this.friendRequestModel.findOne(query).populate({ path: 'sender', select: 'fcmToken firstName lastName avatar' });
+    return await this.friendRequestModel.findOne(query).populate({ path: 'sender', select: 'fcmToken firstName lastName avatar enableNotifications' });
   }
 
   async find(query: FilterQuery<FriendRequestDocument>) {
     return await this.friendRequestModel.find(query).populate([
-      { path: 'sender', select: 'fcmToken firstName lastName avatar' },
-      { path: 'receiver', select: 'fcmToken firstName lastName avatar' },
+      { path: 'sender', select: 'fcmToken firstName lastName avatar enableNotifications' },
+      { path: 'receiver', select: 'fcmToken firstName lastName avatar enableNotifications' },
     ]);
   }
 }
