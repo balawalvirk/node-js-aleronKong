@@ -256,15 +256,6 @@ export class ProductController {
             if (userData.fcmToken && userData.enableNotifications) {
 
 
-                await this.notificationService.createRecord({
-                    order: order._id,
-                    sender: user._id,
-                    //@ts-ignore
-                    receiver: userData._id,
-                    message: 'has placed an order',
-                    type: NotificationType.ORDER_PLACED,
-                });
-
 
                 await this.firebaseService.sendNotification({
                     token: userData.fcmToken,
@@ -274,6 +265,16 @@ export class ProductController {
                     data: {order: order._id.toString(), type: NotificationType.ORDER_PLACED},
                 });
             }
+
+            await this.notificationService.createRecord({
+                order: order._id,
+                sender: user._id,
+                //@ts-ignore
+                receiver: userData._id,
+                message: 'has placed an order',
+                type: NotificationType.ORDER_PLACED,
+            });
+
         }
 
         return {message: 'Order placed successfully.'};
@@ -322,16 +323,17 @@ export class ProductController {
                 data: {product: product._id.toString(), type: NotificationType.PRODUCT_BOUGHT},
             });
 
-            await this.notificationService.createRecord({
-                product: product._id,
-                sender: user._id,
-                //@ts-ignore
-                receiver: userData._id,
-                type: NotificationType.PRODUCT_BOUGHT,
-                message: 'has bought your product.',
-            });
-
         }
+
+
+        await this.notificationService.createRecord({
+            product: product._id,
+            sender: user._id,
+            //@ts-ignore
+            receiver: userData._id,
+            type: NotificationType.PRODUCT_BOUGHT,
+            message: 'has bought your product.',
+        });
 
         return {message: 'Thanks for purchasing the product.'};
     }
@@ -394,17 +396,17 @@ export class ProductController {
                 data: {product: product._id.toString(), type: NotificationType.PRODUCT_BOUGHT},
             });
 
-
-            await this.notificationService.createRecord({
-                product: product._id,
-                sender: user._id,
-                //@ts-ignore
-                receiver: userData._id,
-                type: NotificationType.PRODUCT_BOUGHT,
-                message: 'has bought your product.',
-            });
-
         }
+
+
+        await this.notificationService.createRecord({
+            product: product._id,
+            sender: user._id,
+            //@ts-ignore
+            receiver: userData._id,
+            type: NotificationType.PRODUCT_BOUGHT,
+            message: 'has bought your product.',
+        });
 
         return {message: 'Thanks for purchasing the products.'};
     }

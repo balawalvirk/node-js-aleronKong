@@ -280,16 +280,17 @@ export class UserController {
                 data: {user: user._id.toString(), type: NotificationType.USER_FOLLOWING},
             });
 
-            await this.notificationService.createRecord({
-                user: user._id,
-                message: 'started following you.',
-                type: NotificationType.USER_FOLLOWING,
-                sender: user._id,
-                receiver: id,
-            });
 
         }
 
+
+        await this.notificationService.createRecord({
+            user: user._id,
+            message: 'started following you.',
+            type: NotificationType.USER_FOLLOWING,
+            sender: user._id,
+            receiver: id,
+        });
 
         this.socketService.triggerMessage(`friends-${(updatedUser._id).toString()}`, {data: updatedUser.friends});
         this.socketService.triggerMessage(`friends-${(updatedUser._id).toString()}`, {data: updatedUser.friends});
@@ -489,16 +490,17 @@ export class UserController {
                 data: {user: user._id, type: NotificationType.SELLER_REQUEST},
             });
 
-            await this.notificationService.createRecord({
-                type: NotificationType.SELLER_REQUEST,
-                message: 'A new request for seller approval.',
-                sender: user._id,
-                user: user._id,
-                receiver: admin._id,
-            });
-
-
         }
+
+
+        await this.notificationService.createRecord({
+            type: NotificationType.SELLER_REQUEST,
+            message: 'A new request for seller approval.',
+            sender: user._id,
+            user: user._id,
+            receiver: admin._id,
+        });
+
         return 'Your request for seller is under consideration.';
     }
 
@@ -548,15 +550,14 @@ export class UserController {
                 notification: {title: `Your seller request has been ${sellerRequest}`},
                 data: {user: userFound._id, type: NotificationType.SELLER_REQUEST_APPROVED_REJECTED},
             });
-
-
-            await this.notificationService.createRecord({
-                type: NotificationType.SELLER_REQUEST_APPROVED_REJECTED,
-                message: `Your seller request has been ${sellerRequest}`,
-                receiver: userFound._id,
-            });
-
         }
+
+
+        await this.notificationService.createRecord({
+            type: NotificationType.SELLER_REQUEST_APPROVED_REJECTED,
+            message: `Your seller request has been ${sellerRequest}`,
+            receiver: userFound._id,
+        });
 
         return 'Request approved successfully.';
     }
@@ -659,15 +660,17 @@ export class UserController {
             });
 
 
-            await this.notificationService.createRecord({
-                sender: user._id,
-                receiver: receiver,
-                user: user._id,
-                message: 'sent you a friend request.',
-                type: NotificationType.FRIEND_REQUEST,
-            });
-
         }
+
+        await this.notificationService.createRecord({
+            sender: user._id,
+            receiver: receiver,
+            user: user._id,
+            message: 'sent you a friend request.',
+            type: NotificationType.FRIEND_REQUEST,
+        });
+
+
 
 
         return friendRequest;

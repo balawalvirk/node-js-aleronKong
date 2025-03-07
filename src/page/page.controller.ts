@@ -102,7 +102,7 @@ export class PageController {
     @UsePipes(new ValidationPipe({transform: true}))
     async findAll(@Query() {filter, query, limit, page, created, moderating, following, pageId}: any, @GetUser() user: UserDocument) {
         const $q = makeQuery({page, limit});
-        const options = {limit: $q.limit, sort: $q.sort,skip: $q.skip};
+        const options = {limit: $q.limit, sort: $q.sort, skip: $q.skip};
 
         let multipleQuery = [];
         query = query || "";
@@ -252,17 +252,7 @@ export class PageController {
         if (followerFound) throw new BadRequestException('You are already a follower of this page.');
 
 
-        if(page.creator.fcmToken && page.creator.enableNotifications){
-            await this.notificationService.createRecord({
-                type: NotificationType.PAGE_FOLLOW_ACCEPTED,
-                // @ts-ignore
-                page: id,
-                message: `has started following the ${page.name} page`,
-                sender: user._id,
-                //@ts-ignore
-                receiver: page.creator._id,
-                sender_page:id,
-            });
+        if (page.creator.fcmToken && page.creator.enableNotifications) {
             //@ts-ignore
 
             await this.firebaseService.sendNotification({
@@ -272,6 +262,18 @@ export class PageController {
                 data: {page: id.toString(), type: NotificationType.PAGE_FOLLOW_ACCEPTED},
             });
         }
+
+        await this.notificationService.createRecord({
+            type: NotificationType.PAGE_FOLLOW_ACCEPTED,
+            // @ts-ignore
+            page: id,
+            message: `has started following the ${page.name} page`,
+            sender: user._id,
+            //@ts-ignore
+            receiver: page.creator._id,
+            sender_page: id,
+        });
+
 
 
         const updated: any = await this.pageService.findOneRecordAndUpdate({_id: id}, {$push: {followers: {follower: user._id}}})
@@ -297,11 +299,10 @@ export class PageController {
         if (followerFound) throw new BadRequestException('You are already a follower of this page.');
 
 
-
         //@ts-ignore
 
 
-        if(page.creator.fcmToken && page.creator.enableNotifications){
+        if (page.creator.fcmToken && page.creator.enableNotifications) {
             await this.firebaseService.sendNotification({
                 token: page.creator.fcmToken,
                 notification: {title: `${user.firstName} ${user.lastName} has started following the ${page.name} page`},
@@ -309,17 +310,17 @@ export class PageController {
                 data: {page: id.toString(), type: NotificationType.PAGE_FOLLOW_ACCEPTED},
             });
 
-            await this.notificationService.createRecord({
-                type: NotificationType.PAGE_FOLLOW_ACCEPTED,
-                // @ts-ignore
-                page: id,
-                message: `${user.firstName} ${user.lastName} has started following the ${page.name} page`,
-                sender: user._id,
-                //@ts-ignore
-                receiver: page.creator._id,
-            });
-
         }
+
+        await this.notificationService.createRecord({
+            type: NotificationType.PAGE_FOLLOW_ACCEPTED,
+            // @ts-ignore
+            page: id,
+            message: `${user.firstName} ${user.lastName} has started following the ${page.name} page`,
+            sender: user._id,
+            //@ts-ignore
+            receiver: page.creator._id,
+        });
 
 
 
@@ -399,25 +400,23 @@ export class PageController {
 
     // find all post of page that user follow
     @Get('follow/post/find-all')
-    async feed(@GetUser() user: UserDocument, @Query() {page, limit,creator}: PaginationDto) {
+    async feed(@GetUser() user: UserDocument, @Query() {page, limit, creator}: PaginationDto) {
         const $q = makeQuery({page, limit,});
         const options = {sort: {pin: -1, ...$q.sort}, limit: $q.limit, skip: $q.skip};
 
 
-
-
         const pagesFollowed = (await this.pageService.findAllRecords({'followers.follower': user._id})).map((page) => page._id);
 
-        let condition:any = {page: {$in: pagesFollowed}, creator: {$nin: user.blockedUsers}};
+        let condition: any = {page: {$in: pagesFollowed}, creator: {$nin: user.blockedUsers}};
 
-        if(creator){
+        if (creator) {
             const pagesCreated = (await this.pageService.findAllRecords({'creator': user._id})).map((page) => page._id);
 
-            condition = {page: {$in: pagesFollowed.concat(pagesCreated)},creator: {$nin: user.blockedUsers}};
+            condition = {page: {$in: pagesFollowed.concat(pagesCreated)}, creator: {$nin: user.blockedUsers}};
         }
 
 
-        const {posts,total} = await this.postService.find(user._id,condition, options);
+        const {posts, total} = await this.postService.find(user._id, condition, options);
         const paginated = {
             total,
             pages: Math.floor(total / $q.limit),
@@ -444,7 +443,7 @@ export class PageController {
         const $q = makeQuery({page, limit});
         const options = {sort: {feature: -1, pin: -1, ...$q.sort}, limit: $q.limit, skip: $q.skip};
         const condition = {page: new mongoose.Types.ObjectId(id), creator: {$nin: user.blockedUsers}};
-        const {posts,total} = await this.postService.find(user._id,condition, options);
+        const {posts, total} = await this.postService.find(user._id, condition, options);
         const paginated = {
             total,
             pages: Math.ceil(total / $q.limit),
@@ -488,18 +487,7 @@ export class PageController {
             {$push: {moderators: {user: createModeratorDto.user, moderator: saveModerator._id}}});
 
 
-
-        if(moderator.fcmToken && moderator.enableNotifications){
-
-            await this.notificationService.createRecord({
-                type: NotificationType.PAGE_MODERATOR,
-                //@ts-ignore
-                page: page._id,
-                message: `${user.firstName} ${user.lastName} has added you as moderator.`,
-                sender: user._id,
-                //@ts-ignore
-                receiver: createModeratorDto.user
-            });
+        if (moderator.fcmToken && moderator.enableNotifications) {
 
             await this.firebaseService.sendNotification({
                 token: moderator.fcmToken,
@@ -510,7 +498,15 @@ export class PageController {
 
         }
 
-
+        await this.notificationService.createRecord({
+            type: NotificationType.PAGE_MODERATOR,
+            //@ts-ignore
+            page: page._id,
+            message: `${user.firstName} ${user.lastName} has added you as moderator.`,
+            sender: user._id,
+            //@ts-ignore
+            receiver: createModeratorDto.user
+        });
 
 
         return saveModerator;
@@ -559,22 +555,7 @@ export class PageController {
         const invitation: any = await this.invitationService.create({user: user._id, page, friend});
 
 
-
-
-        if(invitation.friend.enableNotifications && invitation.friend.fcmToken){
-
-
-            await this.notificationService.createRecord({
-                type: NotificationType.PAGE_INVITATION,
-                //@ts-ignore
-                page: invitation.page._id,
-                message: `has invited you to follow ${invitation.page.name} Page.`,
-                sender: user._id,
-                //@ts-ignore
-                receiver: invitation.friend._id,
-                invitation: invitation._id,
-                sender_page:invitation.page._id
-            });
+        if (invitation.friend.enableNotifications && invitation.friend.fcmToken) {
 
             await this.firebaseService.sendNotification({
                 token: invitation.friend.fcmToken,
@@ -588,6 +569,18 @@ export class PageController {
 
         }
 
+
+        await this.notificationService.createRecord({
+            type: NotificationType.PAGE_INVITATION,
+            //@ts-ignore
+            page: invitation.page._id,
+            message: `has invited you to follow ${invitation.page.name} Page.`,
+            sender: user._id,
+            //@ts-ignore
+            receiver: invitation.friend._id,
+            invitation: invitation._id,
+            sender_page: invitation.page._id
+        });
 
         return invitation;
     }
@@ -612,19 +605,7 @@ export class PageController {
             //@ts-ignore
 
 
-            if(invitation.user.fcmToken && invitation.user.enableNotifications){
-
-                await this.notificationService.createRecord({
-                    type: NotificationType.PAGE_FOLLOW_ACCEPTED,
-                    // @ts-ignore
-                    page: invitation.page._id,
-                    message: `${user.firstName} ${user.lastName} has accepted the ${invitation.page.name} page follow request`,
-                    sender: user._id,
-                    //@ts-ignore
-                    receiver: invitation.user._id,
-                    invitation: invitation._id
-                });
-
+            if (invitation.user.fcmToken && invitation.user.enableNotifications) {
                 await this.firebaseService.sendNotification({
                     token: invitation.user.fcmToken,
                     notification: {title: `${user.firstName} ${user.lastName} has accepted the ${invitation.page.name} page follow request`},
@@ -634,8 +615,19 @@ export class PageController {
                         invitation: invitation._id.toString()
                     },
                 });
-
             }
+
+            await this.notificationService.createRecord({
+                type: NotificationType.PAGE_FOLLOW_ACCEPTED,
+                // @ts-ignore
+                page: invitation.page._id,
+                message: `${user.firstName} ${user.lastName} has accepted the ${invitation.page.name} page follow request`,
+                sender: user._id,
+                //@ts-ignore
+                receiver: invitation.user._id,
+                invitation: invitation._id
+            });
+
 
             const page = await this.pageService.findOneRecordAndUpdate({_id: invitation.page._id}, {
                 $pull: {requests: user._id},
@@ -655,7 +647,7 @@ export class PageController {
         @Param('userId', ParseObjectId) userId: string,
         @GetUser() user: UserDocument
     ) {
-        const page:any = await this.pageService.findOneRecord({_id: id})
+        const page: any = await this.pageService.findOneRecord({_id: id})
             .populate('creator');
         if (!page) throw new HttpException('Page does not exist.', HttpStatus.BAD_REQUEST);
 
@@ -667,23 +659,24 @@ export class PageController {
                 });
 
 
-                if(page.creator.fcmToken && page.creator.enableNotifications){
+                if (page.creator.fcmToken && page.creator.enableNotifications) {
 
-                    await this.notificationService.createRecord({
-                        page: page._id,
-                        sender: user._id,
-                        receiver: userId,
-                        message: `Your request to join page is approved`,
-                        type: NotificationType.PAGE_JOIN_REQUEST_APPROVED,
+
+                    await this.firebaseService.sendNotification({
+                        token: page.creator.fcmToken,
+                        notification: {title: `Your request to join page is approved`},
+                        data: {page: page._id.toString(), type: NotificationType.PAGE_JOIN_REQUEST_APPROVED},
                     });
+                }
 
-                        await this.firebaseService.sendNotification({
-                            token: page.creator.fcmToken,
-                            notification: {title: `Your request to join page is approved`},
-                            data: {page: page._id.toString(), type: NotificationType.PAGE_JOIN_REQUEST_APPROVED},
-                        });
-                    }
 
+                await this.notificationService.createRecord({
+                    page: page._id,
+                    sender: user._id,
+                    receiver: userId,
+                    message: `Your request to join page is approved`,
+                    type: NotificationType.PAGE_JOIN_REQUEST_APPROVED,
+                });
 
 
                 return 'Request approved successfully.';
@@ -691,16 +684,8 @@ export class PageController {
                 await this.pageService.findOneRecordAndUpdate({_id: id}, {$pull: {requests: userId}});
 
 
-
                 if (page.creator.fcmToken && page.creator.enableNotifications) {
 
-                    await this.notificationService.createRecord({
-                        page: page._id,
-                        sender: user._id,
-                        receiver: userId,
-                        message: `Your request to join page is rejected`,
-                        type: NotificationType.PAGE_JOIN_REQUEST_REJECTED,
-                    });
 
                     await this.firebaseService.sendNotification({
                         token: page.creator.fcmToken,
@@ -708,6 +693,14 @@ export class PageController {
                         data: {page: page._id.toString(), type: NotificationType.PAGE_JOIN_REQUEST_REJECTED},
                     });
                 }
+
+                await this.notificationService.createRecord({
+                    page: page._id,
+                    sender: user._id,
+                    receiver: userId,
+                    message: `Your request to join page is rejected`,
+                    type: NotificationType.PAGE_JOIN_REQUEST_REJECTED,
+                });
 
                 return 'Request rejected successfully.';
             }
@@ -724,13 +717,6 @@ export class PageController {
 
                 if (page.creator.fcmToken && page.creator.enableNotifications) {
 
-                    await this.notificationService.createRecord({
-                        page: page._id,
-                        sender: user._id,
-                        receiver: userId,
-                        message: `Your request to join page is approved`,
-                        type: NotificationType.PAGE_JOIN_REQUEST_APPROVED,
-                    });
 
                     await this.firebaseService.sendNotification({
                         token: page.creator.fcmToken,
@@ -739,6 +725,15 @@ export class PageController {
                     });
                 }
 
+                await this.notificationService.createRecord({
+                    page: page._id,
+                    sender: user._id,
+                    receiver: userId,
+                    message: `Your request to join page is approved`,
+                    type: NotificationType.PAGE_JOIN_REQUEST_APPROVED,
+                });
+
+
                 return 'Request approved successfully.';
             } else {
                 await this.pageService.findOneRecordAndUpdate({_id: id}, {$pull: {requests: userId}});
@@ -746,13 +741,6 @@ export class PageController {
 
                 if (page.creator.fcmToken && page.creator.enableNotifications) {
 
-                    await this.notificationService.createRecord({
-                        page: page._id,
-                        sender: user._id,
-                        receiver: userId,
-                        message: `Your request to join page is rejected`,
-                        type: NotificationType.PAGE_JOIN_REQUEST_REJECTED,
-                    });
 
                     await this.firebaseService.sendNotification({
                         token: page.creator.fcmToken,
@@ -760,6 +748,15 @@ export class PageController {
                         data: {page: page._id.toString(), type: NotificationType.PAGE_JOIN_REQUEST_REJECTED},
                     });
                 }
+
+
+                await this.notificationService.createRecord({
+                    page: page._id,
+                    sender: user._id,
+                    receiver: userId,
+                    message: `Your request to join page is rejected`,
+                    type: NotificationType.PAGE_JOIN_REQUEST_REJECTED,
+                });
 
                 return 'Request rejected successfully.';
             }
@@ -779,19 +776,9 @@ export class PageController {
                 .populate('creator');
 
 
+            if (updatedComment.creator.fcmToken && updatedComment.creator.enableNotifications) {
 
-            if(updatedComment.creator.fcmToken && updatedComment.creator.enableNotifications){
 
-
-                await this.notificationService.createRecord({
-                    page: page._id,
-                    message: 'replied to you comment.',
-                    type: NotificationType.COMMENT_REPLIED,
-                    sender: user._id,
-                    sender_page:page._id,
-                    //@ts-ignore
-                    receiver: updatedComment.creator._id,
-                });
 
                 await this.firebaseService.sendNotification({
                     token: updatedComment.creator.fcmToken,
@@ -801,6 +788,16 @@ export class PageController {
 
             }
 
+
+            await this.notificationService.createRecord({
+                page: page._id,
+                message: 'replied to you comment.',
+                type: NotificationType.COMMENT_REPLIED,
+                sender: user._id,
+                sender_page: page._id,
+                //@ts-ignore
+                receiver: updatedComment.creator._id,
+            });
 
             this.socketService.triggerMessage(`page-comment-reply-${(page._id).toString()}`, comment);
 
@@ -822,17 +819,18 @@ export class PageController {
                         data: {post: page._id.toString(), type: NotificationType.PAGE_COMMENTED},
                     });
 
-                    await this.notificationService.createRecord({
-                        post: page._id,
-                        message: 'commented on your page.',
-                        type: NotificationType.PAGE_COMMENTED,
-                        sender: user._id,
-                        //@ts-ignore
-                        receiver: post.creator._id,
-                    });
 
                 }
 
+
+                await this.notificationService.createRecord({
+                    post: page._id,
+                    message: 'commented on your page.',
+                    type: NotificationType.PAGE_COMMENTED,
+                    sender: user._id,
+                    //@ts-ignore
+                    receiver: post.creator._id,
+                });
 
                 this.socketService.triggerMessage(`page-comment-${(page._id).toString()}`, comment);
 
@@ -915,14 +913,6 @@ export class PageController {
 
                 if (page.creator.fcmToken && page.creator.enableNotifications) {
 
-                    await this.notificationService.createRecord({
-                        page: page._id,
-                        message: 'reacted to your page.',
-                        type: NotificationType.PAGE_REACTED,
-                        sender: user._id,
-                        //@ts-ignore
-                        receiver: post.creator._id,
-                    });
 
 
                     await this.firebaseService.sendNotification({
@@ -931,6 +921,16 @@ export class PageController {
                         data: {post: page._id.toString(), type: NotificationType.PAGE_REACTED},
                     });
                 }
+
+                await this.notificationService.createRecord({
+                    page: page._id,
+                    message: 'reacted to your page.',
+                    type: NotificationType.PAGE_REACTED,
+                    sender: user._id,
+                    //@ts-ignore
+                    receiver: post.creator._id,
+                });
+
             }
             return reaction;
         }

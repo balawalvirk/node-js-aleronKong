@@ -212,23 +212,21 @@ export class ChatController {
 
 
                             if(receiver.enableNotifications && receiver.fcmToken){
-
                                 await this.firebaseService.sendNotification({
                                     token: receiver.fcmToken,
                                     notification: {body: `${user.firstName} ${user.lastName} has sent you a message.`},
                                     data: {user: user._id.toString(), type: NotificationType.NEW_MESSAGE},
                                 });
-
-                                await this.notificationService.createRecord({
-                                    message: 'has sent you a message.',
-                                    sender: user._id,
-                                    //@ts-ignore
-                                    receiver: receiver._id,
-                                    type: NotificationType.NEW_MESSAGE,
-                                    user: user._id,
-                                });
-
                             }
+
+                            await this.notificationService.createRecord({
+                                message: 'has sent you a message.',
+                                sender: user._id,
+                                //@ts-ignore
+                                receiver: receiver._id,
+                                type: NotificationType.NEW_MESSAGE,
+                                user: user._id,
+                            });
 
 
                         }

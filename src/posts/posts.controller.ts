@@ -324,16 +324,17 @@ export class PostsController {
                 });
 
 
-                await this.notificationService.createRecord({
-                    post: post._id,
-                    message: 'liked your post.',
-                    type: NotificationType.POST_LIKED,
-                    sender: user._id,
-                    //@ts-ignore
-                    receiver: userData._id,
-                });
-
             }
+
+            await this.notificationService.createRecord({
+                post: post._id,
+                message: 'liked your post.',
+                type: NotificationType.POST_LIKED,
+                sender: user._id,
+                //@ts-ignore
+                receiver: userData._id,
+            });
+
         }
 
         return post;
@@ -420,21 +421,19 @@ export class PostsController {
                     notification: {title: `${title} replied to you comment.`},
                     data: {post: post._id.toString(), type: NotificationType.COMMENT_REPLIED},
                 });
-                await this.notificationService.createRecord({
-                    post: post._id,
-                    message: 'replied to you comment.',
-                    type: NotificationType.COMMENT_REPLIED,
-                    sender: user._id,
-                    sender_page:page && page._id,
-                    //@ts-ignore
-                    receiver: userData._id,
-                    page: page && page._id
-                });
-
-
             }
 
 
+            await this.notificationService.createRecord({
+                post: post._id,
+                message: 'replied to you comment.',
+                type: NotificationType.COMMENT_REPLIED,
+                sender: user._id,
+                sender_page:page && page._id,
+                //@ts-ignore
+                receiver: userData._id,
+                page: page && page._id
+            });
 
             comment.page = page;
             this.socketService.triggerMessage(`post-comment-reply-${(post._id).toString()}`, comment);
@@ -465,20 +464,19 @@ export class PostsController {
                         notification: {title: `${title} commented on your post.`},
                         data: {post: post._id.toString(), type: NotificationType.POST_COMMENTED},
                     });
-
-                    await this.notificationService.createRecord({
-                        post: post._id,
-                        message: 'commented on your post.',
-                        type: NotificationType.POST_COMMENTED,
-                        sender: user._id,
-                        sender_page: page && page._id,
-                        //@ts-ignore
-                        receiver: userData._id,
-                        page: page && page._id
-                    });
-
-
                 }
+
+                await this.notificationService.createRecord({
+                    post: post._id,
+                    message: 'commented on your post.',
+                    type: NotificationType.POST_COMMENTED,
+                    sender: user._id,
+                    sender_page: page && page._id,
+                    //@ts-ignore
+                    receiver: userData._id,
+                    page: page && page._id
+                });
+
             }
 
             comment.page = page;
@@ -717,19 +715,20 @@ export class PostsController {
                         data: {post: post._id.toString(), type: NotificationType.POST_REACTED},
                     });
 
-
-                    await this.notificationService.createRecord({
-                        post: post._id,
-                        message: 'reacted to your post.',
-                        type: NotificationType.POST_REACTED,
-                        sender: user._id,
-                        sender_page:addReactionsDto.page,
-                        //@ts-ignore
-                        receiver: userData._id,
-                        page: addReactionsDto.page
-                    });
-
                 }
+
+
+                await this.notificationService.createRecord({
+                    post: post._id,
+                    message: 'reacted to your post.',
+                    type: NotificationType.POST_REACTED,
+                    sender: user._id,
+                    sender_page:addReactionsDto.page,
+                    //@ts-ignore
+                    receiver: userData._id,
+                    page: addReactionsDto.page
+                });
+
             }
             reaction.page = page;
             return reaction;

@@ -97,17 +97,17 @@ export class FundraisingController {
             });
 
 
-            await this.notificationService.createRecord({
-                post: post._id,
-                sender: user._id,
-                //@ts-ignore
-                receiver: post.creator._id,
-                message: `has funded ${amount}$ for your project`,
-                type: NotificationType.FUNDRAISING_PROJECT_FUNDED,
-            });
-
         }
 
+
+        await this.notificationService.createRecord({
+            post: post._id,
+            sender: user._id,
+            //@ts-ignore
+            receiver: post.creator._id,
+            message: `has funded ${amount}$ for your project`,
+            type: NotificationType.FUNDRAISING_PROJECT_FUNDED,
+        });
 
         return post;
     }
@@ -154,17 +154,16 @@ export class FundraisingController {
                 data: {post: post._id.toString(), type: NotificationType.FUNDRAISING_PROJECT_APPROVED},
             });
 
-
-            await this.notificationService.createRecord({
-                post: post._id,
-                sender: user._id,
-                //@ts-ignore
-                receiver: project.creator._id,
-                message: `Your fundraising project has been approved`,
-                type: NotificationType.FUNDRAISING_PROJECT_APPROVED,
-            });
-
         }
+
+        await this.notificationService.createRecord({
+            post: post._id,
+            sender: user._id,
+            //@ts-ignore
+            receiver: project.creator._id,
+            message: `Your fundraising project has been approved`,
+            type: NotificationType.FUNDRAISING_PROJECT_APPROVED,
+        });
 
         return {message: 'Fundraising project approved successfully.'};
     }

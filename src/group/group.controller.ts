@@ -121,16 +121,16 @@ export class GroupController {
                             data: {group: group._id.toString(), type: NotificationType.NEW_GROUP_POST},
                         });
 
-                        await this.notificationService.createRecord({
-                            type: NotificationType.NEW_GROUP_POST,
-                            group: group._id,
-                            message: `has posted in your ${group.name} group`,
-                            sender: user._id,
-                            //@ts-ignore
-                            receiver: group.creator._id,
-                        });
-
                     }
+
+                    await this.notificationService.createRecord({
+                        type: NotificationType.NEW_GROUP_POST,
+                        group: group._id,
+                        message: `has posted in your ${group.name} group`,
+                        sender: user._id,
+                        //@ts-ignore
+                        receiver: group.creator._id,
+                    });
                 }
             }
             return post;
@@ -193,16 +193,17 @@ export class GroupController {
                                 data: {post: post._id.toString(), type: NotificationType.USER_TAGGED},
                             });
 
-
-                            await this.notificationService.createRecord({
-                                type: NotificationType.USER_TAGGED,
-                                post: post._id,
-                                message: `has tagged you in a post.`,
-                                sender: user._id,
-                                //@ts-ignore
-                                receiver: taggedUser._id,
-                            });
                         }
+
+                        await this.notificationService.createRecord({
+                            type: NotificationType.USER_TAGGED,
+                            post: post._id,
+                            message: `has tagged you in a post.`,
+                            sender: user._id,
+                            //@ts-ignore
+                            receiver: taggedUser._id,
+                        });
+
                     }
                 }
             }
@@ -328,16 +329,17 @@ export class GroupController {
                     data: {group: group._id.toString(), type: NotificationType.GROUP_JOIN_REQUEST},
                 });
 
-
-                await this.notificationService.createRecord({
-                    type: NotificationType.GROUP_JOIN_REQUEST,
-                    group: group._id,
-                    message: `has sent a join request for ${group.name} group`,
-                    sender: user._id,
-                    //@ts-ignore
-                    receiver: group.creator._id,
-                });
             }
+
+
+            await this.notificationService.createRecord({
+                type: NotificationType.GROUP_JOIN_REQUEST,
+                group: group._id,
+                message: `has sent a join request for ${group.name} group`,
+                sender: user._id,
+                //@ts-ignore
+                receiver: group.creator._id,
+            });
 
             const updated: any = await this.groupService.findOneRecordAndUpdate({_id: id},
                 {$push: {requests: {member: user._id}}})
@@ -365,22 +367,23 @@ export class GroupController {
 
 
         if(group.creator.enableNotifications && group.creator.fcmToken){
-            await this.notificationService.createRecord({
-                type: NotificationType.GROUP_JOINED,
-                group: group._id,
-                message: `has joined your ${group.name} group`,
-                sender: user._id,
-                //@ts-ignore
-                receiver: group.creator._id,
-            });
-
             await this.firebaseService.sendNotification({
                 token: group.creator.fcmToken,
                 notification: {title: `${user.firstName} ${user.lastName} has joined your ${group.name} group`},
                 data: {group: group._id.toString(), type: NotificationType.GROUP_JOINED},
             });
-
         }
+
+
+        await this.notificationService.createRecord({
+            type: NotificationType.GROUP_JOINED,
+            group: group._id,
+            message: `has joined your ${group.name} group`,
+            sender: user._id,
+            //@ts-ignore
+            receiver: group.creator._id,
+        });
+
 
 
         return updatedGroup;
@@ -418,20 +421,20 @@ export class GroupController {
                     notification: {body: `${page.name} has sent a join request for ${group.name} group`},
                     data: {group: group._id.toString(), type: NotificationType.GROUP_JOIN_REQUEST},
                 });
-
-
-                await this.notificationService.createRecord({
-                    type: NotificationType.GROUP_JOIN_REQUEST,
-                    group: group._id,
-                    message: `has sent a join request for ${group.name} group`,
-                    sender: user._id,
-                    sender_page:page._id,
-                    //@ts-ignore
-                    receiver: group.creator._id,
-                    page: page._id
-                });
-
             }
+
+
+            await this.notificationService.createRecord({
+                type: NotificationType.GROUP_JOIN_REQUEST,
+                group: group._id,
+                message: `has sent a join request for ${group.name} group`,
+                sender: user._id,
+                sender_page:page._id,
+                //@ts-ignore
+                receiver: group.creator._id,
+                page: page._id
+            });
+
             const updated: any = await this.groupService.findOneRecordAndUpdate({_id: id},
                 {$push: {requests: {page: page._id}}})
                 .lean();
@@ -467,21 +470,19 @@ export class GroupController {
                 notification: {title: `${page.name} has joined your ${group.name} group`},
                 data: {group: group._id.toString(), type: NotificationType.GROUP_JOINED},
             });
-
-
-            await this.notificationService.createRecord({
-                type: NotificationType.GROUP_JOINED,
-                group: group._id,
-                message: `has joined your ${group.name} group`,
-                sender: user._id,
-                sender_page:page._id,
-                //@ts-ignore
-                receiver: group.creator._id,
-                page: page._id
-            });
-
-
         }
+
+        await this.notificationService.createRecord({
+            type: NotificationType.GROUP_JOINED,
+            group: group._id,
+            message: `has joined your ${group.name} group`,
+            sender: user._id,
+            sender_page:page._id,
+            //@ts-ignore
+            receiver: group.creator._id,
+            page: page._id
+        });
+
 
         return updatedGroup;
     }
@@ -642,17 +643,16 @@ export class GroupController {
                         notification: {title: `Your request to join group is approved`},
                         data: {group: group._id.toString(), type: NotificationType.GROUP_JOIN_REQUEST_APPROVED},
                     });
-
-
-                    await this.notificationService.createRecord({
-                        group: group._id,
-                        sender: user._id,
-                        receiver: userId,
-                        message: `Your request to join group is approved`,
-                        type: NotificationType.GROUP_JOIN_REQUEST_APPROVED,
-                    });
-
                 }
+
+                await this.notificationService.createRecord({
+                    group: group._id,
+                    sender: user._id,
+                    receiver: userId,
+                    message: `Your request to join group is approved`,
+                    type: NotificationType.GROUP_JOIN_REQUEST_APPROVED,
+                });
+
                 return 'Request approved successfully.';
             } else {
                 await this.groupService.findOneRecordAndUpdate({_id: id}, {$pull: {requests: {member: userId}}});
@@ -674,15 +674,15 @@ export class GroupController {
                         data: {group: group._id.toString(), type: NotificationType.GROUP_JOIN_REQUEST_REJECTED},
                     });
 
-
-                    await this.notificationService.createRecord({
-                        group: group._id,
-                        sender: user._id,
-                        receiver: userId,
-                        message: `Your request to join group is rejected`,
-                        type: NotificationType.GROUP_JOIN_REQUEST_REJECTED,
-                    });
                 }
+
+                await this.notificationService.createRecord({
+                    group: group._id,
+                    sender: user._id,
+                    receiver: userId,
+                    message: `Your request to join group is rejected`,
+                    type: NotificationType.GROUP_JOIN_REQUEST_REJECTED,
+                });
 
                 return 'Request rejected successfully.';
             }
@@ -712,15 +712,16 @@ export class GroupController {
                     });
 
 
-                    await this.notificationService.createRecord({
-                        group: group._id,
-                        sender: user._id,
-                        receiver: userId,
-                        message: `Your request to join group is approved`,
-                        type: NotificationType.GROUP_JOIN_REQUEST_APPROVED,
-                    });
-
                 }
+
+                await this.notificationService.createRecord({
+                    group: group._id,
+                    sender: user._id,
+                    receiver: userId,
+                    message: `Your request to join group is approved`,
+                    type: NotificationType.GROUP_JOIN_REQUEST_APPROVED,
+                });
+
 
                 return 'Request approved successfully.';
             } else {
@@ -742,16 +743,17 @@ export class GroupController {
                         data: {group: group._id.toString(), type: NotificationType.GROUP_JOIN_REQUEST_REJECTED},
                     });
 
-
-                    await this.notificationService.createRecord({
-                        group: group._id,
-                        sender: user._id,
-                        receiver: userId,
-                        message: `Your request to join group is rejected`,
-                        type: NotificationType.GROUP_JOIN_REQUEST_REJECTED,
-                    });
-
                 }
+
+
+
+                await this.notificationService.createRecord({
+                    group: group._id,
+                    sender: user._id,
+                    receiver: userId,
+                    message: `Your request to join group is rejected`,
+                    type: NotificationType.GROUP_JOIN_REQUEST_REJECTED,
+                });
 
                 return 'Request rejected successfully.';
             }
@@ -795,16 +797,16 @@ export class GroupController {
                     data: {group: group._id.toString(), type: NotificationType.GROUP_JOIN_REQUEST_APPROVED},
                 });
 
-
-                await this.notificationService.createRecord({
-                    group: group._id,
-                    sender: user._id,
-                    page: pageId,
-                    message: `Your request to join group is approved`,
-                    type: NotificationType.GROUP_JOIN_REQUEST_APPROVED,
-                });
-
             }
+
+            await this.notificationService.createRecord({
+                group: group._id,
+                sender: user._id,
+                page: pageId,
+                message: `Your request to join group is approved`,
+                type: NotificationType.GROUP_JOIN_REQUEST_APPROVED,
+            });
+
             return 'Request approved successfully.';
         } else {
             await this.groupService.findOneRecordAndUpdate({_id: id}, {$pull: {requests: {page: pageId}}});
@@ -827,15 +829,16 @@ export class GroupController {
                 });
 
 
-                await this.notificationService.createRecord({
-                    group: group._id,
-                    sender: user._id,
-                    page: pageId,
-                    message: `Your request to join group is rejected`,
-                    type: NotificationType.GROUP_JOIN_REQUEST_REJECTED,
-                });
-
             }
+
+
+            await this.notificationService.createRecord({
+                group: group._id,
+                sender: user._id,
+                page: pageId,
+                message: `Your request to join group is rejected`,
+                type: NotificationType.GROUP_JOIN_REQUEST_REJECTED,
+            });
 
             return 'Request rejected successfully.';
         }
@@ -1059,16 +1062,6 @@ export class GroupController {
 
         if(userData.fcmToken && userData.enableNotifications){
 
-            await this.notificationService.createRecord({
-                type: NotificationType.GROUP_INVITATION,
-                //@ts-ignore
-                group: invitation.group._id,
-                message: `has sent you a group invitation request.`,
-                sender: user._id,
-                //@ts-ignore
-                receiver: userData.enableNotifications,
-            });
-
             await this.firebaseService.sendNotification({
                 token: userData.fcmToken,
                 notification: {body: `${user.firstName} ${user.lastName} has sent you a group invitation request.`},
@@ -1077,6 +1070,16 @@ export class GroupController {
             });
         }
 
+
+        await this.notificationService.createRecord({
+            type: NotificationType.GROUP_INVITATION,
+            //@ts-ignore
+            group: invitation.group._id,
+            message: `has sent you a group invitation request.`,
+            sender: user._id,
+            //@ts-ignore
+            receiver: userData.enableNotifications,
+        });
         return invitation;
     }
 
@@ -1122,17 +1125,18 @@ export class GroupController {
                     // @ts-ignore
                     data: {group: invitation.group._id.toString(), type: NotificationType.GROUP_JOIN_REQUEST},
                 });
-
-                await this.notificationService.createRecord({
-                    type: NotificationType.GROUP_JOIN_REQUEST,
-                    // @ts-ignore
-                    group: invitation.group._id,
-                    message: `has sent a join request for ${invitation.group.name} group`,
-                    sender: user._id,
-                    //@ts-ignore
-                    receiver: userData._id,
-                });
             }
+
+
+            await this.notificationService.createRecord({
+                type: NotificationType.GROUP_JOIN_REQUEST,
+                // @ts-ignore
+                group: invitation.group._id,
+                message: `has sent a join request for ${invitation.group.name} group`,
+                sender: user._id,
+                //@ts-ignore
+                receiver: userData._id,
+            });
 
 
             if (group.privacy === GroupPrivacy.PUBLIC)
