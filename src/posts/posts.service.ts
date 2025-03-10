@@ -512,8 +512,6 @@ export class PostsService extends BaseService<PostDocument> {
         const totalPages=Math.ceil(total / (options.limit||10));
 
 
-        // if((options.page||1)>totalPages)
-        //     return {total,posts:[]};
 
 
         const posts = await this.postModel.aggregate([

@@ -38,14 +38,17 @@ export class FirebaseService {
     async sendNotification(message: Message) {
         try {
 
+
             if (!message.notification.title) {
                 if(message.data.type){
-                    message.notification.title = `${this.getNotificationTitle(message.data.type)}`
+
+                    message.notification.title = `${await this.getNotificationTitle(message.data.type)}`
 
                 }else{
                     message.notification.title = "New Message"
                 }
             }
+
 
             await admin.messaging().send({
                 ...message,
