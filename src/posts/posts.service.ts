@@ -461,6 +461,61 @@ export class PostsService extends BaseService<PostDocument> {
 
     async findHomePosts(user_id:any,query: FilterQuery<PostDocument>, options?: QueryOptions<PostDocument>) {
 
+        const total = (await this.postModel.aggregate([
+            {$match: query},
+            {
+                $lookup: {
+                    from: "users",
+                    let: {user: '$creator'},
+                    pipeline: [
+                        {
+                            $match: {
+                                $expr: {
+                                    $and: [
+                                        {$eq: ['$$user', '$_id']},
+                                    ]
+                                }
+                            },
+                        },
+                    ],
+                    as: 'creator_data'
+                },
+            },
+            {
+                $match: {
+                    $or: [
+                        {privacy:{$ne:PostPrivacy.FOLLOWERS}},
+                        {
+                            $or:[
+                                {
+                                    $and:[
+                                        {privacy:PostPrivacy.FOLLOWERS},
+                                        {"creator_data.friends":user_id}
+                                    ]
+                                },
+                                {
+                                    $and:[
+                                        {privacy:PostPrivacy.FOLLOWERS},
+                                        {creator:user_id}
+                                    ]
+                                },
+                            ]
+                        }
+                    ],
+                }
+            },
+            { $unset: ["creator_data"] },
+        ])).length
+
+
+
+        const totalPages=Math.ceil(total / (options.limit||10));
+
+
+        // if((options.page||1)>totalPages)
+        //     return {total,posts:[]};
+
+
         const posts = await this.postModel.aggregate([
             {$match: query},
             {
@@ -518,51 +573,6 @@ export class PostsService extends BaseService<PostDocument> {
 
 
 
-        const total = (await this.postModel.aggregate([
-            {$match: query},
-            {
-                $lookup: {
-                    from: "users",
-                    let: {user: '$creator'},
-                    pipeline: [
-                        {
-                            $match: {
-                                $expr: {
-                                    $and: [
-                                        {$eq: ['$$user', '$_id']},
-                                    ]
-                                }
-                            },
-                        },
-                    ],
-                    as: 'creator_data'
-                },
-            },
-            {
-                $match: {
-                    $or: [
-                        {privacy:{$ne:PostPrivacy.FOLLOWERS}},
-                        {
-                            $or:[
-                                {
-                                    $and:[
-                                        {privacy:PostPrivacy.FOLLOWERS},
-                                        {"creator_data.friends":user_id}
-                                    ]
-                                },
-                                {
-                                    $and:[
-                                        {privacy:PostPrivacy.FOLLOWERS},
-                                        {creator:user_id}
-                                    ]
-                                },
-                            ]
-                        }
-                    ],
-                }
-            },
-            { $unset: ["creator_data"] },
-        ])).length
 
         await this.postModel.populate(posts,this.getHomePostpopulateFields());
 
