@@ -191,7 +191,7 @@ export class PostsController {
             isBlocked: false,
             status: PostStatus.ACTIVE,
             $or:[
-                {creator:{$in:user.friends}},
+                {creator:{$in:user.friends.concat([user._id])}},
                 {_id:followedPagesPosts.concat(groupJoinedPosts)}
             ],
             /*$or: user.isGuildMember
