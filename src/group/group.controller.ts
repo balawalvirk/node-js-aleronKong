@@ -688,7 +688,8 @@ export class GroupController {
             }
         } else {
             const moderator = await this.moderatorService.findOneRecord({group: id, user: user._id});
-            if (!moderator || !moderator.acceptMemberRequests) throw new UnauthorizedException();
+            if (!moderator || !moderator.acceptMemberRequests) throw new HttpException('Moderator not found.',
+                HttpStatus.BAD_REQUEST);
 
             if (isApproved) {
                 await this.groupService.findOneRecordAndUpdate({_id: id}, {
@@ -1078,7 +1079,7 @@ export class GroupController {
             message: `has sent you a group invitation request.`,
             sender: user._id,
             //@ts-ignore
-            receiver: userData.enableNotifications,
+            receiver: invitation.friend._id,
         });
         return invitation;
     }
