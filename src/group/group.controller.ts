@@ -615,11 +615,11 @@ export class GroupController {
         @Param('userId', ParseObjectId) userId: string,
         @GetUser() user: UserDocument
     ) {
-        const group = await this.groupService.findOneRecord({_id: id})
+        const group:any = await this.groupService.findOneRecord({_id: id})
             .populate('creator','fcmToken enableNotifications');
         if (!group) throw new HttpException('Group does not exist.', HttpStatus.BAD_REQUEST);
 
-        if (group.creator.toString() == user._id) {
+        if (group.creator._id.toString() == user._id.toString()) {
             if (isApproved) {
                 await this.groupService.findOneRecordAndUpdate({_id: id}, {
                     $pull: {requests: {member: userId}},
